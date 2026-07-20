@@ -3,11 +3,13 @@ const cors = require("cors");
 require("dotenv").config();
 console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Loaded ✅" : "Missing ❌");
 const db = require("./models/db");
+const chatRoutes = require("./routes/chat");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/chat", chatRoutes);
 
 app.get("/", async (req, res) => {
   try {
