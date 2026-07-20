@@ -38,7 +38,7 @@ export default function SignupPage() {
       <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
       <input placeholder="Full Name" value={fullName} onChange={e => setFullName(e.target.value)} />
       <input
-        placeholder="Email (.edu)"
+        placeholder="Email"
         type="email"
         value={email}
         onChange={e => setEmail(e.target.value)}

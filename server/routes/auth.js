@@ -11,9 +11,9 @@ router.post('/signup', async (req, res) => {
     return res.status(400).json({ error: 'Username, email, and password are required' });
   }
 
-  // Generic .edu check — flag with team if you want a stricter per-college rule
-  if (!/^[^\s@]+@[^\s@]+\.edu$/.test(email)) {
-    return res.status(400).json({ error: 'Must use a valid .edu email' });
+  // Generic email format check — no domain restriction (any provider allowed)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Must provide a valid email address' });
   }
 
   const existing = await db.query(
