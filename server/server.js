@@ -6,6 +6,9 @@ const db = require("./models/db");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const tradeRoutes = require("./routes/trades");
+const ratingsRoutes = require("./routes/ratings");
+const notificationsRoutes = require("./routes/notifications");
+const reportsRoutes = require("./routes/reports");
 
 const app = express();
 
@@ -14,6 +17,9 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/trades", tradeRoutes);
+app.use("/api/ratings", ratingsRoutes);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/reports", reportsRoutes);
 
 app.get("/", async (req, res) => {
   try {

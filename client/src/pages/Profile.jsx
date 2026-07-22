@@ -52,11 +52,11 @@ export default function Profile() {
       <h2>Profile</h2>
       <img src={profileImage || 'https://placehold.co/96'} alt="avatar" width={96} height={96} />
       <p>@{currentUser.username}</p>
-      {ratingSummary ? (
-        <p>★ {ratingSummary.avg_rating ?? 'No ratings yet'} ({ratingSummary.total} review{ratingSummary.total === 1 ? '' : 's'})</p>
-      ) : (
-        <p>No ratings yet</p>
-      )}
+      {ratingSummary && ratingSummary.avg_rating != null ? (
+  <p>★ {Number(ratingSummary.avg_rating).toFixed(1)} ({ratingSummary.total} review{Number(ratingSummary.total) === 1 ? '' : 's'})</p>
+     ) : (
+       <p>No ratings yet</p>
+    )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSave}>
         <label>

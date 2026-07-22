@@ -1,7 +1,8 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
+import NotificationBell from '../features/notifications/NotificationBell'
 import { User } from 'lucide-react'
 import './Navbar.css'
 
@@ -13,7 +14,6 @@ export default function Navbar() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [search, setSearch] = useState('')
-
   return (
     <>
       <header className="navbar">
@@ -25,7 +25,6 @@ export default function Navbar() {
             </div>
           </Link>
         </div>
-
         <div className="navbar-center">
           <SearchBar
             placeholder="Search items to trade..."
@@ -33,7 +32,6 @@ export default function Navbar() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-
         <div className="navbar-right">
           <nav className="navbar-links">
             {navItems.map((item) => (
@@ -48,6 +46,7 @@ export default function Navbar() {
               </Link>
             ))}
           </nav>
+          <NotificationBell />
           <button
             type="button"
             className="profile-button"
