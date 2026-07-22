@@ -15,7 +15,7 @@ router.get("/", requireAuth, async (req, res) => {
 // PATCH mark one notification as read
 router.patch("/:id/read", requireAuth, async (req, res) => {
   await db.query(
-    "UPDATE notifications SET read = TRUE WHERE id = $1 AND user_id = $2",
+    "UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2",
     [req.params.id, req.userId]
   );
   res.json({ success: true });
