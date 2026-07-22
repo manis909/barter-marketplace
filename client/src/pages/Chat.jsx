@@ -11,16 +11,31 @@ export default function Chat() {
   const [showRating, setShowRating] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [otherUserId, setOtherUserId] = useState(null);
+  const [completeError, setCompleteError] = useState('');
 
   const { currentUser } = useAuth();
   const currentUserId = currentUser?.id;
 
-  // TODO: get the other user's id from the trade data once
-  // Member 3's "get single trade" endpoint is available
-  const otherUserId = null;
+  const handleMarkComplete = async () => {
+    setCompleteError('');
+    const token = localStorage.getItem('token');
 
-  const handleMarkComplete = () => {
-    // TODO: call Member 3's "mark trade complete" endpoint once it exists
+    const res = await fetch(`${API_URL}/api/trades/${tradeId}/complete`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setCompleteError(data.message || 'Failed to mark trade complete');
+      return;
+    }
+
+    const trade = data.tradeOffer;
+    const otherId = trade.sender_id === currentUserId ? trade.receiver_id : trade.sender_id;
+    setOtherUserId(otherId);
     setShowRating(true);
   };
 
@@ -48,6 +63,8 @@ export default function Chat() {
         <button onClick={handleMarkComplete}>Mark Trade Complete</button>
         <button onClick={() => setShowReport(!showReport)}>Report User</button>
       </div>
+
+      {completeError && <p style={{ color: 'red', fontSize: 13 }}>{completeError}</p>}
 
       {showReport && (
         <div style={{ marginTop: 12 }}>
