@@ -10,6 +10,7 @@ export default function Profile() {
   const [college, setCollege] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [ratingSummary, setRatingSummary] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -17,6 +18,11 @@ export default function Profile() {
       setProfileImage(currentUser.profile_image || '');
       setBio(currentUser.bio || '');
       setCollege(currentUser.college || '');
+
+      // Ratings summary comes from Member 4's endpoint, not stored on users
+      api.get(`/ratings/user/${currentUser.id}`)
+        .then(res => setRatingSummary(res.data.summary))
+        .catch(() => setRatingSummary(null));
     }
   }, [currentUser]);
 
@@ -46,8 +52,11 @@ export default function Profile() {
       <h2>Profile</h2>
       <img src={profileImage || 'https://placehold.co/96'} alt="avatar" width={96} height={96} />
       <p>@{currentUser.username}</p>
-      {/* Rating is derived from the ratings table, not stored on users —
-          compute with AVG(rating) once the ratings feature exists */}
+      {ratingSummary ? (
+        <p>★ {ratingSummary.avg_rating ?? 'No ratings yet'} ({ratingSummary.total} review{ratingSummary.total === 1 ? '' : 's'})</p>
+      ) : (
+        <p>No ratings yet</p>
+      )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSave}>
         <label>
