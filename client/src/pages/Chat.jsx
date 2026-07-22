@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatWindow from '../features/chat/ChatWindow';
 import RatingForm from '../features/ratings/RatingForm';
+import { useAuth } from '../features/auth/AuthContext';
 
 const API_URL = 'http://localhost:5000';
 
@@ -11,9 +12,11 @@ export default function Chat() {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
 
-  // TODO: get the actual current user id and the other user's id
-  // once Member 1's auth context is wired in — placeholders for now
-  const currentUserId = null;
+  const { currentUser } = useAuth();
+  const currentUserId = currentUser?.id;
+
+  // TODO: get the other user's id from the trade data once
+  // Member 3's "get single trade" endpoint is available
   const otherUserId = null;
 
   const handleMarkComplete = () => {
