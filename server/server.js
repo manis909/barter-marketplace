@@ -5,6 +5,7 @@ console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Loaded ✅" : "Missing 
 const db = require("./models/db");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
+const tradeRoutes = require("./routes/trades");
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/trades", tradeRoutes);
 
 app.get("/", async (req, res) => {
   try {
