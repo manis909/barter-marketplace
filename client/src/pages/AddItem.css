@@ -1,0 +1,72 @@
+.add-item-page {
+  display: grid;
+  gap: 30px;
+}
+
+.add-item-header {
+  padding: 28px;
+  border-radius: 20px;
+  background: #FFFFFF;
+  border: 1px solid #E4E2D9;
+}
+
+.page-label {
+  margin: 0 0 8px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.86rem;
+  color: #5F5B52;
+}
+
+.add-item-header h1 {
+  margin: 0 0 10px;
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+}
+
+.page-description {
+  margin: 0;
+  color: #5F5B52;
+  line-height: 1.85;
+}
+
+.item-form {
+  display: grid;
+  gap: 24px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 12px;
+  color: #24231F;
+  font-weight: 600;
+}
+
+.form-grid input,
+.form-grid textarea,
+.form-grid select {
+  min-height: 54px;
+}
+
+.form-grid textarea {
+  min-height: 132px;
+  resize: vertical;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
