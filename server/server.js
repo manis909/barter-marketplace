@@ -13,6 +13,7 @@ const db = require("./models/db");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const chatRoutes = require("./routes/chat");
+const tradeRoutes = require("./routes/trades");
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/trades", tradeRoutes);
 
 // Health Check Route
 app.get("/", async (req, res) => {
