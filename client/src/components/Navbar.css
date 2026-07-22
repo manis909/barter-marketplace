@@ -1,0 +1,120 @@
+.navbar {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1.2fr minmax(180px, 280px);
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: #F6F5F0;
+  border-bottom: 1px solid #E4E2D9;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.navbar-left,
+.navbar-center,
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #24231F;
+}
+
+.navbar-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #3D6E63;
+  color: #F6F5F0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.navbar-logo {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.navbar-center {
+  width: 100%;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.navbar-link {
+  padding: 10px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: #24231F;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.navbar-link:hover,
+.navbar-link.active {
+  background: #EAF2EE;
+  border-color: #C9DBD2;
+  color: #3D6E63;
+}
+
+.profile-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid #E4E2D9;
+  background: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.profile-button svg,
+.profile-button .profile-icon {
+  width: 22px;
+  height: 22px;
+  color: #3D6E63;
+}
+
+@media (max-width: 980px) {
+  .navbar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 18px 20px;
+  }
+
+  .navbar-center {
+    width: 100%;
+  }
+
+  .navbar-right {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-links {
+    display: none;
+  }
+}

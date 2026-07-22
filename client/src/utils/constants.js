@@ -36,8 +36,12 @@ export const ROUTES = {
   SIGNUP: '/signup',
   PROFILE: '/profile',
   EXPLORE: '/explore',
+  MY_LISTINGS: '/my-listings',
   MY_TRADES: '/my-trades',
   WISHLIST: '/wishlist',
+  FEEDBACK: '/feedback',
+  HELP: '/help',
+  LOGOUT: '/logout',
   CHAT: (tradeId) => `/chat/${tradeId}`,
 };
 

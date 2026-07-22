@@ -1,0 +1,101 @@
+.help-page {
+  display: grid;
+  gap: 28px;
+}
+
+.section-header {
+  display: grid;
+  gap: 12px;
+}
+
+.section-copy {
+  max-width: 720px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.help-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 26px;
+  display: grid;
+  gap: 16px;
+}
+
+.help-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.help-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.button-primary,
+.button-secondary {
+  width: fit-content;
+}
+
+.faq-list {
+  display: grid;
+  gap: 16px;
+}
+
+.faq-item strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.support-tips {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 26px;
+}
+
+.support-tips h2 {
+  margin: 0 0 16px;
+}
+
+.support-tips ul,
+.support-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.help-secondary-grid {
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+}
+
+.support-note {
+  margin: 0;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 960px) {
+  .help-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .help-secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 660px) {
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+}

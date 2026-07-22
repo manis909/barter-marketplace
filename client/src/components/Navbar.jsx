@@ -1,23 +1,76 @@
-// client/src/components/Navbar.jsx
-// Routing shell only — links to each member's pages, no page logic here.
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { User } from 'lucide-react'
+import NotificationBell from '../features/notifications/NotificationBell'
+import SearchBar from './SearchBar'
+import ProfileDrawer from './ProfileDrawer'
+import './Navbar.css'
 
-import { Link } from 'react-router-dom';
-import NotificationBell from '../features/notifications/NotificationBell';
+const navItems = [
+  { label: 'Explore', path: '/explore' },
+  { label: 'My Trades', path: '/my-trades' },
+  { label: 'Wishlist', path: '/wishlist' },
+]
 
-function Navbar() {
-    return (
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '16px', borderBottom: '1px solid #eee' }}>
-            <Link to="/explore">Explore</Link>
-            <Link to="/my-trades">My Trades</Link>
-            <Link to="/wishlist">Wishlist</Link>
+export default function Navbar() {
+  const location = useLocation()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [search, setSearch] = useState('')
 
-            {/* pushes NotificationBell + Profile to the right side of the navbar */}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <NotificationBell />
-                <Link to="/profile">Profile</Link>
+  return (
+    <>
+      <header className="navbar">
+        <div className="navbar-left">
+          <Link to="/explore" className="navbar-brand">
+            <div className="navbar-mark">⇄</div>
+            <div>
+              <p className="navbar-logo">Barter</p>
             </div>
-        </nav>
-    );
-}
+          </Link>
+        </div>
 
-export default Navbar;
+        <div className="navbar-center">
+          <SearchBar
+            placeholder="Search items to trade..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+
+        <div className="navbar-right">
+          <nav className="navbar-links">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={
+                  location.pathname === item.path
+                    ? 'navbar-link active'
+                    : 'navbar-link'
+                }
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <NotificationBell />
+
+          <button
+            type="button"
+            className="profile-button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open profile drawer"
+          >
+            <User className="profile-icon" size={20} />
+          </button>
+        </div>
+      </header>
+
+      <ProfileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
+  )
+}
