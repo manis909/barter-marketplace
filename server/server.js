@@ -14,6 +14,9 @@ const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const chatRoutes = require("./routes/chat");
 const tradeRoutes = require("./routes/trades");
+const ratingsRoutes = require("./routes/ratings");
+const notificationsRoutes = require("./routes/notifications");
+const reportsRoutes = require("./routes/reports");
 
 const app = express();
 
@@ -26,6 +29,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/trades", tradeRoutes);
+app.use("/api/ratings", ratingsRoutes);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/reports", reportsRoutes);
 
 // Health Check Route
 app.get("/", async (req, res) => {
