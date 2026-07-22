@@ -270,6 +270,63 @@ Content-Type: application/json
 
 ---
 
+### PATCH /api/trades/:id/complete
+
+Mark an accepted trade as completed. Either the **sender** or **receiver** can call this — both are present at the physical meetup and either can confirm it happened.
+
+**Authentication:** Required
+
+#### URL Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | UUID | The trade offer ID to mark as completed |
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Request Body
+
+None.
+
+#### Success Response — `200 OK`
+
+```json
+{
+  "success": true,
+  "tradeOffer": {
+    "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "sender_id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    "receiver_id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+    "offered_item_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "requested_item_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "message": "Let's trade!",
+    "status": "completed",
+    "created_at": "2026-07-20T15:30:00.000Z",
+    "updated_at": "2026-07-20T17:00:00.000Z"
+  }
+}
+```
+
+**Side effect:** The other participant receives a `trade_completed` notification.
+
+#### Error Responses
+
+| Status | Body | Cause |
+|--------|------|-------|
+| `400` | `{ "error": "Invalid trade id" }` | `:id` is not a valid UUID format |
+| `400` | `{ "error": "Only an accepted trade can be marked as completed" }` | Trade status is not `accepted` |
+| `403` | `{ "error": "You are not part of this trade" }` | Authenticated user is neither sender nor receiver |
+| `404` | `{ "error": "Trade not found" }` | No trade exists with the given ID |
+| `401` | `{ "error": "No token provided" }` | Missing Authorization header |
+| `401` | `{ "error": "Invalid token" }` | Expired or malformed JWT |
+| `500` | `{ "error": "Server error" }` | Unexpected server or database error |
+
+---
+
 ### POST /api/trades/wishlist/:itemId
 
 Add an item to the authenticated user's wishlist. This endpoint is **idempotent** — adding the same item twice returns `200` instead of an error.
@@ -447,6 +504,18 @@ Authorization: Bearer <TOKEN_B>
 ```
 
 Both items are now `status: "traded"` in the database.
+Alice receives a `trade_accepted` notification.
+
+### 8. Alice and Bob meet up — either marks the trade complete
+
+```
+PATCH /api/trades/<TRADE_ID>/complete
+Authorization: Bearer <TOKEN_A>   (or TOKEN_B — either works)
+→ 200 { "success": true, "tradeOffer": { "status": "completed", ... } }
+```
+
+The other participant receives a `trade_completed` notification.
+Member 4's `Chat.jsx` "Mark Trade Complete" button calls this endpoint.
 
 ---
 
@@ -457,6 +526,7 @@ Both items are now `status: "traded"` in the database.
 - `POST /wishlist/:itemId` is safe to call multiple times for the same item — duplicate entries are silently ignored and return `200`.
 - The `sender` cannot respond to their own trade offer — only the `receiver` can call `PATCH /:id`.
 - Trades can only be created against items with `status = 'available'`. Offers against `pending` or `traded` items are rejected with `400`.
+- Notifications are sent fire-and-forget after every successful DB operation. A notification failure never causes the trade operation itself to fail.
 
 ---
 

@@ -69,6 +69,18 @@ export async function declineTrade(tradeId) {
   return res.data;
 }
 
+/**
+ * Mark an accepted trade as completed.
+ * Either the sender or receiver can call this — both are present at the meetup.
+ *
+ * @param {string} tradeId - UUID of the trade offer to complete
+ * @returns {Promise<{ success: boolean, tradeOffer: Object }>}
+ */
+export async function completeTrade(tradeId) {
+  const res = await api.patch(`/trades/${tradeId}/complete`);
+  return res.data;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Wishlist
 // ─────────────────────────────────────────────────────────────────────────────
