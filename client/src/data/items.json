@@ -1,0 +1,124 @@
+[
+  {
+    "id": "1",
+    "title": "Hardcover Travel Guide Set",
+    "category": "Books",
+    "condition": "Very Good",
+    "ownerName": "Lina Harper",
+    "ownerRating": 4.8,
+    "tradeRating": 4.7,
+    "description": "A curated set of travel guides covering Europe, Asia, and the Americas in sturdy hardcover editions.",
+    "image": "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Modern Noise-Cancelling Headphones",
+    "category": "Electronics",
+    "condition": "Excellent",
+    "ownerName": "Noah Singh",
+    "ownerRating": 4.9,
+    "tradeRating": 4.8,
+    "description": "High-fidelity wireless headphones with premium comfort padding and excellent active noise reduction.",
+    "image": "https://images.unsplash.com/photo-1511452126234-1dc0d6f4232d?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1511452126234-1dc0d6f4232d?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1496180727794-817822f65950?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "3",
+    "title": "Elevated Denim Jacket",
+    "category": "Clothes",
+    "condition": "Good",
+    "ownerName": "Aria Cole",
+    "ownerRating": 4.6,
+    "tradeRating": 4.5,
+    "description": "A durable denim jacket with a polished fit, perfect for styling with layered outfits.",
+    "image": "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1520975917417-2320d8bc1f18?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "4",
+    "title": "Minimalist Runner Sneakers",
+    "category": "Shoes",
+    "condition": "Very Good",
+    "ownerName": "Samira Patel",
+    "ownerRating": 4.7,
+    "tradeRating": 4.6,
+    "description": "Lightweight and modern sneakers designed for everyday wear with a clean silhouette.",
+    "image": "https://images.unsplash.com/photo-1528701800489-20d03b7a5a6d?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1528701800489-20d03b7a5a6d?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1528701800489-20d03b7a5a6d?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "5",
+    "title": "Brushed Oak Side Table",
+    "category": "Home",
+    "condition": "Excellent",
+    "ownerName": "Marcus Lee",
+    "ownerRating": 4.9,
+    "tradeRating": 4.9,
+    "description": "A compact oak side table with clean lines, ideal for living spaces that favor calm, premium styling.",
+    "image": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "6",
+    "title": "Cast Iron Skillet Set",
+    "category": "Kitchen",
+    "condition": "Good",
+    "ownerName": "Tomas Walsh",
+    "ownerRating": 4.7,
+    "tradeRating": 4.5,
+    "description": "A set of premium cast iron skillets for reliable cooking, with a naturally seasoned finish.",
+    "image": "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1498579809087-ef1e558fd1b7?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "7",
+    "title": "Carbon Fiber Tennis Racket",
+    "category": "Sports",
+    "condition": "Very Good",
+    "ownerName": "Ellie Wright",
+    "ownerRating": 4.8,
+    "tradeRating": 4.6,
+    "description": "A responsive racket with a high-quality carbon frame, balanced for players looking to trade up.",
+    "image": "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80"
+    ]
+  },
+  {
+    "id": "8",
+    "title": "Woven Leather Belt",
+    "category": "Accessories",
+    "condition": "Good",
+    "ownerName": "Nina Ortiz",
+    "ownerRating": 4.6,
+    "tradeRating": 4.4,
+    "description": "A hand-finished woven leather belt with minimal hardware and a polished look.",
+    "image": "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1520975917417-2320d8bc1f18?auto=format&fit=crop&w=900&q=80"
+    ]
+  }
+]
