@@ -7,8 +7,45 @@ import { useAuth } from '../features/auth/AuthContext';
 
 const FILTERS = ['all', 'pending', 'accepted', 'declined'];
 
-// Pulse keyframe injected once — used by skeleton loaders
-const PULSE_CSS = `@keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }`;
+// Shimmer animation — more modern than simple opacity pulse
+const SHIMMER_CSS = `
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--code-bg) 50%,
+    var(--border) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+`;
+
+function SkeletonCard() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        padding: '18px 20px',
+        background: 'var(--social-bg)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+        <div className="skeleton" style={{ height: 16, width: '55%' }} />
+        <div className="skeleton" style={{ height: 22, width: 72, borderRadius: 20 }} />
+      </div>
+      <div className="skeleton" style={{ height: 12, width: '25%', marginBottom: 14 }} />
+      <div className="skeleton" style={{ height: 32, width: 88, borderRadius: 7 }} />
+    </div>
+  );
+}
 
 export default function MyTrades() {
   const { currentUser, loading: authLoading } = useAuth();
@@ -18,7 +55,6 @@ export default function MyTrades() {
   const [error, setError]     = useState('');
   const [filter, setFilter]   = useState('all');
 
-  // ── Fetch ────────────────────────────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -32,32 +68,21 @@ export default function MyTrades() {
     }
   }, []);
 
-  // Fetch once auth has resolved and a user is present.
-  // If auth is still loading we wait; if nobody is logged in we skip the call.
   useEffect(() => {
     if (authLoading) return;
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
+    if (!currentUser) { setLoading(false); return; }
     fetchTrades();
   }, [authLoading, currentUser, fetchTrades]);
 
-  // ── Accept / Decline ─────────────────────────────────────────────────────
-  // Called by TradeCard — must return a Promise so the card can track in-flight state.
-  // On success we update that single trade in state using the server's response
-  // instead of mutating locally, so the UI always reflects the real DB state.
-  async function handleStatusChange(tradeId, newStatus) {
+  const handleStatusChange = useCallback(async (tradeId, newStatus) => {
     const updatedData = newStatus === TRADE_STATUS.ACCEPTED
       ? await acceptTrade(tradeId)
       : await declineTrade(tradeId);
-
     setTrades(prev =>
       prev.map(t => (t.id === tradeId ? updatedData.tradeOffer : t))
     );
-  }
+  }, []);
 
-  // ── Derived state ─────────────────────────────────────────────────────────
   const filtered = filter === 'all'
     ? trades
     : trades.filter(t => t.status === filter);
@@ -66,69 +91,63 @@ export default function MyTrades() {
   if (!authLoading && !currentUser) {
     return (
       <div style={pageStyle}>
-        <h2 style={{ marginTop: 0 }}>My Trades</h2>
-        <p style={{ color: 'var(--text)' }}>Please log in to view your trades.</p>
+        <PageHeader />
+        <div style={infoBoxStyle}>
+          <span style={{ fontSize: 28 }} aria-hidden="true">🔐</span>
+          <p style={{ margin: '8px 0 0', fontWeight: 500, color: 'var(--text-h)' }}>
+            You're not logged in
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text)' }}>
+            Please log in to view your trade offers.
+          </p>
+        </div>
       </div>
     );
   }
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading || authLoading) {
     return (
       <div style={pageStyle} aria-busy="true" aria-label="Loading trades">
-        <h2 style={{ marginTop: 0 }}>My Trades</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[1, 2, 3].map(n => (
-            <div
-              key={n}
-              aria-hidden="true"
-              style={{
-                height: 80,
-                borderRadius: 8,
-                background: 'var(--border)',
-                animation: 'pulse 1.4s ease-in-out infinite',
-                opacity: 1 - n * 0.15,
-              }}
-            />
-          ))}
+        <style>{SHIMMER_CSS}</style>
+        <PageHeader />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
-        <style>{PULSE_CSS}</style>
       </div>
     );
   }
 
-  // ── Error state ───────────────────────────────────────────────────────────
+  // ── Error ─────────────────────────────────────────────────────────────────
   if (error) {
     return (
       <div style={pageStyle}>
-        <h2 style={{ marginTop: 0 }}>My Trades</h2>
+        <PageHeader />
         <div
           role="alert"
           style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            border: '1px solid #ef4444',
-            background: 'rgba(239,68,68,0.08)',
-            color: '#ef4444',
+            padding: '24px',
+            borderRadius: 10,
+            border: '1px solid rgba(239,68,68,0.3)',
+            background: 'rgba(239,68,68,0.06)',
             textAlign: 'center',
           }}
         >
-          <p style={{ margin: '0 0 12px', fontWeight: 500 }}>
+          <span style={{ fontSize: 28 }} aria-hidden="true">⚠️</span>
+          <p style={{ margin: '8px 0 4px', fontWeight: 600, color: '#dc2626' }}>
             Could not load your trades
           </p>
-          <p style={{ margin: '0 0 16px', fontSize: 14 }}>{error}</p>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text)' }}>{error}</p>
           <button
             type="button"
             onClick={fetchTrades}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              border: '1px solid #ef4444',
-              background: 'transparent',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
+            style={retryBtnStyle}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onFocus={e => (e.currentTarget.style.outline = '2px solid #dc2626')}
+            onBlur={e => (e.currentTarget.style.outline = 'none')}
           >
             Try again
           </button>
@@ -137,12 +156,12 @@ export default function MyTrades() {
     );
   }
 
-  // ── Normal state ──────────────────────────────────────────────────────────
+  // ── Normal ────────────────────────────────────────────────────────────────
   return (
     <div style={pageStyle}>
-      <h2 style={{ marginTop: 0 }}>My Trades</h2>
+      <PageHeader />
 
-      {/* Filter tabs */}
+      {/* Filter pills */}
       <div
         role="group"
         aria-label="Filter trades by status"
@@ -152,25 +171,32 @@ export default function MyTrades() {
           const count = f === 'all'
             ? trades.length
             : trades.filter(t => t.status === f).length;
+          const active = filter === f;
 
           return (
             <button
               key={f}
               type="button"
-              aria-pressed={filter === f}
+              aria-pressed={active}
               onClick={() => setFilter(f)}
               style={{
-                padding: '5px 14px',
-                borderRadius: 20,
-                border: '1px solid var(--border)',
-                background: filter === f ? 'var(--accent-bg)' : 'transparent',
-                color: filter === f ? 'var(--accent)' : 'var(--text-h)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 16px',
+                borderRadius: 24,
+                border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                background: active ? 'var(--accent-bg)' : 'transparent',
+                color: active ? 'var(--accent)' : 'var(--text-h)',
                 cursor: 'pointer',
-                fontSize: 14,
+                fontSize: 13,
+                fontWeight: active ? 700 : 400,
                 textTransform: 'capitalize',
-                fontWeight: filter === f ? 600 : 400,
                 outline: 'none',
+                transition: 'background 0.15s, border-color 0.15s',
               }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--social-bg)'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
               onFocus={e => (e.currentTarget.style.outline = '2px solid var(--accent)')}
               onBlur={e => (e.currentTarget.style.outline = 'none')}
             >
@@ -178,13 +204,14 @@ export default function MyTrades() {
               <span
                 aria-label={`${count} trade${count !== 1 ? 's' : ''}`}
                 style={{
-                  marginLeft: 6,
                   fontSize: 11,
-                  fontWeight: 700,
-                  background: filter === f ? 'var(--accent)' : 'var(--border)',
-                  color: filter === f ? '#fff' : 'var(--text)',
+                  fontWeight: 800,
+                  background: active ? 'var(--accent)' : 'var(--border)',
+                  color: active ? '#fff' : 'var(--text)',
                   borderRadius: 10,
-                  padding: '1px 6px',
+                  padding: '1px 7px',
+                  minWidth: 20,
+                  textAlign: 'center',
                 }}
               >
                 {count}
@@ -196,37 +223,22 @@ export default function MyTrades() {
 
       {/* Empty state */}
       {filtered.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '48px 24px',
-            border: '1px dashed var(--border)',
-            borderRadius: 8,
-            color: 'var(--text)',
-          }}
-        >
-          <p style={{ fontSize: 32, margin: '0 0 8px' }} aria-hidden="true">🤝</p>
-          <p style={{ margin: '0 0 4px', fontWeight: 500, color: 'var(--text-h)' }}>
-            No {filter === 'all' ? '' : filter} trades yet
+        <div style={infoBoxStyle}>
+          <span style={{ fontSize: 36 }} aria-hidden="true">🤝</span>
+          <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>
+            No {filter === 'all' ? '' : filter + ' '}trades yet
           </p>
-          <p style={{ margin: 0, fontSize: 14 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text)', maxWidth: 300 }}>
             {filter === 'all'
-              ? 'When you send or receive trade offers they will appear here.'
-              : `You have no ${filter} trades.`}
+              ? 'Trade offers you send or receive will appear here.'
+              : `You have no ${filter} trades right now.`}
           </p>
         </div>
       ) : (
         <ul
           role="list"
           aria-label="Trade offers"
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
+          style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14 }}
         >
           {filtered.map(trade => (
             <li key={trade.id}>
@@ -243,10 +255,42 @@ export default function MyTrades() {
   );
 }
 
+function PageHeader() {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>My Trades</h2>
+      <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text)' }}>
+        Trade offers you've sent and received
+      </p>
+    </div>
+  );
+}
+
 const pageStyle = {
   padding: '32px 24px',
-  maxWidth: 720,
+  maxWidth: 740,
   margin: '0 auto',
   textAlign: 'left',
   boxSizing: 'border-box',
+};
+
+const infoBoxStyle = {
+  textAlign: 'center',
+  padding: '48px 24px',
+  border: '1px dashed var(--border)',
+  borderRadius: 10,
+  color: 'var(--text)',
+};
+
+const retryBtnStyle = {
+  padding: '7px 20px',
+  borderRadius: 7,
+  border: '1px solid rgba(239,68,68,0.4)',
+  background: 'transparent',
+  color: '#dc2626',
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 500,
+  transition: 'background 0.15s',
+  outline: 'none',
 };

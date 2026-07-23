@@ -9,8 +9,56 @@ import { useAuth } from '../features/auth/AuthContext';
 // Remove button is intentionally disabled.
 const REMOVE_ENDPOINT_READY = false;
 
-// Pulse keyframe injected once — used by skeleton loaders
-const PULSE_CSS = `@keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }`;
+// Shimmer animation — same as MyTrades
+const SHIMMER_CSS = `
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--code-bg) 50%,
+    var(--border) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+`;
+
+function SkeletonCard() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        padding: '14px 16px',
+        background: 'var(--social-bg)',
+        display: 'flex',
+        gap: 14,
+        alignItems: 'center',
+      }}
+    >
+      <div className="skeleton" style={{ width: 64, height: 64, flexShrink: 0, borderRadius: 8 }} />
+      <div style={{ flex: 1 }}>
+        <div className="skeleton" style={{ height: 15, width: '60%', marginBottom: 8 }} />
+        <div className="skeleton" style={{ height: 12, width: '40%' }} />
+      </div>
+      <div className="skeleton" style={{ height: 32, width: 72, borderRadius: 7 }} />
+    </div>
+  );
+}
+
+// Capitalize each word, replace underscores with spaces
+function prettifyCondition(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
 
 export default function Wishlist() {
   const { currentUser, loading: authLoading } = useAuth();
@@ -19,7 +67,6 @@ export default function Wishlist() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchWishlist = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -35,20 +82,14 @@ export default function Wishlist() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
+    if (!currentUser) { setLoading(false); return; }
     fetchWishlist();
   }, [authLoading, currentUser, fetchWishlist]);
 
-  // ── Remove (disabled until DELETE endpoint exists) ─────────────────────────
-  // TODO: replace this stub with a real API call once the DELETE endpoint is ready.
-  // When REMOVE_ENDPOINT_READY is true, import removeWishlist from tradeService
-  // and call: await removeWishlist(item.id)
-  // Then remove the item from local state on success.
+  // TODO: replace this stub once DELETE endpoint is ready.
+  // Set REMOVE_ENDPOINT_READY = true, import removeWishlist from tradeService,
+  // call await removeWishlist(item.id), then filter item from local state.
   function handleRemove(_itemId) {
-    // intentionally a no-op until backend endpoint is implemented
     return Promise.resolve();
   }
 
@@ -56,69 +97,63 @@ export default function Wishlist() {
   if (!authLoading && !currentUser) {
     return (
       <div style={pageStyle}>
-        <h2 style={{ marginTop: 0 }}>My Wishlist</h2>
-        <p style={{ color: 'var(--text)' }}>Please log in to view your wishlist.</p>
+        <PageHeader count={0} />
+        <div style={infoBoxStyle}>
+          <span style={{ fontSize: 28 }} aria-hidden="true">🔐</span>
+          <p style={{ margin: '8px 0 0', fontWeight: 500, color: 'var(--text-h)' }}>
+            You're not logged in
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text)' }}>
+            Please log in to view your wishlist.
+          </p>
+        </div>
       </div>
     );
   }
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading || authLoading) {
     return (
       <div style={pageStyle} aria-busy="true" aria-label="Loading wishlist">
-        <h2 style={{ marginTop: 0 }}>My Wishlist</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[1, 2, 3].map(n => (
-            <div
-              key={n}
-              aria-hidden="true"
-              style={{
-                height: 80,
-                borderRadius: 8,
-                background: 'var(--border)',
-                animation: 'pulse 1.4s ease-in-out infinite',
-                opacity: 1 - n * 0.15,
-              }}
-            />
-          ))}
+        <style>{SHIMMER_CSS}</style>
+        <PageHeader count={0} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
-        <style>{PULSE_CSS}</style>
       </div>
     );
   }
 
-  // ── Error state ───────────────────────────────────────────────────────────
+  // ── Error ─────────────────────────────────────────────────────────────────
   if (error) {
     return (
       <div style={pageStyle}>
-        <h2 style={{ marginTop: 0 }}>My Wishlist</h2>
+        <PageHeader count={0} />
         <div
           role="alert"
           style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            border: '1px solid #ef4444',
-            background: 'rgba(239,68,68,0.08)',
-            color: '#ef4444',
+            padding: '24px',
+            borderRadius: 10,
+            border: '1px solid rgba(239,68,68,0.3)',
+            background: 'rgba(239,68,68,0.06)',
             textAlign: 'center',
           }}
         >
-          <p style={{ margin: '0 0 12px', fontWeight: 500 }}>
+          <span style={{ fontSize: 28 }} aria-hidden="true">⚠️</span>
+          <p style={{ margin: '8px 0 4px', fontWeight: 600, color: '#dc2626' }}>
             Could not load your wishlist
           </p>
-          <p style={{ margin: '0 0 16px', fontSize: 14 }}>{error}</p>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text)' }}>{error}</p>
           <button
             type="button"
             onClick={fetchWishlist}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              border: '1px solid #ef4444',
-              background: 'transparent',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
+            style={retryBtnStyle}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onFocus={e => (e.currentTarget.style.outline = '2px solid #dc2626')}
+            onBlur={e => (e.currentTarget.style.outline = 'none')}
           >
             Try again
           </button>
@@ -127,43 +162,18 @@ export default function Wishlist() {
     );
   }
 
-  // ── Normal state ──────────────────────────────────────────────────────────
+  // ── Normal ────────────────────────────────────────────────────────────────
   return (
     <div style={pageStyle}>
-      <h2 style={{ marginTop: 0 }}>
-        My Wishlist
-        {wishlist.length > 0 && (
-          <span
-            aria-label={`${wishlist.length} item${wishlist.length !== 1 ? 's' : ''}`}
-            style={{
-              marginLeft: 10,
-              fontSize: 15,
-              fontWeight: 600,
-              color: 'var(--text)',
-              verticalAlign: 'middle',
-            }}
-          >
-            ({wishlist.length})
-          </span>
-        )}
-      </h2>
+      <PageHeader count={wishlist.length} />
 
-      {/* Empty state */}
       {wishlist.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '48px 24px',
-            border: '1px dashed var(--border)',
-            borderRadius: 8,
-            color: 'var(--text)',
-          }}
-        >
-          <p style={{ fontSize: 32, margin: '0 0 8px' }} aria-hidden="true">🔖</p>
-          <p style={{ margin: '0 0 4px', fontWeight: 500, color: 'var(--text-h)' }}>
+        <div style={infoBoxStyle}>
+          <span style={{ fontSize: 36 }} aria-hidden="true">🔖</span>
+          <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>
             Your wishlist is empty
           </p>
-          <p style={{ margin: 0, fontSize: 14 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text)', maxWidth: 300 }}>
             Browse items and save the ones you want to trade for.
           </p>
         </div>
@@ -171,14 +181,7 @@ export default function Wishlist() {
         <ul
           role="list"
           aria-label="Wishlist items"
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
+          style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14 }}
         >
           {wishlist.map(item => (
             <li key={item.wishlist_id}>
@@ -195,14 +198,40 @@ export default function Wishlist() {
   );
 }
 
+// ── Page header ───────────────────────────────────────────────────────────────
+function PageHeader({ count }) {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>My Wishlist</h2>
+        {count > 0 && (
+          <span
+            aria-label={`${count} item${count !== 1 ? 's' : ''}`}
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'var(--accent)',
+              background: 'var(--accent-bg)',
+              borderRadius: 20,
+              padding: '2px 10px',
+            }}
+          >
+            {count}
+          </span>
+        )}
+      </div>
+      <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text)' }}>
+        Items you've saved to trade for
+      </p>
+    </div>
+  );
+}
+
 // ── Internal card component ───────────────────────────────────────────────────
-// Props:
-//   item          – WishlistItem shape (joined wishlists + items, see TRADE_API.md)
-//   onRemove      – () => Promise<void>  called when Remove is clicked
-//   removeEnabled – false until DELETE /api/trades/wishlist/:itemId is implemented
 function WishlistCard({ item, onRemove, removeEnabled }) {
   const [removing, setRemoving]       = useState(false);
   const [removeError, setRemoveError] = useState('');
+  const [hovered, setHovered]         = useState(false);
   const FALLBACK_IMG = 'https://placehold.co/64x64?text=?';
 
   const isUnavailable = item.status !== 'available';
@@ -219,25 +248,28 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
     }
   }
 
+  const metaParts = [
+    item.category,
+    prettifyCondition(item.item_condition),
+    item.estimated_value ? `~$${item.estimated_value}` : null,
+  ].filter(Boolean);
+
   return (
     <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         border: '1px solid var(--border)',
-        borderRadius: 8,
+        borderRadius: 10,
         padding: '14px 16px',
         background: 'var(--social-bg)',
         opacity: isUnavailable ? 0.65 : 1,
-        transition: 'opacity 0.2s',
+        boxShadow: hovered ? 'var(--shadow)' : '0 1px 3px rgba(0,0,0,0.06)',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        transition: 'box-shadow 0.18s, transform 0.18s, opacity 0.2s',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          gap: 14,
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
         {/* Thumbnail */}
         <img
           src={item.image_urls?.[0] ?? FALLBACK_IMG}
@@ -246,16 +278,17 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
           height={64}
           onError={e => { e.currentTarget.src = FALLBACK_IMG; }}
           style={{
-            borderRadius: 6,
+            borderRadius: 8,
             objectFit: 'cover',
             flexShrink: 0,
+            border: '1px solid var(--border)',
             background: 'var(--border)',
           }}
         />
 
         {/* Info */}
         <div style={{ flex: '1 1 160px' }}>
-          <p style={{ margin: 0, fontWeight: 500, color: 'var(--text-h)', lineHeight: 1.4 }}>
+          <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: 'var(--text-h)', lineHeight: 1.4 }}>
             {item.title}
             {isUnavailable && (
               <span
@@ -263,33 +296,25 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
                 style={{
                   marginLeft: 8,
                   fontSize: 11,
-                  color: '#ef4444',
                   fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
+                  color: '#dc2626',
                   background: 'rgba(239,68,68,0.1)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
                   borderRadius: 4,
-                  padding: '1px 5px',
+                  padding: '2px 6px',
                 }}
               >
                 {item.status}
               </span>
             )}
           </p>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text)' }}>
-            {[
-              item.category,
-              item.item_condition?.replace(/_/g, ' '),
-              item.estimated_value ? `~$${item.estimated_value}` : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
+          <p style={{ margin: '5px 0 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
+            {metaParts.join(' · ')}
           </p>
         </div>
 
-        {/* Remove button
-            Disabled with tooltip until DELETE endpoint is implemented.
-            TODO: set REMOVE_ENDPOINT_READY = true once backend is ready. */}
+        {/* Remove button — disabled until backend DELETE endpoint is implemented */}
         <button
           type="button"
           disabled={!removeEnabled || removing}
@@ -297,42 +322,41 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
           aria-label={
             removeEnabled
               ? `Remove ${item.title} from wishlist`
-              : `Remove ${item.title} — not yet available`
+              : `Remove not yet available for ${item.title}`
           }
           aria-busy={removing}
           title={removeEnabled ? undefined : 'Coming soon'}
           style={{
             alignSelf: 'center',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
             background: 'none',
             border: '1px solid var(--border)',
-            borderRadius: 6,
-            padding: '5px 14px',
+            borderRadius: 7,
+            padding: '6px 14px',
             cursor: (!removeEnabled || removing) ? 'not-allowed' : 'pointer',
-            color: (!removeEnabled || removing) ? 'var(--text)' : '#ef4444',
+            color: (!removeEnabled || removing) ? 'var(--text)' : '#dc2626',
             fontSize: 13,
             fontWeight: 500,
             flexShrink: 0,
             opacity: (!removeEnabled || removing) ? 0.4 : 1,
             outline: 'none',
-            transition: 'opacity 0.15s',
+            transition: 'background 0.15s, opacity 0.15s',
           }}
-          onFocus={e => {
-            if (removeEnabled && !removing)
-              e.currentTarget.style.outline = '2px solid var(--accent)';
-          }}
+          onMouseEnter={e => { if (removeEnabled && !removing) e.currentTarget.style.background = 'rgba(239,68,68,0.07)'; }}
+          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          onFocus={e => { if (removeEnabled && !removing) e.currentTarget.style.outline = '2px solid var(--accent)'; }}
           onBlur={e => (e.currentTarget.style.outline = 'none')}
         >
+          {!removeEnabled && <span aria-hidden="true">🔒</span>}
           {removing ? 'Removing…' : 'Remove'}
         </button>
       </div>
 
-      {/* Inline remove error */}
       {removeError && (
-        <p
-          role="alert"
-          style={{ margin: '8px 0 0', fontSize: 13, color: '#ef4444' }}
-        >
-          {removeError}
+        <p role="alert" style={{ margin: '10px 0 0', fontSize: 13, color: '#dc2626', fontWeight: 500 }}>
+          ⚠ {removeError}
         </p>
       )}
     </div>
@@ -341,8 +365,29 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
 
 const pageStyle = {
   padding: '32px 24px',
-  maxWidth: 720,
+  maxWidth: 740,
   margin: '0 auto',
   textAlign: 'left',
   boxSizing: 'border-box',
+};
+
+const infoBoxStyle = {
+  textAlign: 'center',
+  padding: '48px 24px',
+  border: '1px dashed var(--border)',
+  borderRadius: 10,
+  color: 'var(--text)',
+};
+
+const retryBtnStyle = {
+  padding: '7px 20px',
+  borderRadius: 7,
+  border: '1px solid rgba(239,68,68,0.4)',
+  background: 'transparent',
+  color: '#dc2626',
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 500,
+  transition: 'background 0.15s',
+  outline: 'none',
 };
