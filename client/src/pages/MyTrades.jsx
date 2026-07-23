@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TradeCard from '../features/trades/TradeCard';
 import { getMyTrades, acceptTrade, declineTrade } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
@@ -74,6 +75,8 @@ export default function MyTrades() {
     fetchTrades();
   }, [authLoading, currentUser, fetchTrades]);
 
+  const navigate = useNavigate();
+
   const handleStatusChange = useCallback(async (tradeId, newStatus) => {
     const updatedData = newStatus === TRADE_STATUS.ACCEPTED
       ? await acceptTrade(tradeId)
@@ -81,7 +84,10 @@ export default function MyTrades() {
     setTrades(prev =>
       prev.map(t => (t.id === tradeId ? updatedData.tradeOffer : t))
     );
-  }, []);
+    if (newStatus === TRADE_STATUS.ACCEPTED) {
+      navigate(`/chat/${tradeId}`);
+    }
+  }, [navigate]);
 
   const filtered = filter === 'all'
     ? trades
