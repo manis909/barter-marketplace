@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import api from '../services/api'
+import { uploadImageToSupabase } from '../services/supabase'
 import './AddItem.css'
 
 const categories = ['Books', 'Electronics', 'Clothes', 'Shoes', 'Home', 'Kitchen', 'Sports', 'Accessories']
@@ -13,6 +15,8 @@ export default function AddItemPage() {
     desiredItem: '',
     images: []
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -24,9 +28,37 @@ export default function AddItemPage() {
     setForm((prev) => ({ ...prev, images: files }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    window.alert('Item listing saved locally. This is a demo submission.')
+    setIsSubmitting(true)
+    setMessage('')
+
+    try {
+      const uploadedImageUrls = form.images.length > 0
+        ? await Promise.all(form.images.map((file) => uploadImageToSupabase(file)))
+        : []
+
+      const response = await api.post('/items', {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        image_urls: uploadedImageUrls
+      })
+
+      setMessage(`Item created successfully! ID: ${response.data.item.id}`)
+      setForm({
+        title: '',
+        description: '',
+        category: 'Books',
+        condition: 'Excellent',
+        desiredItem: '',
+        images: []
+      })
+    } catch (error) {
+      setMessage(error.response?.data?.error || error.message || 'Unable to create item right now.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -108,10 +140,12 @@ export default function AddItemPage() {
         </div>
 
         <div className="form-footer">
-          <button type="submit" className="primary-button">
-            Submit Listing
+          <button type="submit" className="primary-button" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Listing...' : 'Submit Listing'}
           </button>
         </div>
+
+        {message ? <p className="form-message">{message}</p> : null}
       </form>
     </section>
   )

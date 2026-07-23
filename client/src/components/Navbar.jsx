@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+﻿import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
@@ -12,8 +12,29 @@ const navItems = [
 
 export default function Navbar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
+
+  useEffect(() => {
+    setSearch(new URLSearchParams(location.search).get('search') || '')
+  }, [location.search])
+
+  const handleSearchChange = (event) => {
+    const nextValue = event.target.value
+    setSearch(nextValue)
+
+    const params = new URLSearchParams(location.search)
+
+    if (nextValue.trim()) {
+      params.set('search', nextValue.trim())
+    } else {
+      params.delete('search')
+    }
+
+    navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+  }
+
   return (
     <>
       <header className="navbar">
@@ -29,7 +50,7 @@ export default function Navbar() {
           <SearchBar
             placeholder="Search items to trade..."
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={handleSearchChange}
           />
         </div>
         <div className="navbar-right">

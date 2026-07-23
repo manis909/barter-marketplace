@@ -6,6 +6,7 @@ import SignupPage from './features/auth/SignupPage';
 import ExplorePage from './pages/Explore';
 import ItemDetailPage from './pages/ItemDetail';
 import ProfilePage from './pages/Profile';
+import AddItemPage from './pages/AddItem';
 import MyListingsPage from './pages/MyListings';
 import MyTradesPage from './pages/MyTrades';
 import WishlistPage from './pages/Wishlist';
@@ -29,6 +30,7 @@ function App() {
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/item/:id" element={<ItemDetailPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/add-item" element={<AddItemPage />} />
               <Route path="/my-listings" element={<MyListingsPage />} />
               <Route path="/my-trades" element={<MyTradesPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />

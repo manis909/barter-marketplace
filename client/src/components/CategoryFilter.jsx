@@ -1,7 +1,8 @@
 import './CategoryFilter.css'
 
-const categories = ['Books', 'Electronics', 'Clothes', 'Shoes', 'Home', 'Kitchen', 'Sports', 'Accessories']
+const categories = ['All', 'Books', 'Electronics', 'Clothes', 'Shoes', 'Home', 'Kitchen', 'Sports', 'Accessories']
 const categoryIcons = {
+  All: '🧭',
   Books: '📚',
   Electronics: '🔌',
   Clothes: '👚',
