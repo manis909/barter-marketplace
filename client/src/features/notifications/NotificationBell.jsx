@@ -28,11 +28,11 @@ export default function NotificationBell() {
       headers: { Authorization: `Bearer ${token}` }
     });
     setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
+      prev.map(n => (n.id === id ? { ...n, is_read: true } : n))
     );
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -65,7 +65,7 @@ export default function NotificationBell() {
               style={{
                 padding: 8,
                 borderBottom: '1px solid #eee',
-                background: n.read ? 'white' : '#f0f8ff',
+                background: n.is_read ? 'white' : '#f0f8ff',
                 cursor: 'pointer'
               }}
             >
