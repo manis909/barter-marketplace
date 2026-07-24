@@ -1,9 +1,10 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
 import { User } from 'lucide-react'
+import { useAuth } from '../features/auth/AuthContext'
 import './Navbar.css'
 
 const navItems = [
@@ -14,6 +15,8 @@ export default function Navbar() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const { currentUser } = useAuth()
+
   return (
     <>
       <header className="navbar">
@@ -45,6 +48,45 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {currentUser ? (
+              <>
+                <Link
+                  to="/profile"
+                  className={
+                    location.pathname === '/profile' ? 'navbar-link active' : 'navbar-link'
+                  }
+                >
+                  Profile
+                </Link>
+                <Link
+                  to="/logout"
+                  className={
+                    location.pathname === '/logout' ? 'navbar-link active' : 'navbar-link'
+                  }
+                >
+                  Logout
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className={
+                    location.pathname === '/login' ? 'navbar-link active' : 'navbar-link'
+                  }
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className={
+                    location.pathname === '/signup' ? 'navbar-link active' : 'navbar-link'
+                  }
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </nav>
           <NotificationBell />
           <button

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import HeroBanner from '../components/HeroBanner'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
-import Footer from '../components/Footer'
 import itemsData from '../data/items.json'
 import './Explore.css'
 
@@ -101,8 +100,6 @@ export default function ExplorePage() {
           items={itemsData.filter((item) => section.ids.includes(item.id))}
         />
       ))}
-
-      <Footer />
     </div>
   )
 }
