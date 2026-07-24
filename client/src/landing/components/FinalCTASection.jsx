@@ -1,67 +1,43 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Leaf } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function FinalCTASection() {
   return (
-    <section className="lp-section" style={{ paddingBottom: 140 }}>
+    <section className="lp-section" style={{ padding: '80px 0 110px' }}>
       <div className="lp-container">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.6 }}
           style={{
-            position: 'relative',
-            overflow: 'hidden',
-            borderRadius: 36,
-            background: 'linear-gradient(135deg, rgba(224, 122, 95, 0.08) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(244, 211, 94, 0.1) 100%)',
-            border: '1px solid rgba(224, 122, 95, 0.2)',
-            padding: '80px 40px',
+            borderRadius: 28,
+            background: 'linear-gradient(135deg, rgba(224, 122, 95, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%)',
+            border: '1px solid rgba(224, 122, 95, 0.18)',
+            padding: '55px 32px',
             textAlign: 'center',
-            backdropFilter: 'blur(24px)',
-            boxShadow: '0 25px 60px rgba(180, 140, 120, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 16px 45px rgba(180, 140, 120, 0.08)',
           }}
         >
-          {/* Ambient Glow Center */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 500,
-              height: 500,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(224, 122, 95, 0.12) 0%, transparent 70%)',
-              filter: 'blur(80px)',
-              pointerEvents: 'none',
-            }}
-          />
-
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
-            <div className="lp-badge" style={{ margin: '0 auto 24px' }}>
-              <Leaf size={14} color="#E07A5F" />
-              <span>Join Your Campus Marketplace</span>
-            </div>
-
-            <h2 className="lp-heading-lg" style={{ marginBottom: 20 }}>
-              Ready to Give Your Items <br />
-              <span className="lp-gradient-text">A Second Life?</span>
+          <div style={{ maxWidth: 640, margin: '0 auto' }}>
+            <h2 className="lp-heading-md" style={{ marginBottom: 14 }}>
+              Ready to Start <span className="lp-gradient-text">Trading?</span>
             </h2>
 
-            <p className="lp-subtext" style={{ margin: '0 auto 38px' }}>
-              Join thousands of students trading textbooks, tech, and gear sustainably. Create your account in under 60 seconds and start trading today.
+            <p className="lp-subtext" style={{ margin: '0 auto 28px' }}>
+              Create your account in under a minute and start swapping items with students on your campus.
             </p>
 
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/signup" className="lp-btn-primary" style={{ padding: '16px 36px', fontSize: 16 }}>
+            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/signup" className="lp-btn-primary" style={{ padding: '14px 32px' }}>
                 <span>Create Free Account</span>
-                <ArrowRight size={18} />
+                <ArrowRight size={17} />
               </Link>
 
-              <Link to="/explore" className="lp-btn-secondary" style={{ padding: '16px 36px', fontSize: 16 }}>
-                <span>Explore Marketplace</span>
+              <Link to="/explore" className="lp-btn-secondary" style={{ padding: '14px 32px' }}>
+                <span>Browse Marketplace</span>
               </Link>
             </div>
           </div>

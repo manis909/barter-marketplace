@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Repeat, Leaf } from 'lucide-react';
+import { Repeat } from 'lucide-react';
 
 export default function LandingFooter() {
   return (
@@ -7,7 +7,7 @@ export default function LandingFooter() {
       style={{
         borderTop: '1px solid rgba(224, 122, 95, 0.12)',
         background: '#FAF6F0',
-        padding: '60px 24px 40px',
+        padding: '40px 24px 30px',
         color: '#57534E',
         fontSize: 14,
       }}
@@ -20,52 +20,31 @@ export default function LandingFooter() {
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 24,
+          gap: 20,
         }}
       >
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
+              width: 30,
+              height: 30,
+              borderRadius: 9,
               background: 'linear-gradient(135deg, #E07A5F 0%, #C8624B 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Repeat size={16} color="#FFFFFF" />
+            <Repeat size={15} color="#FFFFFF" />
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#1C1917', letterSpacing: '-0.025em' }}>
+          <span style={{ fontSize: 17, fontWeight: 800, color: '#1C1917', letterSpacing: '-0.02em' }}>
             Barter<span style={{ color: '#E07A5F' }}>.</span>
           </span>
         </div>
 
-        {/* Operational Status & Sustainability Badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 14px',
-              borderRadius: 20,
-              background: 'rgba(224, 122, 95, 0.08)',
-              border: '1px solid rgba(224, 122, 95, 0.2)',
-              color: '#E07A5F',
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            <Leaf size={12} color="#E07A5F" />
-            <span>Sustainable Campus Trading</span>
-          </div>
-        </div>
-
         {/* Links */}
-        <div style={{ display: 'flex', gap: 24 }}>
+        <div style={{ display: 'flex', gap: 20, fontSize: 13 }}>
           <Link to="/explore" style={{ color: '#57534E', textDecoration: 'none' }}>
             Explore
           </Link>
@@ -81,20 +60,19 @@ export default function LandingFooter() {
       <div
         style={{
           maxWidth: 1220,
-          margin: '30px auto 0',
-          paddingTop: 24,
+          margin: '20px auto 0',
+          paddingTop: 18,
           borderTop: '1px solid rgba(224, 122, 95, 0.08)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: 13,
+          fontSize: 12,
           color: '#A8A29A',
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 10,
         }}
       >
-        <div>© {new Date().getFullYear()} Barter Marketplace. Built for zero-cash campus trading.</div>
-        <div>Crafted with care for student communities.</div>
+        <div>© {new Date().getFullYear()} Barter Marketplace. Peer-to-peer campus exchange.</div>
       </div>
     </footer>
   );

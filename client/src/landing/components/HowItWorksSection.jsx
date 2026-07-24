@@ -1,92 +1,65 @@
 import { motion } from 'framer-motion';
-import { PlusCircle, Inbox, Scale, Lock, MapPin, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Search, MessageSquare, MapPin } from 'lucide-react';
 
 const STEPS = [
   {
-    step: '01',
-    title: 'List Item',
-    desc: 'Take a quick photo, add condition notes, and publish your item in under 30 seconds.',
+    step: '1',
+    title: 'List Your Item',
+    desc: 'Snap a photo, add condition details, and list your item for trade.',
     icon: PlusCircle,
-    color: '#E07A5F',
   },
   {
-    step: '02',
-    title: 'Receive Offers',
-    desc: 'Interested campus peers propose item swaps directly to your trade inbox.',
-    icon: Inbox,
-    color: '#D97706',
+    step: '2',
+    title: 'Propose a Trade',
+    desc: 'Browse campus listings and send a 1-click trade offer.',
+    icon: Search,
   },
   {
-    step: '03',
-    title: 'Choose Best Trade',
-    desc: 'Review offered items, compare estimated values, and accept your preferred match.',
-    icon: Scale,
-    color: '#C8624B',
+    step: '3',
+    title: 'Chat & Coordinate',
+    desc: 'Once accepted, use secure chat to arrange a meetup spot.',
+    icon: MessageSquare,
   },
   {
-    step: '04',
-    title: 'Chat Securely',
-    desc: 'Enter room-isolated, real-time messaging to coordinate swap details.',
-    icon: Lock,
-    color: '#E07A5F',
-  },
-  {
-    step: '05',
-    title: 'Meet on Campus',
-    desc: 'Swap safely at standard campus hubs—libraries, dining halls, or quad benches.',
+    step: '4',
+    title: 'Swap on Campus',
+    desc: 'Meet safely at campus hubs and complete the exchange.',
     icon: MapPin,
-    color: '#D97706',
-  },
-  {
-    step: '06',
-    title: 'Complete Trade',
-    desc: 'Confirm the transaction on your phone to build your campus trust rating.',
-    icon: CheckCircle2,
-    color: '#C8624B',
   },
 ];
 
 export default function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="lp-section" style={{ background: 'rgba(255, 255, 255, 0.4)' }}>
+    <section id="how-it-works" className="lp-section" style={{ padding: '75px 0', background: 'rgba(255, 255, 255, 0.4)' }}>
       <div className="lp-container">
-        <div className="lp-center" style={{ marginBottom: 65 }}>
-          <motion.div
+        <div className="lp-center" style={{ marginBottom: 45 }}>
+          <motion.h2
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-          >
-            <div className="lp-badge">Seamless Journey</div>
-          </motion.div>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
             className="lp-heading-md"
           >
-            How Campus Trading <span className="lp-gradient-text">Works</span>
+            How Trading <span className="lp-gradient-text">Works</span>
           </motion.h2>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
             className="lp-subtext"
           >
-            A six-step journey engineered for trust, simplicity, and zero cash friction.
+            Four simple steps to trade what you have for what you need.
           </motion.p>
         </div>
 
-        {/* 6 Step Cards Grid */}
+        {/* 4 Steps Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-            gap: 18,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 20,
           }}
         >
           {STEPS.map((s, idx) => {
@@ -94,46 +67,38 @@ export default function HowItWorksSection() {
             return (
               <motion.div
                 key={s.step}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.08 }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
                 className="lp-glass-card"
-                style={{ padding: '22px 18px', position: 'relative' }}
+                style={{ padding: '24px 20px', position: 'relative' }}
               >
-                {/* Step Number */}
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: s.color,
-                    marginBottom: 14,
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  STEP {s.step}
-                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 11,
+                      background: 'rgba(224, 122, 95, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon size={19} color="#E07A5F" />
+                  </div>
 
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    background: 'rgba(224, 122, 95, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 14,
-                  }}
-                >
-                  <Icon size={20} color={s.color} />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#C8624B', opacity: 0.8 }}>
+                    0{s.step}
+                  </span>
                 </div>
 
                 <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: '#1C1917' }}>
                   {s.title}
                 </h3>
 
-                <p style={{ fontSize: 12.5, color: '#57534E', lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontSize: 13, color: '#57534E', lineHeight: 1.5, margin: 0 }}>
                   {s.desc}
                 </p>
               </motion.div>
