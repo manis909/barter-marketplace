@@ -1,21 +1,21 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import SearchBar from './SearchBar'
-import ProfileDrawer from './ProfileDrawer'
-import NotificationBell from '../features/notifications/NotificationBell'
-import { User } from 'lucide-react'
-import { useAuth } from '../features/auth/AuthContext'
-import './Navbar.css'
+// client/src/components/Navbar.jsx
+// Main app navbar (post-login). Logo left, search bar center,
+// right side order: Profile icon -> Explore -> Notification bell.
+// My Trades / Wishlist moved into ProfileDrawer (ask its owner to add them there).
 
-const navItems = [
-  { label: 'Explore', path: '/explore' }
-]
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import SearchBar from './SearchBar';
+import ProfileDrawer from './ProfileDrawer';
+import NotificationBell from '../features/notifications/NotificationBell';
+import { User } from 'lucide-react';
+import { useAuth } from '../features/auth/AuthContext';
+import './Navbar.css';
 
-export default function Navbar() {
-  const location = useLocation()
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const { currentUser } = useAuth()
+function Navbar() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const { currentUser } = useAuth();
 
   return (
     <>
@@ -23,11 +23,10 @@ export default function Navbar() {
         <div className="navbar-left">
           <Link to="/explore" className="navbar-brand">
             <div className="navbar-mark">⇄</div>
-            <div>
-              <p className="navbar-logo">Barter</p>
-            </div>
+            <p className="navbar-logo">Barter</p>
           </Link>
         </div>
+
         <div className="navbar-center">
           <SearchBar
             placeholder="Search items to trade..."
@@ -35,71 +34,30 @@ export default function Navbar() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-        <div className="navbar-right">
-          <nav className="navbar-links">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={
-                  location.pathname === item.path ? 'navbar-link active' : 'navbar-link'
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-            {currentUser ? (
-              <>
-                <Link
-                  to="/profile"
-                  className={
-                    location.pathname === '/profile' ? 'navbar-link active' : 'navbar-link'
-                  }
-                >
-                  Profile
-                </Link>
-                <Link
-                  to="/logout"
-                  className={
-                    location.pathname === '/logout' ? 'navbar-link active' : 'navbar-link'
-                  }
-                >
-                  Logout
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className={
-                    location.pathname === '/login' ? 'navbar-link active' : 'navbar-link'
-                  }
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className={
-                    location.pathname === '/signup' ? 'navbar-link active' : 'navbar-link'
-                  }
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </nav>
-          <NotificationBell />
-          <button
-            type="button"
-            className="profile-button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open profile drawer"
-          >
-            <User className="profile-icon" size={20} />
-          </button>
+
+        <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {currentUser ? (
+            <button
+              type="button"
+              className="profile-button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open profile drawer"
+            >
+              <User className="profile-icon" size={20} />
+            </button>
+          ) : (
+            <Link to="/signup" className="navbar-link">signup</Link>
+          )}
+
+          <Link to="/explore" className="navbar-link">Explore</Link>
+
+          {currentUser && <NotificationBell />}
         </div>
       </header>
-      <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      {currentUser && <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
     </>
-  )
+  );
 }
+
+export default Navbar;

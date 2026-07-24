@@ -13,6 +13,8 @@ import FeedbackPage from './pages/FeedbackReviews';
 import HelpSupportPage from './pages/HelpSupport';
 import LogoutPage from './pages/Logout';
 import ChatPage from './pages/Chat';
+import LandingPage from './landing/LandingPage';
+import AppLayout from './components/AppLayout';
 import './App.css';
 
 function App() {
@@ -23,9 +25,11 @@ function App() {
           <Navbar />
           <main className="app-main">
             <Routes>
-              <Route path="/" element={<Navigate to="/explore" replace />} />
+            <Route path="/" element={<LandingPage />} />
+              <Route path="/landing" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/" element={<Navigate to="/explore" replace />} />
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/item/:id" element={<ItemDetailPage />} />
               <Route path="/profile" element={<ProfilePage />} />
