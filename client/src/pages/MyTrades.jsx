@@ -51,10 +51,11 @@ function SkeletonCard() {
 export default function MyTrades() {
   const { currentUser, loading: authLoading } = useAuth();
 
-  const [trades, setTrades]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
-  const [filter, setFilter]   = useState('all');
+  const [trades, setTrades]                   = useState([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState('');
+  const [filter, setFilter]                   = useState('all');
+  const [acceptedTradeModal, setAcceptedTradeModal] = useState(null);
 
   const fetchTrades = useCallback(async () => {
     setLoading(true);
@@ -81,13 +82,15 @@ export default function MyTrades() {
     const updatedData = newStatus === TRADE_STATUS.ACCEPTED
       ? await acceptTrade(tradeId)
       : await declineTrade(tradeId);
-    setTrades(prev =>
-      prev.map(t => (t.id === tradeId ? updatedData.tradeOffer : t))
-    );
+    
+    // Re-fetch all trades so joined details and auto-declined trade statuses update correctly
+    await fetchTrades();
+
     if (newStatus === TRADE_STATUS.ACCEPTED) {
-      navigate(`/chat/${tradeId}`);
+      const matched = updatedData.tradeOffer || { id: tradeId };
+      setAcceptedTradeModal(matched);
     }
-  }, [navigate]);
+  }, [fetchTrades]);
 
   const filtered = filter === 'all'
     ? trades
@@ -234,11 +237,27 @@ export default function MyTrades() {
           <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>
             No {filter === 'all' ? '' : filter + ' '}trades yet
           </p>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text)', maxWidth: 300 }}>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text)', maxWidth: 320 }}>
             {filter === 'all'
-              ? 'Trade offers you send or receive will appear here.'
+              ? 'Browse items around your campus to start trading.'
               : `You have no ${filter} trades right now.`}
           </p>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 8,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Explore Items
+          </button>
         </div>
       ) : (
         <ul
@@ -256,6 +275,84 @@ export default function MyTrades() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Trade Accepted Success Modal */}
+      {acceptedTradeModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Trade accepted success"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: 28,
+              maxWidth: 420,
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+            }}
+          >
+            <span style={{ fontSize: 44 }} aria-hidden="true">🎉</span>
+            <h3 style={{ margin: '12px 0 6px', fontSize: 20, fontWeight: 700, color: 'var(--text-h)' }}>
+              Trade Accepted!
+            </h3>
+            <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>
+              Your trade is confirmed. You can now chat directly with the trader to arrange the exchange.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setAcceptedTradeModal(null)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                Stay Here
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = acceptedTradeModal.id;
+                  setAcceptedTradeModal(null);
+                  navigate(`/chat/${id}`);
+                }}
+                style={{
+                  padding: '9px 22px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#16a34a',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                💬 Open Chat
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

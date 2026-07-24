@@ -136,12 +136,14 @@ Content-Type: application/json
 | Status | Body | Cause |
 |--------|------|-------|
 | `400` | `{ "error": "offered_item_id and requested_item_id are required" }` | Missing required fields |
+| `400` | `{ "error": "Invalid item id" }` | Invalid UUID parameter format |
 | `400` | `{ "error": "You cannot trade with yourself" }` | Both items are owned by the sender |
 | `400` | `{ "error": "Your offered item is no longer available" }` | Offered item status is not `available` |
 | `400` | `{ "error": "The requested item is no longer available" }` | Requested item status is not `available` |
 | `403` | `{ "error": "You can only offer items you own" }` | Sender does not own `offered_item_id` |
 | `404` | `{ "error": "Requested item not found" }` | `requested_item_id` does not exist |
 | `404` | `{ "error": "Offered item not found" }` | `offered_item_id` does not exist |
+| `409` | `{ "error": "A pending trade offer already exists for these items" }` | Duplicate pending offer between items |
 | `401` | `{ "error": "No token provided" }` | Missing Authorization header |
 | `401` | `{ "error": "Invalid token" }` | Expired or malformed JWT |
 | `500` | `{ "error": "Server error" }` | Unexpected server or database error |
@@ -150,7 +152,7 @@ Content-Type: application/json
 
 ### GET /api/trades/mine
 
-Retrieve all trade offers where the authenticated user is either the sender or the receiver. Results are ordered by most recent first.
+Retrieve all trade offers where the authenticated user is either the sender or the receiver, with joined item details (`offered_item_title`, `requested_item_title`, images, usernames). Results are ordered by most recent first.
 
 **Authentication:** Required
 
@@ -179,7 +181,17 @@ None.
       "message": "Happy to trade — book is in great condition.",
       "status": "pending",
       "created_at": "2026-07-20T15:30:00.000Z",
-      "updated_at": "2026-07-20T15:30:00.000Z"
+      "updated_at": "2026-07-20T15:30:00.000Z",
+      "offered_item_title": "MacBook Air M1",
+      "offered_item_images": ["https://example.com/mac.jpg"],
+      "offered_item_condition": "like_new",
+      "offered_item_value": "750.00",
+      "requested_item_title": "PlayStation 5 Digital",
+      "requested_item_images": ["https://example.com/ps5.jpg"],
+      "requested_item_condition": "good",
+      "requested_item_value": "450.00",
+      "sender_username": "alice",
+      "receiver_username": "bob"
     }
   ]
 }

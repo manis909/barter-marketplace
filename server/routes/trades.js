@@ -29,6 +29,21 @@ router.post("/", requireAuth, async (req, res) => {
         .json({ error: "offered_item_id and requested_item_id are required" });
     }
 
+    if (!isValidUUID(offered_item_id) || !isValidUUID(requested_item_id)) {
+      return res.status(400).json({ error: "Invalid item id" });
+    }
+
+    // Check for duplicate pending offer between sender and this item pair
+    const duplicateCheck = await db.query(
+      `SELECT id FROM trade_offers
+       WHERE sender_id = $1 AND offered_item_id = $2 AND requested_item_id = $3 AND status = 'pending'`,
+      [sender_id, offered_item_id, requested_item_id]
+    );
+
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(409).json({ error: "A pending trade offer already exists for these items" });
+    }
+
     // Look up the owner of the requested item to set receiver_id
     const itemResult = await db.query(
       "SELECT owner_id, status FROM items WHERE id = $1",
@@ -100,14 +115,29 @@ router.post("/", requireAuth, async (req, res) => {
 });
 
 // GET /api/trades/mine
-// Get all trades where the current user is sender or receiver
+// Get all trades where the current user is sender or receiver with JOINed item details
 // Must be defined BEFORE /:id so Express doesn't treat "mine" as an :id param
 router.get("/mine", requireAuth, async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT * FROM trade_offers
-       WHERE sender_id = $1 OR receiver_id = $1
-       ORDER BY created_at DESC`,
+      `SELECT t.*,
+              o.title AS offered_item_title,
+              o.image_urls AS offered_item_images,
+              o.item_condition AS offered_item_condition,
+              o.estimated_value AS offered_item_value,
+              r.title AS requested_item_title,
+              r.image_urls AS requested_item_images,
+              r.item_condition AS requested_item_condition,
+              r.estimated_value AS requested_item_value,
+              u_sender.username AS sender_username,
+              u_receiver.username AS receiver_username
+       FROM trade_offers t
+       JOIN items o ON o.id = t.offered_item_id
+       JOIN items r ON r.id = t.requested_item_id
+       JOIN users u_sender ON u_sender.id = t.sender_id
+       JOIN users u_receiver ON u_receiver.id = t.receiver_id
+       WHERE t.sender_id = $1 OR t.receiver_id = $1
+       ORDER BY t.created_at DESC`,
       [req.userId]
     );
 
@@ -329,6 +359,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
     // are atomic — a crash between the two writes can't leave data inconsistent.
     const client = await db.getClient();
     let updatedTrade;
+    let autoDeclinedTrades = [];
     try {
       await client.query("BEGIN");
 
@@ -348,6 +379,17 @@ router.patch("/:id", requireAuth, async (req, res) => {
            WHERE id IN ($1, $2)`,
           [updatedTrade.offered_item_id, updatedTrade.requested_item_id]
         );
+
+        const autoDeclineResult = await client.query(
+          `UPDATE trade_offers
+           SET status = 'declined', updated_at = CURRENT_TIMESTAMP
+           WHERE id != $1
+             AND status = 'pending'
+             AND (offered_item_id IN ($2, $3) OR requested_item_id IN ($2, $3))
+           RETURNING *`,
+          [updatedTrade.id, updatedTrade.offered_item_id, updatedTrade.requested_item_id]
+        );
+        autoDeclinedTrades = autoDeclineResult.rows;
       }
 
       await client.query("COMMIT");
@@ -367,6 +409,16 @@ router.patch("/:id", requireAuth, async (req, res) => {
         "Trade Accepted",
         "Your trade offer was accepted."
       ).catch(err => console.error("Notification error (accepted):", err));
+
+      // Notify senders of competing offers that were auto-declined
+      for (const declined of autoDeclinedTrades) {
+        createNotification(
+          declined.sender_id,
+          "trade_declined",
+          "Trade Offer Auto-Declined",
+          "An item in your trade offer was traded in another offer."
+        ).catch(err => console.error("Notification error (auto-declined):", err));
+      }
     } else {
       createNotification(
         updatedTrade.sender_id,

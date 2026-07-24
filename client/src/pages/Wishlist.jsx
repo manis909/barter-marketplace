@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getWishlist, removeWishlist } from '../services/tradeService';
+import { useNavigate } from 'react-router-dom';
+import { getWishlist, removeWishlist, addWishlist } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 
@@ -58,10 +59,12 @@ function prettifyCondition(raw) {
 
 export default function Wishlist() {
   const { currentUser, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
-  const [wishlist, setWishlist] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
+  const [wishlist, setWishlist]               = useState([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState('');
+  const [removedToast, setRemovedToast]       = useState(null); // { item }
 
   const fetchWishlist = useCallback(async () => {
     setLoading(true);
@@ -83,10 +86,32 @@ export default function Wishlist() {
   }, [authLoading, currentUser, fetchWishlist]);
 
   const handleRemove = useCallback(async (itemId) => {
+    const itemToRemove = wishlist.find(i => i.id === itemId);
     await removeWishlist(itemId);
     setWishlist(prev => prev.filter(item => item.id !== itemId));
-  }, []);
+    if (itemToRemove) {
+      setRemovedToast(itemToRemove);
+    }
+  }, [wishlist]);
 
+  const handleUndo = useCallback(async () => {
+    if (!removedToast) return;
+    try {
+      await addWishlist(removedToast.id);
+      setWishlist(prev => [removedToast, ...prev]);
+    } catch (err) {
+      console.error('Failed to undo wishlist removal:', err);
+    } finally {
+      setRemovedToast(null);
+    }
+  }, [removedToast]);
+
+  // Auto-dismiss toast after 6 seconds
+  useEffect(() => {
+    if (!removedToast) return;
+    const timer = setTimeout(() => setRemovedToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [removedToast]);
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {
@@ -168,9 +193,25 @@ export default function Wishlist() {
           <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>
             Your wishlist is empty
           </p>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text)', maxWidth: 300 }}>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text)', maxWidth: 320 }}>
             Browse items and save the ones you want to trade for.
           </p>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 8,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Explore Items
+          </button>
         </div>
       ) : (
         <ul
@@ -188,6 +229,49 @@ export default function Wishlist() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Floating Undo Toast Banner */}
+      {removedToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--text-h)',
+            color: 'var(--bg)',
+            padding: '10px 20px',
+            borderRadius: 30,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+            zIndex: 1300,
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+        >
+          <span>✓ Removed <strong>{removedToast.title}</strong> from wishlist</span>
+          <button
+            type="button"
+            onClick={handleUndo}
+            style={{
+              background: 'var(--accent)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 16,
+              padding: '3px 12px',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Undo
+          </button>
+        </div>
       )}
     </div>
   );

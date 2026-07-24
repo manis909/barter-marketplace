@@ -16,10 +16,11 @@ const STATUS_STYLE = {
 //   onStatusChange    – async (id, newStatus) => void  called when receiver acts
 //   currentUserId     – used to decide which action buttons to show
 export default function TradeCard({ trade, onStatusChange, currentUserId }) {
-  const [showModal, setShowModal]     = useState(false);
-  const [acting, setActing]           = useState(false);
-  const [actionError, setActionError] = useState('');
-  const [hovered, setHovered]         = useState(false);
+  const [showModal, setShowModal]                 = useState(false);
+  const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+  const [acting, setActing]                       = useState(false);
+  const [actionError, setActionError]             = useState('');
+  const [hovered, setHovered]                     = useState(false);
 
   const isReceiver = trade.receiver_id === currentUserId;
   const canAct     = isReceiver && trade.status === 'pending';
@@ -35,6 +36,7 @@ export default function TradeCard({ trade, onStatusChange, currentUserId }) {
   async function handleAction(newStatus) {
     setActing(true);
     setActionError('');
+    setShowAcceptConfirm(false);
     try {
       await onStatusChange(trade.id, newStatus);
     } catch {
@@ -182,7 +184,7 @@ export default function TradeCard({ trade, onStatusChange, currentUserId }) {
               <button
                 type="button"
                 disabled={acting}
-                onClick={() => handleAction('accepted')}
+                onClick={() => setShowAcceptConfirm(true)}
                 aria-label="Accept this trade offer"
                 aria-busy={acting}
                 style={actionBtnStyle('#16a34a', acting)}
@@ -221,6 +223,77 @@ export default function TradeCard({ trade, onStatusChange, currentUserId }) {
           </p>
         )}
       </article>
+
+      {/* Confirmation Modal prior to accepting */}
+      {showAcceptConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm trade acceptance"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 400,
+              width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700 }}>Accept this trade offer?</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>
+              Both items (<strong>{trade.offered_item_title ?? 'Offered item'}</strong> and <strong>{trade.requested_item_title ?? 'Requested item'}</strong>) will be marked as traded. Any other pending offers for these items will be automatically declined.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowAcceptConfirm(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 7,
+                  border: '1px solid var(--border)',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={acting}
+                onClick={() => handleAction('accepted')}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: '#16a34a',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {acting ? 'Accepting...' : 'Yes, Accept Trade'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <TradeModal trade={trade} onClose={() => setShowModal(false)} />
