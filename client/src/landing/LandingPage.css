@@ -1,0 +1,241 @@
+/* client/src/landing/LandingPage.css — Isolated Design System */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --lp-bg: #090D16;
+  --lp-bg-card: rgba(255, 255, 255, 0.03);
+  --lp-bg-card-hover: rgba(255, 255, 255, 0.06);
+  --lp-border: rgba(255, 255, 255, 0.08);
+  --lp-border-glow: rgba(168, 85, 247, 0.3);
+  
+  --lp-text-primary: #F9FAFB;
+  --lp-text-secondary: #9CA3AF;
+  --lp-text-muted: #6B7280;
+  
+  --lp-accent-purple: #A855F7;
+  --lp-accent-indigo: #6366F1;
+  --lp-accent-blue: #3B82F6;
+  --lp-accent-emerald: #10B981;
+  
+  --lp-gradient-primary: linear-gradient(135deg, #A855F7 0%, #6366F1 50%, #3B82F6 100%);
+  --lp-gradient-text: linear-gradient(135deg, #FFFFFF 30%, #A855F7 70%, #6366F1 100%);
+  --lp-gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  --lp-gradient-glow: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+
+  --lp-shadow-glow: 0 0 50px rgba(168, 85, 247, 0.2);
+  --lp-radius-lg: 24px;
+  --lp-radius-md: 16px;
+  --lp-radius-sm: 10px;
+}
+
+.landing-root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--lp-bg);
+  color: var(--lp-text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-root * {
+  box-sizing: border-box;
+}
+
+/* Background Ambient Orbs */
+.lp-ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lp-ambient-orb-1 {
+  width: 600px;
+  height: 600px;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, rgba(99, 102, 241, 0.05) 70%, transparent 100%);
+}
+
+.lp-ambient-orb-2 {
+  width: 500px;
+  height: 500px;
+  top: 40%;
+  left: -100px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+}
+
+.lp-ambient-orb-3 {
+  width: 550px;
+  height: 550px;
+  bottom: 10%;
+  right: -100px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.14) 0%, transparent 70%);
+}
+
+.lp-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.lp-section {
+  padding: 110px 0;
+  position: relative;
+}
+
+/* Header Text Utilities */
+.lp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 30px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: #C084FC;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 24px;
+}
+
+.lp-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lp-accent-purple);
+  box-shadow: 0 0 10px var(--lp-accent-purple);
+}
+
+.lp-heading-lg {
+  font-size: clamp(2.5rem, 5vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+
+.lp-heading-md {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.lp-gradient-text {
+  background: var(--lp-gradient-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lp-subtext {
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  color: var(--lp-text-secondary);
+  max-width: 640px;
+  font-weight: 400;
+}
+
+.lp-center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Glass Card Component Base */
+.lp-glass-card {
+  background: var(--lp-bg-card);
+  border: 1px solid var(--lp-border);
+  backdrop-filter: blur(16px);
+  border-radius: var(--lp-radius-lg);
+  padding: 32px;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lp-glass-card:hover {
+  background: var(--lp-bg-card-hover);
+  border-color: rgba(168, 85, 247, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(168, 85, 247, 0.1);
+}
+
+/* Button Component Styles */
+.lp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-radius: 40px;
+  background: var(--lp-gradient-primary);
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lp-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(168, 85, 247, 0.5);
+}
+
+.lp-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--lp-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--lp-border);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.lp-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Scrollbar styling for showcase */
+.lp-scroll-row {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--lp-accent-purple) transparent;
+}
+
+.lp-scroll-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.lp-scroll-row::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .lp-section {
+    padding: 70px 0;
+  }
+}
