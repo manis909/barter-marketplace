@@ -1,51 +1,58 @@
 import { motion } from 'framer-motion';
-import { PlusCircle, Search, MessageSquare, MapPin, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Inbox, Scale, Lock, MapPin, CheckCircle2 } from 'lucide-react';
 
 const STEPS = [
   {
     step: '01',
     title: 'List Item',
-    desc: 'Snap a photo, add condition tags, and set an estimated trade value in under 30 seconds.',
+    desc: 'Take a quick photo, add condition notes, and publish your item in under 30 seconds.',
     icon: PlusCircle,
-    color: '#A855F7',
+    color: '#E07A5F',
   },
   {
     step: '02',
-    title: 'Find Trade',
-    desc: 'Browse items listed by peers on your campus and send a 1-click trade offer proposal.',
-    icon: Search,
-    color: '#6366F1',
+    title: 'Receive Offers',
+    desc: 'Interested campus peers propose item swaps directly to your trade inbox.',
+    icon: Inbox,
+    color: '#D97706',
   },
   {
     step: '03',
-    title: 'Chat & Confirm',
-    desc: 'Once the receiver accepts your offer, instantly enter encrypted real-time chat to plan the swap.',
-    icon: MessageSquare,
-    color: '#3B82F6',
+    title: 'Choose Best Trade',
+    desc: 'Review offered items, compare estimated values, and accept your preferred match.',
+    icon: Scale,
+    color: '#C8624B',
   },
   {
     step: '04',
-    title: 'Campus Meetup',
-    desc: 'Meet safely at standard student hubs—libraries, dining halls, or campus centers.',
-    icon: MapPin,
-    color: '#10B981',
+    title: 'Chat Securely',
+    desc: 'Enter room-isolated, real-time messaging to coordinate swap details.',
+    icon: Lock,
+    color: '#E07A5F',
   },
   {
     step: '05',
-    title: 'Complete Swap',
-    desc: 'Confirm the exchange on your phone to lock the trade status and rate your peer.',
+    title: 'Meet on Campus',
+    desc: 'Swap safely at standard campus hubs—libraries, dining halls, or quad benches.',
+    icon: MapPin,
+    color: '#D97706',
+  },
+  {
+    step: '06',
+    title: 'Complete Trade',
+    desc: 'Confirm the transaction on your phone to build your campus trust rating.',
     icon: CheckCircle2,
-    color: '#EC4899',
+    color: '#C8624B',
   },
 ];
 
 export default function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="lp-section" style={{ background: 'rgba(255, 255, 255, 0.01)' }}>
+    <section id="how-it-works" className="lp-section" style={{ background: 'rgba(255, 255, 255, 0.4)' }}>
       <div className="lp-container">
-        <div className="lp-center" style={{ marginBottom: 70 }}>
+        <div className="lp-center" style={{ marginBottom: 65 }}>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
@@ -60,7 +67,7 @@ export default function HowItWorksSection() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="lp-heading-md"
           >
-            How <span className="lp-gradient-text">Barter</span> Works
+            How Campus Trading <span className="lp-gradient-text">Works</span>
           </motion.h2>
 
           <motion.p
@@ -70,17 +77,16 @@ export default function HowItWorksSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="lp-subtext"
           >
-            Five simple steps to trade what you have for what you need.
+            A six-step journey engineered for trust, simplicity, and zero cash friction.
           </motion.p>
         </div>
 
-        {/* Timeline Horizontal Line / Grid */}
+        {/* 6 Step Cards Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 20,
-            position: 'relative',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+            gap: 18,
           }}
         >
           {STEPS.map((s, idx) => {
@@ -88,26 +94,20 @@ export default function HowItWorksSection() {
             return (
               <motion.div
                 key={s.step}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.12 }}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: 20,
-                  padding: '24px 20px',
-                  position: 'relative',
-                }}
-                whileHover={{ y: -6, borderColor: 'rgba(168, 85, 247, 0.3)' }}
+                transition={{ duration: 0.5, delay: idx * 0.08 }}
+                className="lp-glass-card"
+                style={{ padding: '22px 18px', position: 'relative' }}
               >
-                {/* Step Number Badge */}
+                {/* Step Number */}
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 800,
                     color: s.color,
-                    marginBottom: 16,
+                    marginBottom: 14,
                     letterSpacing: '0.08em',
                   }}
                 >
@@ -116,24 +116,24 @@ export default function HowItWorksSection() {
 
                 <div
                   style={{
-                    width: 44,
-                    height: 44,
+                    width: 42,
+                    height: 42,
                     borderRadius: 12,
-                    background: `rgba(${s.color === '#A855F7' ? '168, 85, 247' : s.color === '#6366F1' ? '99, 102, 241' : s.color === '#3B82F6' ? '59, 130, 246' : s.color === '#10B981' ? '16, 185, 129' : '236, 72, 153'}, 0.15)`,
+                    background: 'rgba(224, 122, 95, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: 16,
+                    marginBottom: 14,
                   }}
                 >
-                  <Icon size={22} color={s.color} />
+                  <Icon size={20} color={s.color} />
                 </div>
 
-                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: '#F9FAFB' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: '#1C1917' }}>
                   {s.title}
                 </h3>
 
-                <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontSize: 12.5, color: '#57534E', lineHeight: 1.5, margin: 0 }}>
                   {s.desc}
                 </p>
               </motion.div>

@@ -1,32 +1,36 @@
-/* client/src/landing/LandingPage.css — Isolated Design System */
+/* client/src/landing/LandingPage.css — Warm Cream & Ivory White Palette */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,400&display=swap');
 
 :root {
-  --lp-bg: #090D16;
-  --lp-bg-card: rgba(255, 255, 255, 0.03);
-  --lp-bg-card-hover: rgba(255, 255, 255, 0.06);
-  --lp-border: rgba(255, 255, 255, 0.08);
-  --lp-border-glow: rgba(168, 85, 247, 0.3);
+  /* Warm Cream & Ivory Palette */
+  --lp-bg: #FAF6F0;              /* Soft Warm Cream */
+  --lp-bg-elevated: #FFFDF9;     /* Warm Ivory White */
+  --lp-bg-card: rgba(255, 255, 255, 0.75);
+  --lp-bg-card-hover: rgba(255, 255, 255, 0.92);
+  --lp-border: rgba(224, 122, 95, 0.14);
+  --lp-border-warm: rgba(224, 122, 95, 0.35);
   
-  --lp-text-primary: #F9FAFB;
-  --lp-text-secondary: #9CA3AF;
-  --lp-text-muted: #6B7280;
+  /* Text Colors for Light Theme */
+  --lp-text-primary: #1C1917;    /* Deep Charcoal */
+  --lp-text-secondary: #57534E;  /* Warm Slate / Taupe */
+  --lp-text-muted: #A8A29E;      /* Light Warm Gray */
   
-  --lp-accent-purple: #A855F7;
-  --lp-accent-indigo: #6366F1;
-  --lp-accent-blue: #3B82F6;
-  --lp-accent-emerald: #10B981;
+  /* Warm Primary & Accents */
+  --lp-peach: #E07A5F;          /* Sunset Peach */
+  --lp-orange: #C8624B;         /* Terracotta */
+  --lp-terracotta: #B84A39;     /* Deep Terracotta */
+  --lp-gold: #D97706;           /* Warm Amber Gold */
   
-  --lp-gradient-primary: linear-gradient(135deg, #A855F7 0%, #6366F1 50%, #3B82F6 100%);
-  --lp-gradient-text: linear-gradient(135deg, #FFFFFF 30%, #A855F7 70%, #6366F1 100%);
-  --lp-gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-  --lp-gradient-glow: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
-
-  --lp-shadow-glow: 0 0 50px rgba(168, 85, 247, 0.2);
-  --lp-radius-lg: 24px;
-  --lp-radius-md: 16px;
-  --lp-radius-sm: 10px;
+  /* Gradients */
+  --lp-gradient-primary: linear-gradient(135deg, #E07A5F 0%, #C8624B 100%);
+  --lp-gradient-warm-text: linear-gradient(135deg, #1C1917 30%, #C8624B 100%);
+  --lp-shadow-liquid: 0 16px 40px rgba(180, 140, 120, 0.09), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  
+  /* Radii */
+  --lp-radius-xl: 28px;
+  --lp-radius-lg: 20px;
+  --lp-radius-md: 14px;
 }
 
 .landing-root {
@@ -36,7 +40,7 @@
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -44,42 +48,42 @@
   box-sizing: border-box;
 }
 
-/* Background Ambient Orbs */
+/* Background Soft Warm Orbs for Light Theme */
 .lp-ambient-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
+  filter: blur(130px);
   pointer-events: none;
   z-index: 0;
 }
 
-.lp-ambient-orb-1 {
-  width: 600px;
-  height: 600px;
-  top: -100px;
+.lp-orb-1 {
+  width: 650px;
+  height: 650px;
+  top: -120px;
   left: 50%;
   transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, rgba(99, 102, 241, 0.05) 70%, transparent 100%);
+  background: radial-gradient(circle, rgba(224, 122, 95, 0.12) 0%, rgba(244, 211, 94, 0.08) 60%, transparent 100%);
 }
 
-.lp-ambient-orb-2 {
-  width: 500px;
-  height: 500px;
-  top: 40%;
-  left: -100px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
-}
-
-.lp-ambient-orb-3 {
+.lp-orb-2 {
   width: 550px;
   height: 550px;
-  bottom: 10%;
-  right: -100px;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.14) 0%, transparent 70%);
+  top: 35%;
+  left: -120px;
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.07) 0%, transparent 70%);
+}
+
+.lp-orb-3 {
+  width: 600px;
+  height: 600px;
+  bottom: 8%;
+  right: -120px;
+  background: radial-gradient(circle, rgba(224, 122, 95, 0.1) 0%, transparent 70%);
 }
 
 .lp-container {
-  max-width: 1240px;
+  max-width: 1220px;
   margin: 0 auto;
   padding: 0 24px;
   position: relative;
@@ -91,50 +95,51 @@
   position: relative;
 }
 
-/* Header Text Utilities */
+/* Badge & Headings */
 .lp-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
+  padding: 6px 18px;
   border-radius: 30px;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.25);
-  color: #C084FC;
+  background: rgba(224, 122, 95, 0.09);
+  border: 1px solid rgba(224, 122, 95, 0.22);
+  color: var(--lp-orange);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.03em;
   margin-bottom: 24px;
 }
 
-.lp-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--lp-accent-purple);
-  box-shadow: 0 0 10px var(--lp-accent-purple);
-}
-
 .lp-heading-lg {
-  font-size: clamp(2.5rem, 5vw, 4.2rem);
+  font-size: clamp(2.6rem, 5.2vw, 4.4rem);
   font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin-bottom: 20px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  margin-bottom: 22px;
+  color: var(--lp-text-primary);
 }
 
 .lp-heading-md {
   font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.18;
   letter-spacing: -0.02em;
   margin-bottom: 16px;
+  color: var(--lp-text-primary);
 }
 
 .lp-gradient-text {
-  background: var(--lp-gradient-text);
+  background: var(--lp-gradient-warm-text);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.lp-serif-accent {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--lp-orange);
 }
 
 .lp-subtext {
@@ -151,29 +156,32 @@
   align-items: center;
 }
 
-/* Glass Card Component Base */
+/* Liquid Glass Cards (Light Warm Theme) */
 .lp-glass-card {
   background: var(--lp-bg-card);
   border: 1px solid var(--lp-border);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--lp-radius-lg);
   padding: 32px;
-  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--lp-shadow-liquid);
 }
 
 .lp-glass-card:hover {
   background: var(--lp-bg-card-hover);
-  border-color: rgba(168, 85, 247, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(168, 85, 247, 0.1);
+  border-color: var(--lp-border-warm);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 48px rgba(180, 140, 120, 0.15);
 }
 
-/* Button Component Styles */
+/* Primary Warm Button */
 .lp-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 14px 32px;
+  padding: 15px 34px;
   border-radius: 40px;
   background: var(--lp-gradient-primary);
   color: #FFFFFF;
@@ -182,13 +190,13 @@
   text-decoration: none;
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.35);
+  box-shadow: 0 10px 25px rgba(224, 122, 95, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .lp-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 40px rgba(168, 85, 247, 0.5);
+  box-shadow: 0 14px 35px rgba(224, 122, 95, 0.45);
 }
 
 .lp-btn-secondary {
@@ -196,33 +204,34 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 14px 32px;
+  padding: 15px 34px;
   border-radius: 40px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.85);
   color: var(--lp-text-primary);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
-  border: 1px solid var(--lp-border);
+  border: 1px solid rgba(224, 122, 95, 0.2);
   backdrop-filter: blur(12px);
   cursor: pointer;
+  box-shadow: 0 4px 16px rgba(180, 140, 120, 0.06);
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .lp-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: #FFFFFF;
+  border-color: var(--lp-border-warm);
   transform: translateY(-2px);
 }
 
-/* Scrollbar styling for showcase */
+/* Horizontal Scroll Row */
 .lp-scroll-row {
   display: flex;
   gap: 20px;
   overflow-x: auto;
-  padding-bottom: 20px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: var(--lp-accent-purple) transparent;
+  scrollbar-color: rgba(224, 122, 95, 0.3) transparent;
 }
 
 .lp-scroll-row::-webkit-scrollbar {
@@ -230,12 +239,12 @@
 }
 
 .lp-scroll-row::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.4);
+  background: rgba(224, 122, 95, 0.3);
   border-radius: 10px;
 }
 
 @media (max-width: 768px) {
   .lp-section {
-    padding: 70px 0;
+    padding: 75px 0;
   }
 }
