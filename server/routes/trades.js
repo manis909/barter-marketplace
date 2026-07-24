@@ -193,6 +193,39 @@ router.post("/wishlist/:itemId", requireAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/trades/wishlist/:itemId
+// Remove an item from the current user's wishlist
+router.delete("/wishlist/:itemId", requireAuth, async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const user_id = req.userId;
+
+    if (!isValidUUID(itemId)) {
+      return res.status(400).json({ error: "Invalid item id" });
+    }
+
+    const result = await db.query(
+      `DELETE FROM wishlists
+       WHERE user_id = $1 AND item_id = $2
+       RETURNING *`,
+      [user_id, itemId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Wishlist entry not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Item removed from wishlist",
+    });
+  } catch (err) {
+    console.error("DELETE /trades/wishlist/:itemId error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 // PATCH /api/trades/:id/complete
 // Mark an accepted trade as completed.
 // Either the sender or receiver can call this — both parties are present

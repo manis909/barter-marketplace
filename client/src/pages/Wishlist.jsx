@@ -1,13 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getWishlist } from '../services/tradeService';
+import { getWishlist, removeWishlist } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 
-// TODO (Member 3 — next sprint): implement DELETE /api/trades/wishlist/:itemId
-// on the backend, then add removeWishlist(itemId) to tradeService.js and
-// wire it to the Remove button below. Until that endpoint exists the
-// Remove button is intentionally disabled.
-const REMOVE_ENDPOINT_READY = false;
+const REMOVE_ENDPOINT_READY = true;
 
 // Shimmer animation — same as MyTrades
 const SHIMMER_CSS = `
@@ -86,12 +82,11 @@ export default function Wishlist() {
     fetchWishlist();
   }, [authLoading, currentUser, fetchWishlist]);
 
-  // TODO: replace this stub once DELETE endpoint is ready.
-  // Set REMOVE_ENDPOINT_READY = true, import removeWishlist from tradeService,
-  // call await removeWishlist(item.id), then filter item from local state.
-  function handleRemove(_itemId) {
-    return Promise.resolve();
-  }
+  const handleRemove = useCallback(async (itemId) => {
+    await removeWishlist(itemId);
+    setWishlist(prev => prev.filter(item => item.id !== itemId));
+  }, []);
+
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {
@@ -314,7 +309,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
           </p>
         </div>
 
-        {/* Remove button — disabled until backend DELETE endpoint is implemented */}
+        {/* Remove button */}
         <button
           type="button"
           disabled={!removeEnabled || removing}
