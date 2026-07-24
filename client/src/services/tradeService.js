@@ -109,3 +109,15 @@ export async function getWishlist() {
   const res = await api.get('/trades/wishlist');
   return res.data;
 }
+
+/**
+ * Remove an item from the current user's wishlist.
+ *
+ * @param {string} itemId - UUID of the item to remove
+ * @returns {Promise<{ success: boolean, message: string }>}
+ */
+export async function removeWishlist(itemId) {
+  const res = await api.delete(`/trades/wishlist/${itemId}`);
+  return res.data;
+}
+
