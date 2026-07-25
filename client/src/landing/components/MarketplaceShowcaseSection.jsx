@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Sparkles, ArrowRight, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import realItemsData from '../../data/items.json';
+import itemsData from '../../data/items.json';
 
 export default function MarketplaceShowcaseSection() {
   const [liked, setLiked] = useState({});
+  const realItemsData = Array.isArray(itemsData) ? itemsData : [];
 
   function toggleLike(id, e) {
     e.stopPropagation();
@@ -37,7 +38,7 @@ export default function MarketplaceShowcaseSection() {
         <div className="lp-scroll-row">
           {realItemsData.map((item, idx) => (
             <motion.div
-              key={item.id}
+              key={item.id || idx}
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -59,7 +60,7 @@ export default function MarketplaceShowcaseSection() {
               <div style={{ position: 'relative', height: 185, overflow: 'hidden' }}>
                 <img
                   src={item.image}
-                  alt={item.title}
+                  alt={item.title || 'Item image'}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -69,23 +70,25 @@ export default function MarketplaceShowcaseSection() {
                 />
 
                 {/* Condition Badge */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    backdropFilter: 'blur(8px)',
-                    padding: '4px 10px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#C8624B',
-                    border: '1px solid rgba(224, 122, 95, 0.25)',
-                  }}
-                >
-                  {item.condition}
-                </div>
+                {item.condition && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      left: 12,
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      backdropFilter: 'blur(8px)',
+                      padding: '4px 10px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#C8624B',
+                      border: '1px solid rgba(224, 122, 95, 0.25)',
+                    }}
+                  >
+                    {item.condition}
+                  </div>
+                )}
 
                 {/* Wishlist Heart Toggle */}
                 <button
@@ -121,12 +124,14 @@ export default function MarketplaceShowcaseSection() {
               <div style={{ padding: 18 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ fontSize: 11, color: '#57534E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {item.category}
+                    {item.category || 'General'}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#D97706', fontWeight: 700 }}>
-                    <Star size={12} color="#D97706" fill="#D97706" />
-                    <span>{item.ownerRating}</span>
-                  </div>
+                  {item.ownerRating && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#D97706', fontWeight: 700 }}>
+                      <Star size={12} color="#D97706" fill="#D97706" />
+                      <span>{item.ownerRating}</span>
+                    </div>
+                  )}
                 </div>
 
                 <h4
@@ -161,7 +166,7 @@ export default function MarketplaceShowcaseSection() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(224, 122, 95, 0.1)', paddingTop: 12 }}>
                   <span style={{ fontSize: 12, color: '#57534E', fontWeight: 500 }}>
-                    Listed by <strong style={{ color: '#1C1917' }}>{item.ownerName}</strong>
+                    Listed by <strong style={{ color: '#1C1917' }}>{item.ownerName || 'Student'}</strong>
                   </span>
 
                   <Link
