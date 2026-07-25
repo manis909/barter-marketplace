@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
+import { addWishlist, removeWishlist } from '../services/tradeService'
 import './ItemCard.css'
 
 export default function ItemCard({ item }) {
@@ -26,6 +27,10 @@ export default function ItemCard({ item }) {
   const [loadingItems, setLoadingItems] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [tradeError, setTradeError] = useState('')
+
+  // Wishlist state
+  const [wishlisted, setWishlisted] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
 
   async function handleOfferTradeClick() {
     if (!currentUser) {
@@ -78,6 +83,29 @@ export default function ItemCard({ item }) {
     setTradeMessage('')
   }
 
+  async function handleWishlistToggle(e) {
+    e.stopPropagation()
+    if (!currentUser) {
+      navigate('/login')
+      return
+    }
+    if (wishlistLoading) return
+    setWishlistLoading(true)
+    try {
+      if (wishlisted) {
+        await removeWishlist(item.id)
+        setWishlisted(false)
+      } else {
+        await addWishlist(item.id)
+        setWishlisted(true)
+      }
+    } catch (err) {
+      console.error('Wishlist toggle failed:', err)
+    } finally {
+      setWishlistLoading(false)
+    }
+  }
+
   const isOwner = currentUser && (currentUser.id === item.owner_id)
 
   return (
@@ -85,8 +113,19 @@ export default function ItemCard({ item }) {
       <article className="item-card">
         <div className="item-media">
           <img src={image} alt={item.title} />
-          <button type="button" className="wishlist-button" aria-label="Add to wishlist">
-            ♥
+          <button
+            type="button"
+            className="wishlist-button"
+            aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+            onClick={handleWishlistToggle}
+            disabled={wishlistLoading}
+            style={{
+              color: wishlisted ? '#C8624B' : undefined,
+              opacity: wishlistLoading ? 0.5 : 1,
+              cursor: wishlistLoading ? 'wait' : 'pointer',
+            }}
+          >
+            {wishlisted ? '♥' : '♡'}
           </button>
         </div>
         <div className="item-content">
