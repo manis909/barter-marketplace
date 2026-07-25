@@ -38,12 +38,15 @@ export default function AddItemPage() {
         ? await Promise.all(form.images.map((file) => uploadImageToSupabase(file)))
         : []
 
-      const response = await api.post('/items', {
+      const payload = {
         title: form.title,
         description: form.description,
         category: form.category,
+        condition: form.condition,
         image_urls: uploadedImageUrls
-      })
+      }
+
+      const response = await api.post('/items', payload)
 
       setMessage(`Item created successfully! ID: ${response.data.item.id}`)
       setForm({
