@@ -10,6 +10,7 @@ console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Loaded" : "Missing");
 const db = require("./models/db");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
+const itemRoutes = require("./routes/items");
 const tradeRoutes = require("./routes/trades");
 const chatRoutes = require("./routes/chat");
 const ratingsRoutes = require("./routes/ratings");
@@ -22,6 +23,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/items", itemRoutes);
 app.use("/api/trades", tradeRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ratings", ratingsRoutes);

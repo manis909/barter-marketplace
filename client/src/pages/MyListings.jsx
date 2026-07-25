@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   CheckCircle2,
   Clock3,
@@ -13,6 +13,8 @@ import {
   Trophy,
   Upload
 } from 'lucide-react'
+import api from '../services/api'
+import { uploadImageToSupabase } from '../services/supabase'
 import './MyListings.css'
 
 const categories = ['Books', 'Electronics', 'Clothes', 'Shoes', 'Home', 'Kitchen', 'Sports', 'Accessories']
@@ -31,6 +33,24 @@ export default function MyListingsPage() {
     images: []
   })
   const [listings, setListings] = useState([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const loadMyListings = async () => {
+      setLoading(true)
+      try {
+        const response = await api.get('/items/mine')
+        setListings(Array.isArray(response.data.items) ? response.data.items : [])
+      } catch (error) {
+        console.error('Failed to load my listings', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMyListings()
+  }, [])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -42,32 +62,39 @@ export default function MyListingsPage() {
     setForm((prev) => ({ ...prev, images: files }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    const nextId = String(listings.length + 1)
-    const newListing = {
-      id: nextId,
-      title: form.title || 'New listing',
-      category: form.category,
-      condition: form.condition,
-      ownerName: 'You',
-      ownerRating: 4.9,
-      tradeRating: 4.9,
-      description: form.description,
-      image: form.images[0]?.name ? URL.createObjectURL(form.images[0]) : 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80'
-    }
+    setIsSubmitting(true)
+    try {
+      const uploadedImageUrls = form.images.length > 0
+        ? await Promise.all(form.images.map((file) => uploadImageToSupabase(file)))
+        : []
 
-    setListings((prev) => [newListing, ...prev])
-    setForm({
-      title: '',
-      description: '',
-      category: 'Books',
-      condition: 'Excellent',
-      desiredItem: '',
-      coinValue: '',
-      images: []
-    })
-    setIsFormOpen(false)
+      const response = await api.post('/items', {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        condition: form.condition,
+        image_urls: uploadedImageUrls
+      })
+
+      const created = response.data.item
+      setListings((prev) => [created, ...prev])
+      setForm({
+        title: '',
+        description: '',
+        category: 'Books',
+        condition: 'Excellent',
+        desiredItem: '',
+        coinValue: '',
+        images: []
+      })
+      setIsFormOpen(false)
+    } catch (error) {
+      console.error('MyListings create error', error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const activeListings = listings.length
