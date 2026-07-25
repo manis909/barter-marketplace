@@ -127,10 +127,7 @@ export default function ExplorePage() {
 
   return (
     <div className="explore-page">
-      <HeroBanner
-        search={search}
-        onSearch={(event) => setSearch(event.target.value)}
-      />
+      <HeroBanner />
 
       <div className="banner-carousel-section">
         <div className="banner-carousel">

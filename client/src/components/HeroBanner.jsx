@@ -1,14 +1,6 @@
-import SearchBar from './SearchBar'
 import './HeroBanner.css'
 
-const heroChips = ['Verified Traders', 'AI Trade Matching', 'Safe Exchanges', 'Trusted Community']
-const recentTrades = [
-  { actor: 'Arjun', action: 'traded Headphones for Camera', time: '2m' },
-  { actor: 'Sneha', action: 'traded Novels for Earbuds', time: '7m' },
-  { actor: 'Rahul', action: 'traded Nike Shoes for Jeans', time: '14m' }
-]
-
-export default function HeroBanner({ search, onSearch }) {
+export default function HeroBanner() {
   return (
     <section className="hero-banner">
       <div className="hero-main">
@@ -20,23 +12,6 @@ export default function HeroBanner({ search, onSearch }) {
         <p className="hero-description">
           Trade high-quality items across categories with a trusted barter community that keeps exchanges simple and safe.
         </p>
-
-        <div className="hero-search-card">
-          <SearchBar
-            placeholder="Search items to trade..."
-            value={search}
-            onChange={onSearch}
-          />
-          <button type="button" className="primary-button hero-search-button">
-            Search
-          </button>
-        </div>
-
-        <div className="hero-tags">
-          {heroChips.map((label) => (
-            <span key={label} className="hero-chip">{label}</span>
-          ))}
-        </div>
       </div>
 
       <aside className="hero-sidebar">

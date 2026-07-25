@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import api from '../services/api'
 import { uploadImageToSupabase } from '../services/supabase'
+import { categoryNames } from '../data/categories'
 import './AddItem.css'
 
-const categories = ['Books', 'Electronics', 'Clothes', 'Shoes', 'Home', 'Kitchen', 'Sports', 'Accessories']
 const conditions = ['Excellent', 'Very Good', 'Good', 'Fair']
 
 export default function AddItemPage() {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    category: 'Books',
+    category: '',
     condition: 'Excellent',
     desiredItem: '',
     images: []
@@ -28,8 +28,7 @@ export default function AddItemPage() {
     const files = Array.from(event.target.files)
     console.log('Selected files:', files.map((file) => ({ name: file.name, size: file.size, type: file.type })))
     setForm((prev) => ({ ...prev, images: files }))
-    const previews = files.map((file) => URL.createObjectURL(file))
-    setImagePreviews(previews)
+    setImagePreviews(files.map((file) => URL.createObjectURL(file)))
   }
 
   const removeImage = (indexToRemove) => {
@@ -49,18 +48,11 @@ export default function AddItemPage() {
 
       const uploadedImageUrls = form.images.length > 0
         ? await Promise.all(form.images.map(async (file) => {
-            try {
-              const url = await uploadImageToSupabase(file)
-              console.log('Upload result for file:', file.name, url)
-              return url
-            } catch (error) {
-              console.error('Image upload failed for file:', file.name, error)
-              throw error
-            }
+            const url = await uploadImageToSupabase(file)
+            console.log('Upload result for file:', file.name, url)
+            return url
           }))
         : []
-
-      console.log('Generated public image URLs:', uploadedImageUrls)
 
       const payload = {
         title: form.title,
@@ -79,7 +71,7 @@ export default function AddItemPage() {
       setForm({
         title: '',
         description: '',
-        category: 'Books',
+        category: '',
         condition: 'Excellent',
         desiredItem: '',
         images: []
@@ -171,11 +163,10 @@ export default function AddItemPage() {
 
           <label>
             Category
-            <select name="category" value={form.category} onChange={handleChange}>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
+            <select name="category" value={form.category} onChange={handleChange} required>
+              <option value="">Select Category</option>
+              {categoryNames.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
           </label>
@@ -184,9 +175,7 @@ export default function AddItemPage() {
             Condition
             <select name="condition" value={form.condition} onChange={handleChange}>
               {conditions.map((condition) => (
-                <option key={condition} value={condition}>
-                  {condition}
-                </option>
+                <option key={condition} value={condition}>{condition}</option>
               ))}
             </select>
           </label>
@@ -210,7 +199,7 @@ export default function AddItemPage() {
           </button>
         </div>
 
-        {message ? <p className="form-message">{message}</p> : null}
+        {message && <p className="form-message">{message}</p>}
       </form>
     </section>
   )

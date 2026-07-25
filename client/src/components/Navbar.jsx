@@ -19,18 +19,23 @@ export default function Navbar() {
   }, [location.search])
 
   const handleSearchChange = (event) => {
-    const nextValue = event.target.value
-    setSearch(nextValue)
+    setSearch(event.target.value)
+  }
 
+  // Called when the user presses Enter or clicks the search icon
+  const handleSearch = (query) => {
     const params = new URLSearchParams(location.search)
-
-    if (nextValue.trim()) {
-      params.set('search', nextValue.trim())
+    if (query) {
+      params.set('search', query)
     } else {
       params.delete('search')
     }
-
     navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+  }
+
+  // Called when the user clicks a suggestion row
+  const handleSelect = (item) => {
+    navigate(`/item/${item.id}`)
   }
 
   return (
@@ -48,6 +53,8 @@ export default function Navbar() {
             placeholder="Search items to trade..."
             value={search}
             onChange={handleSearchChange}
+            onSearch={handleSearch}
+            onSelect={handleSelect}
           />
         </div>
 

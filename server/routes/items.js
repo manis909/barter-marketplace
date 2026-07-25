@@ -113,6 +113,63 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify ownership before allowing update
+    const existing = await db.query(
+      'SELECT owner_id FROM items WHERE id = $1',
+      [id]
+    );
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (existing.rows[0].owner_id !== req.userId) {
+      return res.status(403).json({ error: 'You do not have permission to edit this listing' });
+    }
+
+    const { title, description, category, image_urls, condition, item_condition } = req.body;
+    const normalizedCondition = normalizeCondition(item_condition || condition);
+    const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
+
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    if ((condition || item_condition) && !normalizedCondition) {
+      return res.status(400).json({ error: 'Invalid item condition' });
+    }
+
+    const result = await db.query(
+      `UPDATE items
+       SET title = $1,
+           description = $2,
+           category = $3,
+           item_condition = $4,
+           image_urls = $5,
+           updated_at = NOW()
+       WHERE id = $6
+       RETURNING *`,
+      [
+        title,
+        description || null,
+        category || null,
+        normalizedCondition,
+        normalizedImageUrls,
+        id
+      ]
+    );
+
+    res.json({ item: result.rows[0] });
+  } catch (err) {
+    console.error('PUT /items/:id error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Server error' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const result = await db.query(

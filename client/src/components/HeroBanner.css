@@ -8,7 +8,8 @@
 
 .hero-main {
   display: grid;
-  gap: 18px;
+  gap: 16px;
+  align-content: start;
 }
 
 .hero-tag {
@@ -41,33 +42,6 @@
   font-size: 1rem;
   line-height: 1.7;
   max-width: 620px;
-}
-
-.hero-search-card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
-}
-
-.hero-search-button {
-  min-width: 150px;
-}
-
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.hero-chip {
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid #E4E2D9;
-  background: #FFFFFF;
-  color: #3D6E63;
-  font-weight: 600;
-  font-size: 0.95rem;
 }
 
 .hero-sidebar {
@@ -161,10 +135,6 @@
 }
 
 @media (max-width: 760px) {
-  .hero-search-card {
-    grid-template-columns: 1fr;
-  }
-
   .hero-stats-grid {
     grid-template-columns: 1fr;
   }
