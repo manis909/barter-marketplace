@@ -170,7 +170,7 @@ export default function MarketplaceShowcaseSection() {
                   </span>
 
                   <Link
-                    to={`/item/${item.id}`}
+                    to="/explore"
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
@@ -178,7 +178,7 @@ export default function MarketplaceShowcaseSection() {
                       textDecoration: 'none',
                     }}
                   >
-                    View Item →
+                    Browse Live Items →
                   </Link>
                 </div>
               </div>
