@@ -57,6 +57,7 @@ export default function MyListingsPage() {
 
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files)
+    console.log('Selected files:', files.map((file) => ({ name: file.name, size: file.size, type: file.type })))
     setForm((prev) => ({ ...prev, images: files }))
   }
 
@@ -64,17 +65,35 @@ export default function MyListingsPage() {
     event.preventDefault()
     setIsSubmitting(true)
     try {
+      console.log('Submitting listing with selected files:', form.images.map((file) => ({ name: file.name, size: file.size, type: file.type })))
+
       const uploadedImageUrls = form.images.length > 0
-        ? await Promise.all(form.images.map((file) => uploadImageToSupabase(file)))
+        ? await Promise.all(form.images.map(async (file) => {
+            try {
+              const url = await uploadImageToSupabase(file)
+              console.log('Upload result for file:', file.name, url)
+              return url
+            } catch (error) {
+              console.error('Image upload failed for file:', file.name, error)
+              throw error
+            }
+          }))
         : []
 
-      const response = await api.post('/items', {
+      console.log('Generated public image URLs:', uploadedImageUrls)
+
+      const payload = {
         title: form.title,
         description: form.description,
         category: form.category,
         condition: form.condition,
         image_urls: uploadedImageUrls
-      })
+      }
+
+      console.log('Request payload sent to backend:', payload)
+
+      const response = await api.post('/items', payload)
+      console.log('Backend create listing response:', response.data)
 
       const created = response.data.item
       setListings((prev) => [created, ...prev])

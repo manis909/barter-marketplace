@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '..', '..', '.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 const db = require('../models/db');
 
 async function run() {
@@ -7,12 +7,12 @@ async function run() {
     begin
       if not exists (
         select 1 from pg_policies
-        where schemaname = 'storage' and tablename = 'objects' and policyname = 'Allow authenticated uploads'
+        where schemaname = 'storage' and tablename = 'objects' and policyname = 'Allow anon and authenticated uploads'
       ) then
-        create policy "Allow authenticated uploads"
+        create policy "Allow anon and authenticated uploads"
           on storage.objects
           for insert
-          to authenticated
+          to anon, authenticated
           with check (bucket_id = 'item-images');
       end if;
 
@@ -45,7 +45,7 @@ async function run() {
         create policy "Allow public reads"
           on storage.objects
           for select
-          to public
+          to public, anon, authenticated
           using (bucket_id = 'item-images');
       end if;
     end

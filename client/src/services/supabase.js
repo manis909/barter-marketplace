@@ -18,18 +18,39 @@ export async function uploadImageToSupabase(file) {
   }
 
   const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`
+  console.log('Uploading image to Supabase:', {
+    fileName,
+    fileSize: file.size,
+    fileType: file.type,
+  })
+
   const { data, error } = await supabase.storage
     .from('item-images')
     .upload(fileName, file, {
       cacheControl: '3600',
-      upsert: false
+      upsert: false,
+      contentType: file.type || 'application/octet-stream'
     })
+
+  console.log('Supabase upload result:', { data, error })
 
   if (error) {
     throw error
   }
 
-  const { data: publicData } = supabase.storage.from('item-images').getPublicUrl(data.path)
+  const { data: publicData, error: publicUrlError } = supabase.storage
+    .from('item-images')
+    .getPublicUrl(data.path)
+
+  console.log('Supabase public URL result:', { path: data.path, publicData, publicUrlError })
+
+  if (publicUrlError) {
+    throw publicUrlError
+  }
+
+  if (!publicData?.publicUrl) {
+    throw new Error('Supabase did not return a public URL for the uploaded image')
+  }
 
   return publicData.publicUrl
 }

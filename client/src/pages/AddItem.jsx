@@ -15,6 +15,7 @@ export default function AddItemPage() {
     desiredItem: '',
     images: []
   })
+  const [imagePreviews, setImagePreviews] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -25,7 +26,17 @@ export default function AddItemPage() {
 
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files)
+    console.log('Selected files:', files.map((file) => ({ name: file.name, size: file.size, type: file.type })))
     setForm((prev) => ({ ...prev, images: files }))
+    const previews = files.map((file) => URL.createObjectURL(file))
+    setImagePreviews(previews)
+  }
+
+  const removeImage = (indexToRemove) => {
+    const newImages = form.images.filter((_, i) => i !== indexToRemove)
+    const newPreviews = imagePreviews.filter((_, i) => i !== indexToRemove)
+    setForm((prev) => ({ ...prev, images: newImages }))
+    setImagePreviews(newPreviews)
   }
 
   const handleSubmit = async (event) => {
@@ -34,9 +45,22 @@ export default function AddItemPage() {
     setMessage('')
 
     try {
+      console.log('Submitting listing with selected files:', form.images.map((file) => ({ name: file.name, size: file.size, type: file.type })))
+
       const uploadedImageUrls = form.images.length > 0
-        ? await Promise.all(form.images.map((file) => uploadImageToSupabase(file)))
+        ? await Promise.all(form.images.map(async (file) => {
+            try {
+              const url = await uploadImageToSupabase(file)
+              console.log('Upload result for file:', file.name, url)
+              return url
+            } catch (error) {
+              console.error('Image upload failed for file:', file.name, error)
+              throw error
+            }
+          }))
         : []
+
+      console.log('Generated public image URLs:', uploadedImageUrls)
 
       const payload = {
         title: form.title,
@@ -46,7 +70,10 @@ export default function AddItemPage() {
         image_urls: uploadedImageUrls
       }
 
+      console.log('Request payload sent to backend:', payload)
+
       const response = await api.post('/items', payload)
+      console.log('Backend create listing response:', response.data)
 
       setMessage(`Item created successfully! ID: ${response.data.item.id}`)
       setForm({
@@ -57,7 +84,9 @@ export default function AddItemPage() {
         desiredItem: '',
         images: []
       })
+      setImagePreviews([])
     } catch (error) {
+      console.error('Create listing failed:', error)
       setMessage(error.response?.data?.error || error.message || 'Unable to create item right now.')
     } finally {
       setIsSubmitting(false)
@@ -82,6 +111,39 @@ export default function AddItemPage() {
             Upload Images
             <input type="file" accept="image/*" multiple onChange={handleFileChange} />
           </label>
+
+          {imagePreviews.length > 0 && (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+              {imagePreviews.map((src, index) => (
+                <div key={index} style={{ position: 'relative' }}>
+                  <img
+                    src={src}
+                    alt={`preview ${index}`}
+                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      background: 'red',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <label>
             Item Title

@@ -22,10 +22,14 @@ function normalizeCondition(value) {
 
 router.post('/', requireAuth, async (req, res) => {
   try {
+    console.log('POST /items request body:', req.body);
+
     const { title, description, category, image_urls, condition, item_condition } = req.body;
     const rawEstimatedValue = req.body.estimated_value ?? req.body.coinValue;
     const normalizedCondition = normalizeCondition(item_condition || condition);
+    const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
 
+    console.log('Normalized image_urls:', normalizedImageUrls);
 
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -48,14 +52,15 @@ router.post('/', requireAuth, async (req, res) => {
         category || null,
         normalizedCondition,
         rawEstimatedValue || null,
-        Array.isArray(image_urls) ? image_urls : []
+        normalizedImageUrls
       ]
     );
 
+    console.log('Database insert result:', result.rows[0]);
     res.status(201).json({ item: result.rows[0] });
   } catch (err) {
-    console.error('POST /items error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('POST /items error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Server error' });
   }
 });
 
