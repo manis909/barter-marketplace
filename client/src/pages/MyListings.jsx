@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react'
 import {
   CheckCircle2,
   Clock3,
-  Eye,
   ImagePlus,
   Package,
   Pencil,
   Plus,
-  Repeat2,
   Search,
   Trash2,
   Trophy,
@@ -307,7 +305,19 @@ export default function MyListingsPage() {
                     <span className="badge badge--category">{item.category}</span>
                     <span className="badge badge--condition">{item.condition}</span>
                   </div>
-                  <div className="listing-card__status">Active</div>
+                  <div className="listing-card__status" style={{
+                      textTransform: 'capitalize',
+                      background:
+                        item.status === 'available' ? '#D1FAE5' :
+                        item.status === 'traded' ? '#FEE2E2' : '#FEF3C7',
+                      color:
+                        item.status === 'available' ? '#065F46' :
+                        item.status === 'traded' ? '#991B1B' : '#92400E',
+                      padding: '2px 10px',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}>{item.status || 'available'}</div>
                 </div>
                 <h3>{item.title || item.name}</h3>
                 <p>{item.description || item.name}</p>
@@ -315,12 +325,7 @@ export default function MyListingsPage() {
                 <div className="listing-card__footer">
                   <div className="listing-card__meta">
                     <span className="meta-pill">
-                      <Eye size={15} />
-                      24 views
-                    </span>
-                    <span className="meta-pill">
-                      <Repeat2 size={15} />
-                      3 requests
+                      Listed {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
                     </span>
                   </div>
                   <div className="listing-card__actions">

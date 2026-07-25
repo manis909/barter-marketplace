@@ -198,7 +198,7 @@ export default function Wishlist() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/explore')}
             style={{
               padding: '8px 20px',
               borderRadius: 8,
