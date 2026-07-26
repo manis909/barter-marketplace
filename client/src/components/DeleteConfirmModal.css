@@ -1,0 +1,141 @@
+/* ── Backdrop ────────────────────────────────────────────────────── */
+.dcm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(24, 23, 20, 0.45);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  animation: dcm-fade-in 0.15s ease;
+}
+
+@keyframes dcm-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Panel ───────────────────────────────────────────────────────── */
+.dcm-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: #FFFFFF;
+  border: 1px solid #E4E2D9;
+  border-radius: 24px;
+  padding: 32px 28px 28px;
+  box-shadow: 0 24px 60px rgba(36, 35, 31, 0.18);
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+  animation: dcm-slide-up 0.18s ease;
+}
+
+@keyframes dcm-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Close button ────────────────────────────────────────────────── */
+.dcm-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: #F6F5F0;
+  color: #5F5B52;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dcm-close:hover {
+  background: #ECEADE;
+  color: #24231F;
+}
+
+/* ── Icon bubble ─────────────────────────────────────────────────── */
+.dcm-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #FEE2E2;
+  color: #B91C1C;
+  margin-bottom: 4px;
+}
+
+/* ── Copy ────────────────────────────────────────────────────────── */
+.dcm-title {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 1.2rem;
+  color: #24231F;
+}
+
+.dcm-message {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #5F5B52;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.dcm-message strong {
+  color: #24231F;
+  font-weight: 700;
+}
+
+/* ── Action row ──────────────────────────────────────────────────── */
+.dcm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.dcm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dcm-btn--cancel {
+  border: 1px solid #E4E2D9;
+  background: #FFFFFF;
+  color: #5F5B52;
+}
+
+.dcm-btn--cancel:hover {
+  border-color: #C9C5BC;
+  background: #F6F5F0;
+  color: #24231F;
+}
+
+.dcm-btn--delete {
+  border: none;
+  background: #B91C1C;
+  color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(185, 28, 28, 0.25);
+}
+
+.dcm-btn--delete:hover {
+  background: #991B1B;
+  box-shadow: 0 8px 22px rgba(185, 28, 28, 0.32);
+}

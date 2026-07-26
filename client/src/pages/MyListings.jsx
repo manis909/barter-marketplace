@@ -15,6 +15,8 @@ import {
 import api from '../services/api'
 import { uploadImageToSupabase } from '../services/supabase'
 import { categoryNames } from '../data/categories'
+import DeleteConfirmModal from '../components/DeleteConfirmModal'
+import UndoToast from '../components/UndoToast'
 import './MyListings.css'
 
 const conditions = ['Excellent', 'Very Good', 'Good', 'Fair']
@@ -43,6 +45,11 @@ export default function MyListingsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editingItemId, setEditingItemId] = useState(null)
   const createListingRef = useRef(null)
+
+  // ── delete / undo state ────────────────────────────────────────
+  const [confirmItem, setConfirmItem]     = useState(null)  // item pending confirmation
+  const [pendingDelete, setPendingDelete] = useState(null)  // item removed but undoable
+  const undoTimerRef = useRef(null)
 
   // ── load listings ──────────────────────────────────────────────
   const loadMyListings = async () => {
@@ -193,12 +200,64 @@ export default function MyListingsPage() {
     }
   }
 
+  // ── delete handler ─────────────────────────────────────────────
+  const handleDelete = (item) => {
+    console.log('Delete clicked, item.id:', item.id)
+    setConfirmItem(item)
+  }
+
+  // User confirmed deletion in the modal
+  const handleConfirmDelete = () => {
+    const item = confirmItem
+    setConfirmItem(null)
+
+    // Optimistically remove from the visible list
+    setListings((prev) => prev.filter((l) => l.id !== item.id))
+
+    // Park the item so Undo can restore it
+    setPendingDelete(item)
+
+    // Clear any previous undo timer
+    clearTimeout(undoTimerRef.current)
+  }
+
+  // Undo clicked — restore the item to the list in its original position
+  const handleUndo = () => {
+    clearTimeout(undoTimerRef.current)
+    setPendingDelete(null)
+    setListings((prev) => {
+      // Re-insert sorted by created_at descending so it lands in the right spot
+      const restored = [...prev, pendingDelete].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      )
+      return restored
+    })
+  }
+
+  // Toast timer expired — fire the real DELETE request
+  const handleDeleteExpire = async () => {
+    const item = pendingDelete
+    setPendingDelete(null)
+    try {
+      await api.delete(`/items/${item.id}`)
+    } catch (error) {
+      console.error('Delete listing error:', error)
+      // Restore the item if the network request failed
+      setListings((prev) =>
+        [...prev, item].sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        )
+      )
+    }
+  }
+
   // ── stats ──────────────────────────────────────────────────────
   const activeListings = listings.length
   const pendingTrades = 0
   const completedTrades = 0
 
   return (
+    <>
     <section className="my-listings-page">
       <header className="my-listings-hero">
         <div className="hero-copy">
@@ -514,7 +573,7 @@ export default function MyListingsPage() {
                       <Pencil size={14} />
                       <span>Edit</span>
                     </button>
-                    <button type="button" className="action-btn action-btn--danger">
+                    <button type="button" className="action-btn action-btn--danger" onClick={() => handleDelete(item)}>
                       <Trash2 size={14} />
                       <span>Delete</span>
                     </button>
@@ -526,6 +585,25 @@ export default function MyListingsPage() {
         </div>
       )}
     </section>
+
+    {/* ── Delete confirmation modal ────────────────────────────── */}
+    {confirmItem && (
+      <DeleteConfirmModal
+        itemTitle={confirmItem.title}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmItem(null)}
+      />
+    )}
+
+    {/* ── Undo toast ───────────────────────────────────────────── */}
+    {pendingDelete && (
+      <UndoToast
+        message="Listing deleted"
+        onUndo={handleUndo}
+        onExpire={handleDeleteExpire}
+      />
+    )}
+    </>
   )
 }
 

@@ -170,6 +170,33 @@ router.put('/:id', requireAuth, async (req, res) => {
   }
 });
 
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify ownership before allowing delete
+    const existing = await db.query(
+      'SELECT owner_id FROM items WHERE id = $1',
+      [id]
+    );
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (existing.rows[0].owner_id !== req.userId) {
+      return res.status(403).json({ error: 'You do not have permission to delete this listing' });
+    }
+
+    await db.query('DELETE FROM items WHERE id = $1', [id]);
+
+    res.json({ message: 'Listing deleted successfully' });
+  } catch (err) {
+    console.error('DELETE /items/:id error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Server error' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const result = await db.query(
