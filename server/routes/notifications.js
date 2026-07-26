@@ -22,10 +22,10 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
 });
 
 // Helper used by other routes (e.g. Member 3's trades.js) to create a notification
-async function createNotification(userId, type, title, body) {
+async function createNotification(userId, type, title, body, tradeOfferId = null) {
   await db.query(
-    "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, $2, $3, $4)",
-    [userId, type, title, body]
+    "INSERT INTO notifications (user_id, type, title, body, trade_offer_id) VALUES ($1, $2, $3, $4, $5)",
+    [userId, type, title, body, tradeOfferId]
   );
 }
 
