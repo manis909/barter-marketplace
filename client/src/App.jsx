@@ -16,6 +16,7 @@ import HelpSupportPage from './pages/HelpSupport';
 import LogoutPage from './pages/Logout';
 import ChatPage from './pages/Chat';
 import Notifications from './pages/Notifications';
+import ChatsPage from './pages/Chats';
 import LandingPage from './landing/LandingPage';
 import AppLayout from './components/AppLayout';
 import './App.css';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/add-item" element={<AddItemPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/chats" element={<ChatsPage />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
             <Route path="/my-trades" element={<MyTradesPage />} />
             <Route path="/trade-requests" element={<TradeRequestsPage />} />
