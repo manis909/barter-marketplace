@@ -46,6 +46,10 @@ router.post('/profile-photo', requireAuth, upload.single('photo'), async (req, r
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
+    if (!supabaseAdmin) {
+      return res.status(500).json({ message: 'Supabase storage client is not configured' });
+    }
+
     const userId = req.userId;
     const fileExt = req.file.originalname.split('.').pop();
     const filePath = `${userId}/${Date.now()}.${fileExt}`;
