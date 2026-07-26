@@ -3,8 +3,7 @@ import { useParams } from 'react-router-dom';
 import ChatWindow from '../features/chat/ChatWindow';
 import RatingForm from '../features/ratings/RatingForm';
 import { useAuth } from '../features/auth/AuthContext';
-
-const API_URL = 'http://localhost:5000';
+import { completeTrade } from '../services/tradeService';
 
 export default function Chat() {
   const { tradeId } = useParams();
@@ -19,24 +18,15 @@ export default function Chat() {
 
   const handleMarkComplete = async () => {
     setCompleteError('');
-    const token = localStorage.getItem('token');
-
-    const res = await fetch(`${API_URL}/api/trades/${tradeId}/complete`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setCompleteError(data.message || 'Failed to mark trade complete');
-      return;
+    try {
+      const data = await completeTrade(tradeId);
+      const trade = data.tradeOffer;
+      const otherId = trade.sender_id === currentUserId ? trade.receiver_id : trade.sender_id;
+      setOtherUserId(otherId);
+      setShowRating(true);
+    } catch (err) {
+      setCompleteError(err?.response?.data?.error || err?.message || 'Failed to mark trade complete');
     }
-
-    const trade = data.tradeOffer;
-    const otherId = trade.sender_id === currentUserId ? trade.receiver_id : trade.sender_id;
-    setOtherUserId(otherId);
-    setShowRating(true);
   };
 
   const handleSubmitReport = async () => {

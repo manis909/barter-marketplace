@@ -20,7 +20,7 @@ const primaryItems = [
   { label: 'My Profile', icon: User, path: '/profile' },
   { label: 'My Listings', icon: Box, path: '/my-listings' },
   { label: 'My Trades', icon: Repeat, path: '/my-trades' },
-  { label: 'Trade Requests', icon: FileText },
+  { label: 'Trade Requests', icon: FileText, path: '/trade-requests' },
   { label: 'Chats', icon: MessageCircle },
   { label: 'Wishlist', icon: Heart, path: '/wishlist' },
   { label: 'Wallet', icon: CreditCard },

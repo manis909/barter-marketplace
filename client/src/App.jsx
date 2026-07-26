@@ -5,9 +5,11 @@ import LoginPage from './features/auth/LoginPage';
 import SignupPage from './features/auth/SignupPage';
 import ExplorePage from './pages/Explore';
 import ItemDetailPage from './pages/ItemDetail';
+import AddItemPage from './pages/AddItem';
 import ProfilePage from './pages/Profile';
 import MyListingsPage from './pages/MyListings';
 import MyTradesPage from './pages/MyTrades';
+import TradeRequestsPage from './pages/TradeRequests';
 import WishlistPage from './pages/Wishlist';
 import FeedbackPage from './pages/FeedbackReviews';
 import HelpSupportPage from './pages/HelpSupport';
@@ -30,10 +32,12 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/item/:id" element={<ItemDetailPage />} />
+            <Route path="/add-item" element={<AddItemPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
             <Route path="/my-trades" element={<MyTradesPage />} />
+            <Route path="/trade-requests" element={<TradeRequestsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/help" element={<HelpSupportPage />} />
