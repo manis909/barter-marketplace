@@ -201,14 +201,15 @@ export default function Wishlist() {
             type="button"
             onClick={() => navigate('/explore')}
             style={{
-              padding: '8px 20px',
-              borderRadius: 8,
+              padding: '12px 24px',
+              borderRadius: 16,
               border: 'none',
-              background: 'var(--accent)',
+              background: '#C8624B',
               color: '#fff',
               cursor: 'pointer',
               fontSize: 14,
-              fontWeight: 600,
+              fontWeight: 700,
+              boxShadow: '0 12px 28px rgba(200,98,75,0.22)',
             }}
           >
             Explore Items
@@ -218,7 +219,7 @@ export default function Wishlist() {
         <ul
           role="list"
           aria-label="Wishlist items"
-          style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14 }}
+          style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 18 }}
         >
           {wishlist.map(item => (
             <li key={item.wishlist_id}>
@@ -281,27 +282,27 @@ export default function Wishlist() {
 // ── Page header ───────────────────────────────────────────────────────────────
 function PageHeader({ count }) {
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>My Wishlist</h2>
+    <div style={{ marginBottom: 28, padding: '26px 24px', borderRadius: 24, background: 'rgba(255,255,255,0.94)', border: '1px solid rgba(224,122,95,0.18)', boxShadow: '0 22px 50px rgba(208,150,120,0.12)' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text-h)' }}>My Wishlist</h1>
         {count > 0 && (
           <span
             aria-label={`${count} item${count !== 1 ? 's' : ''}`}
             style={{
               fontSize: 13,
               fontWeight: 700,
-              color: 'var(--accent)',
-              background: 'var(--accent-bg)',
-              borderRadius: 20,
-              padding: '2px 10px',
+              color: '#C8624B',
+              background: 'rgba(200,98,75,0.12)',
+              borderRadius: 999,
+              padding: '6px 14px',
             }}
           >
             {count}
           </span>
         )}
       </div>
-      <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text)' }}>
-        Items you've saved to trade for
+      <p style={{ margin: '10px 0 0', fontSize: 15, color: 'var(--text)', maxWidth: 620 }}>
+        Save items you want to trade for, then make an offer when availability is right.
       </p>
     </div>
   );
@@ -388,86 +389,77 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '14px 16px',
-          background: 'var(--social-bg)',
-          opacity: isUnavailable ? 0.7 : 1,
-          boxShadow: hovered ? 'var(--shadow)' : '0 1px 3px rgba(0,0,0,0.06)',
-          transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-          transition: 'box-shadow 0.18s, transform 0.18s, opacity 0.2s',
+          borderRadius: 24,
+          border: '1px solid rgba(224,122,95,0.18)',
+          padding: '20px',
+          background: 'rgba(255,255,255,0.92)',
+          opacity: isUnavailable ? 0.75 : 1,
+          boxShadow: hovered ? '0 22px 50px rgba(208,150,120,0.16)' : '0 12px 28px rgba(208,150,120,0.10)',
+          transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+          transition: 'transform 0.2s, box-shadow 0.2s, opacity 0.2s',
         }}
       >
-        {/* Top row: image + info */}
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
           <img
             src={item.image_urls?.[0] ?? FALLBACK_IMG}
             alt={item.title}
-            width={72}
-            height={72}
+            width={88}
+            height={88}
             onError={e => { e.currentTarget.src = FALLBACK_IMG; }}
             style={{
-              borderRadius: 8,
+              borderRadius: 20,
               objectFit: 'cover',
               flexShrink: 0,
-              border: '1px solid var(--border)',
+              border: '1px solid rgba(224,122,95,0.18)',
             }}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: 'var(--text-h)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: 'var(--text-h)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.title}
-              {isUnavailable && (
-                <span
-                  aria-label={`Status: ${item.status}`}
-                  style={{
-                    marginLeft: 8, fontSize: 11, fontWeight: 700,
-                    color: '#dc2626', background: 'rgba(239,68,68,0.1)',
-                    textTransform: 'uppercase', letterSpacing: '0.05em',
-                    borderRadius: 4, padding: '2px 6px',
-                  }}
-                >
-                  {item.status}
-                </span>
-              )}
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text)' }}>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--muted)' }}>
               {metaParts.join(' · ')}
             </p>
           </div>
+          {isUnavailable && (
+            <span style={{
+              padding: '6px 14px', borderRadius: 999,
+              background: 'rgba(239,68,68,0.12)', color: '#B91C1C',
+              fontSize: 12, fontWeight: 700,
+            }}>
+              {item.status}
+            </span>
+          )}
         </div>
 
-        {/* Bottom row: action buttons */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          {/* View Item */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap', alignItems: 'center' }}>
           <Link
             to={`/item/${item.id}`}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '6px 14px', borderRadius: 7, fontSize: 13, fontWeight: 600,
-              background: 'var(--accent)', color: '#fff', textDecoration: 'none',
-              flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              padding: '10px 18px', borderRadius: 16, fontSize: 13, fontWeight: 700,
+              background: '#C8624B', color: '#fff', textDecoration: 'none',
+              minWidth: 100,
             }}
           >
             View Item
           </Link>
 
-          {/* Offer Trade — only when item is available */}
           {!isUnavailable && (
             <button
               type="button"
               onClick={handleOfferTrade}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '6px 14px', borderRadius: 7, fontSize: 13, fontWeight: 600,
-                background: 'none', border: '1px solid var(--accent)',
-                color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                padding: '10px 18px', borderRadius: 16, fontSize: 13, fontWeight: 700,
+                background: 'transparent', border: '1px solid rgba(37,99,235,0.22)',
+                color: '#2563EB', cursor: 'pointer', minWidth: 120,
               }}
             >
               Offer Trade
             </button>
           )}
 
-          {/* Remove */}
           <button
             type="button"
             disabled={!removeEnabled || removing}
@@ -475,13 +467,12 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
             aria-label={removeEnabled ? `Remove ${item.title} from wishlist` : `Remove not yet available`}
             aria-busy={removing}
             style={{
-              marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
-              background: 'none', border: '1px solid var(--border)', borderRadius: 7,
-              padding: '6px 14px', cursor: (!removeEnabled || removing) ? 'not-allowed' : 'pointer',
-              color: (!removeEnabled || removing) ? 'var(--text)' : '#dc2626',
-              fontSize: 13, fontWeight: 500, flexShrink: 0,
-              opacity: (!removeEnabled || removing) ? 0.4 : 1,
-              transition: 'background 0.15s',
+              marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              gap: 4, padding: '10px 18px', borderRadius: 16, fontSize: 13, fontWeight: 700,
+              background: 'transparent', border: '1px solid rgba(220,38,38,0.22)',
+              color: (!removeEnabled || removing) ? 'var(--muted)' : '#dc2626',
+              cursor: (!removeEnabled || removing) ? 'not-allowed' : 'pointer',
+              minWidth: 110,
             }}
           >
             {removing ? 'Removing…' : 'Remove'}
@@ -489,7 +480,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
         </div>
 
         {removeError && (
-          <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: '#dc2626', fontWeight: 500 }}>
+          <p role="alert" style={{ margin: '14px 0 0', fontSize: 13, color: '#B91C1C', fontWeight: 600 }}>
             ⚠ {removeError}
           </p>
         )}

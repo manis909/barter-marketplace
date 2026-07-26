@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import TradeCard from '../features/trades/TradeCard';
-import { getMyTrades, acceptTrade, declineTrade } from '../services/tradeService';
+import { getMyTrades, acceptTrade, declineTrade, completeTrade } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
 import { TRADE_STATUS } from '../utils/constants';
 import { useAuth } from '../features/auth/AuthContext';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Shimmer animation for skeleton loaders
 const SHIMMER_CSS = `
@@ -115,13 +118,45 @@ export default function MyTrades() {
     fetchTrades();
   }, [authLoading, currentUser, fetchTrades]);
 
+  useEffect(() => {
+    if (authLoading || !currentUser) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket'],
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('Trade socket connect error:', err.message);
+    });
+
+    socket.on('tradeUpdated', (trade) => {
+      if (trade.sender_id === currentUser.id || trade.receiver_id === currentUser.id) {
+        fetchTrades();
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [authLoading, currentUser, fetchTrades]);
+
   // ── Accept / Decline ─────────────────────────────────────────────────────
   const handleStatusChange = useCallback(async (tradeId, newStatus) => {
-    const updatedData = newStatus === TRADE_STATUS.ACCEPTED
-      ? await acceptTrade(tradeId)
-      : await declineTrade(tradeId);
+    let updatedData;
+    if (newStatus === TRADE_STATUS.ACCEPTED) {
+      updatedData = await acceptTrade(tradeId);
+    } else if (newStatus === TRADE_STATUS.DECLINED) {
+      updatedData = await declineTrade(tradeId);
+    } else if (newStatus === TRADE_STATUS.COMPLETED) {
+      updatedData = await completeTrade(tradeId);
+    } else {
+      throw new Error(`Unsupported trade status: ${newStatus}`);
+    }
 
-    // Re-fetch so auto-declined trades and joined titles all update
+    // Re-fetch so the trade sections reflect the latest status.
     await fetchTrades();
 
     if (newStatus === TRADE_STATUS.ACCEPTED) {
@@ -130,9 +165,10 @@ export default function MyTrades() {
   }, [fetchTrades]);
 
   // ── Derived splits ────────────────────────────────────────────────────────
-  const userId     = currentUser?.id;
-  const incoming   = trades.filter(t => t.receiver_id === userId);
-  const outgoing   = trades.filter(t => t.sender_id   === userId);
+  const userId       = currentUser?.id;
+  const outgoing     = trades.filter(t => t.sender_id === userId);
+  const activeTrades = outgoing.filter(t => t.status === TRADE_STATUS.PENDING || t.status === TRADE_STATUS.ACCEPTED);
+  const pastTrades   = outgoing.filter(t => t.status === TRADE_STATUS.COMPLETED || t.status === TRADE_STATUS.DECLINED);
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {
@@ -199,30 +235,30 @@ export default function MyTrades() {
       {trades.length === 0 ? (
         <div style={{ ...infoBoxStyle, marginTop: 0 }}>
           <span style={{ fontSize: 36 }} aria-hidden="true">🤝</span>
-          <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>No trades yet</p>
-          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text)', maxWidth: 320 }}>
-            Browse items around your campus to start trading.
+          <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>No outgoing trades yet</p>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text)', maxWidth: 340 }}>
+            Send a trade offer or respond to incoming requests to get the swap started.
           </p>
           <button type="button" onClick={() => navigate('/explore')}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+            style={{ padding: '10px 22px', borderRadius: 14, border: 'none', background: '#C8624B', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
             Explore Items
           </button>
         </div>
       ) : (
         <>
           <TradeSection
-            title="Trade Requests"
-            icon="📥"
-            trades={incoming}
-            emptyMessage="No trade requests yet."
+            title="Active Trade Offers"
+            icon="⚡"
+            trades={activeTrades}
+            emptyMessage="No active outgoing trades right now."
             currentUserId={userId}
             onStatusChange={handleStatusChange}
           />
           <TradeSection
-            title="My Sent Offers"
-            icon="📤"
-            trades={outgoing}
-            emptyMessage="You haven't sent any trade offers."
+            title="Completed & Declined Trades"
+            icon="✅"
+            trades={pastTrades}
+            emptyMessage="You haven’t completed or declined any outgoing trades yet."
             currentUserId={userId}
             onStatusChange={handleStatusChange}
           />
@@ -258,18 +294,17 @@ export default function MyTrades() {
 
 function PageHeader() {
   return (
-    <div style={{ marginBottom: 28 }}>
-      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>My Trades</h2>
-      <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text)' }}>
-        Trade offers you've sent and received
+    <div style={{ marginBottom: 28, padding: '28px 24px', borderRadius: 24, background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(224,122,95,0.18)', boxShadow: '0 24px 60px rgba(208,150,120,0.12)' }}>
+      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text-h)' }}>My Trades</h1>
+      <p style={{ margin: '10px 0 0', fontSize: 15, color: 'var(--text)' }}>
+        Track outgoing offers, see which trades are active, and review completed swaps.
       </p>
     </div>
   );
 }
 
 const pageStyle = {
-  padding: '32px 24px', maxWidth: 740, margin: '0 auto',
-  textAlign: 'left', boxSizing: 'border-box',
+  padding: '32px 24px', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box', minHeight: '100vh', background: '#FCF3ED',
 };
 
 const infoBoxStyle = {

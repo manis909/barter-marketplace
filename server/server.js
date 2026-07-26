@@ -86,6 +86,9 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id, "user:", socket.user?.userId);
 
+  const userRoom = `user:${socket.user.userId}`;
+  socket.join(userRoom);
+
   socket.on("joinTrade", (tradeOfferId) => {
     socket.join(String(tradeOfferId));
   });
