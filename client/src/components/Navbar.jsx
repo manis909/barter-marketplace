@@ -1,21 +1,42 @@
-// client/src/components/Navbar.jsx
-// Main app navbar (post-login). Logo left, search bar center,
-// right side order: Profile icon -> Explore -> Notification bell.
-// My Trades / Wishlist moved into ProfileDrawer (ask its owner to add them there).
+﻿import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import SearchBar from './SearchBar'
+import ProfileDrawer from './ProfileDrawer'
+import NotificationBell from '../features/notifications/NotificationBell'
+import { User } from 'lucide-react'
+import { useAuth } from '../features/auth/AuthContext'
+import './Navbar.css'
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import SearchBar from './SearchBar';
-import ProfileDrawer from './ProfileDrawer';
-import NotificationBell from '../features/notifications/NotificationBell';
-import { User } from 'lucide-react';
-import { useAuth } from '../features/auth/AuthContext';
-import './Navbar.css';
+export default function Navbar() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
+  const { currentUser } = useAuth()
 
-function Navbar() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const { currentUser } = useAuth();
+  useEffect(() => {
+    setSearch(new URLSearchParams(location.search).get('search') || '')
+  }, [location.search])
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value)
+  }
+
+  // Called when the user presses Enter or clicks the search icon
+  const handleSearch = (query) => {
+    const params = new URLSearchParams(location.search)
+    if (query) {
+      params.set('search', query)
+    } else {
+      params.delete('search')
+    }
+    navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+  }
+
+  // Called when the user clicks a suggestion row
+  const handleSelect = (item) => {
+    navigate(`/item/${item.id}`)
+  }
 
   return (
     <>
@@ -31,7 +52,9 @@ function Navbar() {
           <SearchBar
             placeholder="Search items to trade..."
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={handleSearchChange}
+            onSearch={handleSearch}
+            onSelect={handleSelect}
           />
         </div>
 
@@ -57,7 +80,5 @@ function Navbar() {
 
       {currentUser && <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
     </>
-  );
+  )
 }
-
-export default Navbar;

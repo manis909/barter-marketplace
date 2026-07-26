@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getWishlist, removeWishlist, addWishlist } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
+import api from '../services/api';
 
 const REMOVE_ENDPOINT_READY = true;
 
@@ -198,7 +199,7 @@ export default function Wishlist() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/explore')}
             style={{
               padding: '8px 20px',
               borderRadius: 8,
@@ -308,11 +309,22 @@ function PageHeader({ count }) {
 
 // ── Internal card component ───────────────────────────────────────────────────
 function WishlistCard({ item, onRemove, removeEnabled }) {
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [removing, setRemoving]       = useState(false);
   const [removeError, setRemoveError] = useState('');
   const [hovered, setHovered]         = useState(false);
-  const FALLBACK_IMG = 'https://placehold.co/64x64?text=?';
 
+  // Inline trade modal state
+  const [tradeModalOpen, setTradeModalOpen]   = useState(false);
+  const [myItems, setMyItems]                 = useState([]);
+  const [loadingItems, setLoadingItems]       = useState(false);
+  const [selectedItemId, setSelectedItemId]   = useState('');
+  const [tradeMessage, setTradeMessage]       = useState('');
+  const [submitting, setSubmitting]           = useState(false);
+  const [tradeError, setTradeError]           = useState('');
+
+  const FALLBACK_IMG = 'https://placehold.co/64x64?text=?';
   const isUnavailable = item.status !== 'available';
 
   async function handleRemoveClick() {
@@ -327,6 +339,43 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
     }
   }
 
+  async function handleOfferTrade() {
+    if (!currentUser) { navigate('/login'); return; }
+    setTradeError('');
+    setTradeModalOpen(true);
+    setLoadingItems(true);
+    try {
+      const res = await api.get('/items/mine');
+      const available = (res.data.items || []).filter(i => i.status === 'available');
+      setMyItems(available);
+      if (available.length > 0) setSelectedItemId(available[0].id);
+    } catch {
+      setTradeError('Could not load your items.');
+    } finally {
+      setLoadingItems(false);
+    }
+  }
+
+  async function handleSubmitTrade(e) {
+    e.preventDefault();
+    if (!selectedItemId) { setTradeError('Please select an item to offer.'); return; }
+    setSubmitting(true);
+    setTradeError('');
+    try {
+      await api.post('/trades', {
+        offered_item_id: selectedItemId,
+        requested_item_id: item.id,
+        message: tradeMessage,
+      });
+      setTradeModalOpen(false);
+      navigate('/my-trades');
+    } catch (err) {
+      setTradeError(err.response?.data?.error || 'Failed to send trade offer.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const metaParts = [
     item.category,
     prettifyCondition(item.item_condition),
@@ -334,111 +383,206 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
   ].filter(Boolean);
 
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        border: '1px solid var(--border)',
-        borderRadius: 10,
-        padding: '14px 16px',
-        background: 'var(--social-bg)',
-        opacity: isUnavailable ? 0.65 : 1,
-        boxShadow: hovered ? 'var(--shadow)' : '0 1px 3px rgba(0,0,0,0.06)',
-        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-        transition: 'box-shadow 0.18s, transform 0.18s, opacity 0.2s',
-      }}
-    >
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-        {/* Thumbnail */}
-        <img
-          src={item.image_urls?.[0] ?? FALLBACK_IMG}
-          alt={item.title}
-          width={64}
-          height={64}
-          onError={e => { e.currentTarget.src = FALLBACK_IMG; }}
-          style={{
-            borderRadius: 8,
-            objectFit: 'cover',
-            flexShrink: 0,
-            border: '1px solid var(--border)',
-            background: 'var(--border)',
-          }}
-        />
-
-        {/* Info */}
-        <div style={{ flex: '1 1 160px' }}>
-          <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: 'var(--text-h)', lineHeight: 1.4 }}>
-            {item.title}
-            {isUnavailable && (
-              <span
-                aria-label={`Status: ${item.status}`}
-                style={{
-                  marginLeft: 8,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: '#dc2626',
-                  background: 'rgba(239,68,68,0.1)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderRadius: 4,
-                  padding: '2px 6px',
-                }}
-              >
-                {item.status}
-              </span>
-            )}
-          </p>
-          <p style={{ margin: '5px 0 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
-            {metaParts.join(' · ')}
-          </p>
+    <>
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: '14px 16px',
+          background: 'var(--social-bg)',
+          opacity: isUnavailable ? 0.7 : 1,
+          boxShadow: hovered ? 'var(--shadow)' : '0 1px 3px rgba(0,0,0,0.06)',
+          transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+          transition: 'box-shadow 0.18s, transform 0.18s, opacity 0.2s',
+        }}
+      >
+        {/* Top row: image + info */}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <img
+            src={item.image_urls?.[0] ?? FALLBACK_IMG}
+            alt={item.title}
+            width={72}
+            height={72}
+            onError={e => { e.currentTarget.src = FALLBACK_IMG; }}
+            style={{
+              borderRadius: 8,
+              objectFit: 'cover',
+              flexShrink: 0,
+              border: '1px solid var(--border)',
+            }}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: 'var(--text-h)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {item.title}
+              {isUnavailable && (
+                <span
+                  aria-label={`Status: ${item.status}`}
+                  style={{
+                    marginLeft: 8, fontSize: 11, fontWeight: 700,
+                    color: '#dc2626', background: 'rgba(239,68,68,0.1)',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                    borderRadius: 4, padding: '2px 6px',
+                  }}
+                >
+                  {item.status}
+                </span>
+              )}
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text)' }}>
+              {metaParts.join(' · ')}
+            </p>
+          </div>
         </div>
 
-        {/* Remove button */}
-        <button
-          type="button"
-          disabled={!removeEnabled || removing}
-          onClick={handleRemoveClick}
-          aria-label={
-            removeEnabled
-              ? `Remove ${item.title} from wishlist`
-              : `Remove not yet available for ${item.title}`
-          }
-          aria-busy={removing}
-          title={removeEnabled ? undefined : 'Coming soon'}
-          style={{
-            alignSelf: 'center',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-            background: 'none',
-            border: '1px solid var(--border)',
-            borderRadius: 7,
-            padding: '6px 14px',
-            cursor: (!removeEnabled || removing) ? 'not-allowed' : 'pointer',
-            color: (!removeEnabled || removing) ? 'var(--text)' : '#dc2626',
-            fontSize: 13,
-            fontWeight: 500,
-            flexShrink: 0,
-            opacity: (!removeEnabled || removing) ? 0.4 : 1,
-            outline: 'none',
-            transition: 'background 0.15s, opacity 0.15s',
-          }}
-          onMouseEnter={e => { if (removeEnabled && !removing) e.currentTarget.style.background = 'rgba(239,68,68,0.07)'; }}
-          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-          onFocus={e => { if (removeEnabled && !removing) e.currentTarget.style.outline = '2px solid var(--accent)'; }}
-          onBlur={e => (e.currentTarget.style.outline = 'none')}
-        >
-          {!removeEnabled && <span aria-hidden="true">🔒</span>}
-          {removing ? 'Removing…' : 'Remove'}
-        </button>
+        {/* Bottom row: action buttons */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          {/* View Item */}
+          <Link
+            to={`/item/${item.id}`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '6px 14px', borderRadius: 7, fontSize: 13, fontWeight: 600,
+              background: 'var(--accent)', color: '#fff', textDecoration: 'none',
+              flexShrink: 0,
+            }}
+          >
+            View Item
+          </Link>
+
+          {/* Offer Trade — only when item is available */}
+          {!isUnavailable && (
+            <button
+              type="button"
+              onClick={handleOfferTrade}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '6px 14px', borderRadius: 7, fontSize: 13, fontWeight: 600,
+                background: 'none', border: '1px solid var(--accent)',
+                color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              Offer Trade
+            </button>
+          )}
+
+          {/* Remove */}
+          <button
+            type="button"
+            disabled={!removeEnabled || removing}
+            onClick={handleRemoveClick}
+            aria-label={removeEnabled ? `Remove ${item.title} from wishlist` : `Remove not yet available`}
+            aria-busy={removing}
+            style={{
+              marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
+              background: 'none', border: '1px solid var(--border)', borderRadius: 7,
+              padding: '6px 14px', cursor: (!removeEnabled || removing) ? 'not-allowed' : 'pointer',
+              color: (!removeEnabled || removing) ? 'var(--text)' : '#dc2626',
+              fontSize: 13, fontWeight: 500, flexShrink: 0,
+              opacity: (!removeEnabled || removing) ? 0.4 : 1,
+              transition: 'background 0.15s',
+            }}
+          >
+            {removing ? 'Removing…' : 'Remove'}
+          </button>
+        </div>
+
+        {removeError && (
+          <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: '#dc2626', fontWeight: 500 }}>
+            ⚠ {removeError}
+          </p>
+        )}
       </div>
 
-      {removeError && (
-        <p role="alert" style={{ margin: '10px 0 0', fontSize: 13, color: '#dc2626', fontWeight: 500 }}>
-          ⚠ {removeError}
-        </p>
+      {/* Inline Trade Modal */}
+      {tradeModalOpen && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 2000, padding: 20,
+          }}
+          onClick={() => setTradeModalOpen(false)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 18, padding: 28,
+              maxWidth: 460, width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.18)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 6px', color: '#1C1917' }}>
+              Propose a Trade
+            </h2>
+            <p style={{ fontSize: 13, color: '#57534E', margin: '0 0 18px' }}>
+              Offer one of your items in exchange for <strong>{item.title}</strong>.
+            </p>
+
+            {tradeError && (
+              <div style={{
+                background: '#FEF2F2', border: '1px solid #FCA5A5',
+                color: '#991B1B', padding: '9px 13px', borderRadius: 8,
+                fontSize: 13, marginBottom: 14,
+              }}>
+                {tradeError}
+              </div>
+            )}
+
+            {loadingItems ? (
+              <p style={{ fontSize: 14, color: '#57534E' }}>Loading your items...</p>
+            ) : myItems.length === 0 ? (
+              <>
+                <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 16 }}>
+                  You have no available items to trade. List one first!
+                </p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button type="button" style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #E4E2D9', background: 'none', cursor: 'pointer', fontSize: 13 }} onClick={() => setTradeModalOpen(false)}>Cancel</button>
+                  <Link to="/add-item" style={{ padding: '7px 16px', borderRadius: 7, background: 'var(--accent)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600 }} onClick={() => setTradeModalOpen(false)}>+ Add Item</Link>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleSubmitTrade}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 5 }}>
+                  Your Item to Offer:
+                </label>
+                <select
+                  value={selectedItemId}
+                  onChange={e => setSelectedItemId(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #E4E2D9', fontSize: 14, marginBottom: 14, background: '#F9F8F6' }}
+                >
+                  {myItems.map(i => (
+                    <option key={i.id} value={i.id}>
+                      {i.title}{i.estimated_value ? ` (Est. $${i.estimated_value})` : ''}
+                    </option>
+                  ))}
+                </select>
+
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 5 }}>
+                  Message (Optional):
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Hi! I'd love to swap my item..."
+                  value={tradeMessage}
+                  onChange={e => setTradeMessage(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #E4E2D9', fontSize: 14, marginBottom: 18, background: '#F9F8F6', resize: 'none' }}
+                />
+
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button type="button" style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #E4E2D9', background: 'none', cursor: 'pointer', fontSize: 13 }} onClick={() => setTradeModalOpen(false)} disabled={submitting}>Cancel</button>
+                  <button type="submit" style={{ padding: '7px 18px', borderRadius: 7, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} disabled={submitting}>
+                    {submitting ? 'Sending...' : 'Send Trade Offer'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

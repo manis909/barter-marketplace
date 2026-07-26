@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = 'http://localhost:5000';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const fetchNotifications = () => {
     const token = localStorage.getItem('token');
@@ -12,12 +14,20 @@ export default function NotificationBell() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
-      .then(data => setNotifications(data.notifications || []));
+      .then(data => {
+        setNotifications(prev => {
+          const incoming = data.notifications || [];
+          return incoming.map(n => {
+            const existing = prev.find(p => p.id === n.id);
+            return existing ? { ...n, is_read: existing.is_read || n.is_read } : n;
+          });
+        });
+      });
   };
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000); // poll every 10s
+    const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -30,6 +40,14 @@ export default function NotificationBell() {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, is_read: true } : n))
     );
+  };
+
+  const handleClick = (n) => {
+    markAsRead(n.id);
+    setIsOpen(false);
+    if (n.trade_offer_id) {
+      navigate(`/chat/${n.trade_offer_id}`);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -61,7 +79,7 @@ export default function NotificationBell() {
           {notifications.map(n => (
             <div
               key={n.id}
-              onClick={() => markAsRead(n.id)}
+              onClick={() => handleClick(n)}
               style={{
                 padding: 8,
                 borderBottom: '1px solid #eee',

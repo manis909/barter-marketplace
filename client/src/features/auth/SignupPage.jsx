@@ -116,7 +116,7 @@ export default function SignupPage() {
             />
             <button
               type="button"
-              className="password-toggle"
+              className="barter-auth-eye-toggle"
               onClick={() => setShowPassword(s => !s)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >

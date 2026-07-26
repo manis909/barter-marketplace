@@ -113,29 +113,66 @@
 
 .password-field {
   position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
 }
 
 .password-field input {
-  padding-right: 44px;
+  flex: 1;
+  border: none !important;
+  padding: 14px 16px !important;
 }
 
-.password-toggle {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
+.password-field input:focus {
+  outline: none;
+}
+
+.password-field:focus-within {
+  border-color: var(--color-primary);
+}
+
+.password-field input::-ms-reveal,
+.password-field input::-ms-clear {
+  display: none;
+}
+
+.password-field input::-webkit-textfield-decoration-container {
+  visibility: hidden;
+}
+
+.barter-auth-eye-toggle {
+  position: static !important;
+  transform: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   cursor: pointer;
-  color: #6b7280;
-  padding: 0;
+  color: #6b7280 !important;
+  padding: 0 !important;
+  margin: 0 14px 0 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
 }
 
-.password-toggle:hover {
-  color: var(--color-primary);
+.barter-auth-eye-toggle svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.barter-auth-eye-toggle:hover {
+  color: var(--color-primary) !important;
+  background: transparent !important;
 }
 
 .auth-submit {

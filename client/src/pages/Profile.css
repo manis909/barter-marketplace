@@ -20,6 +20,14 @@
   margin-bottom: 12px;
 }
 
+.profile-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
 .profile-photo-edit {
   background: none;
   border: 1px solid #2f6f5e;

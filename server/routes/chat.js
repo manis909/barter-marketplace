@@ -65,7 +65,8 @@ router.post("/", requireAuth, async (req, res) => {
       recipientId,
       "new_message",
       "New Message",
-      "You have a new message in your trade chat."
+      "You have a new message in your trade chat.",
+      trade_offer_id
     );
 
     res.status(201).json(newMessage);

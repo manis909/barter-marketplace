@@ -1,37 +1,67 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CheckCircle2,
   Clock3,
-  Eye,
   ImagePlus,
   Package,
   Pencil,
   Plus,
-  Repeat2,
   Search,
   Trash2,
   Trophy,
-  Upload
+  Upload,
+  X
 } from 'lucide-react'
+import api from '../services/api'
+import { uploadImageToSupabase } from '../services/supabase'
+import { categoryNames } from '../data/categories'
 import './MyListings.css'
 
-const categories = ['Books', 'Electronics', 'Clothes', 'Shoes', 'Home', 'Kitchen', 'Sports', 'Accessories']
 const conditions = ['Excellent', 'Very Good', 'Good', 'Fair']
 const filterOptions = ['All', 'Active', 'Pending', 'Completed']
 
+const EMPTY_FORM = {
+  title: '',
+  description: '',
+  category: '',
+  condition: 'Excellent',
+  desiredItem: '',
+  coinValue: '',
+  images: [],
+  existingImageUrls: []
+}
+
 export default function MyListingsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: 'Books',
-    condition: 'Excellent',
-    desiredItem: '',
-    coinValue: '',
-    images: []
-  })
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [imagePreviews, setImagePreviews] = useState([])
   const [listings, setListings] = useState([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [isFormHighlighting, setIsFormHighlighting] = useState(false)
+  const [message, setMessage] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingItemId, setEditingItemId] = useState(null)
+  const createListingRef = useRef(null)
 
+  // ── load listings ──────────────────────────────────────────────
+  const loadMyListings = async () => {
+    setLoading(true)
+    try {
+      const response = await api.get('/items/mine')
+      setListings(Array.isArray(response.data.items) ? response.data.items : [])
+    } catch (error) {
+      console.error('Failed to load my listings', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadMyListings()
+  }, [])
+
+  // ── form helpers ───────────────────────────────────────────────
   const handleChange = (event) => {
     const { name, value } = event.target
     setForm((prev) => ({ ...prev, [name]: value }))
@@ -39,37 +69,131 @@ export default function MyListingsPage() {
 
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files)
+    console.log('Selected files:', files.map((f) => ({ name: f.name, size: f.size, type: f.type })))
     setForm((prev) => ({ ...prev, images: files }))
+    setImagePreviews(files.map((f) => URL.createObjectURL(f)))
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    const nextId = String(listings.length + 1)
-    const newListing = {
-      id: nextId,
-      title: form.title || 'New listing',
-      category: form.category,
-      condition: form.condition,
-      ownerName: 'You',
-      ownerRating: 4.9,
-      tradeRating: 4.9,
-      description: form.description,
-      image: form.images[0]?.name ? URL.createObjectURL(form.images[0]) : 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80'
-    }
+  const removeNewImage = (index) => {
+    const newImages = form.images.filter((_, i) => i !== index)
+    const newPreviews = imagePreviews.filter((_, i) => i !== index)
+    setForm((prev) => ({ ...prev, images: newImages }))
+    setImagePreviews(newPreviews)
+  }
 
-    setListings((prev) => [newListing, ...prev])
-    setForm({
-      title: '',
-      description: '',
-      category: 'Books',
-      condition: 'Excellent',
-      desiredItem: '',
-      coinValue: '',
-      images: []
+  const removeExistingImage = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      existingImageUrls: prev.existingImageUrls.filter((_, i) => i !== index)
+    }))
+  }
+
+  const scrollToForm = () => {
+    requestAnimationFrame(() => {
+      createListingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setIsFormHighlighting(true)
+      window.setTimeout(() => setIsFormHighlighting(false), 1500)
     })
+  }
+
+  const resetForm = () => {
+    setForm(EMPTY_FORM)
+    setImagePreviews([])
+    setMessage('')
+    setIsEditing(false)
+    setEditingItemId(null)
+  }
+
+  // ── open create form ───────────────────────────────────────────
+  const handleOpenCreateForm = () => {
+    resetForm()
+    setIsFormOpen(true)
+    scrollToForm()
+  }
+
+  // ── edit handler ───────────────────────────────────────────────
+  const handleEdit = (item) => {
+    setIsEditing(true)
+    setEditingItemId(item.id)
+    setForm({
+      title: item.title || '',
+      description: item.description || '',
+      category: item.category || '',
+      condition: mapConditionToDisplay(item.item_condition) || item.condition || 'Excellent',
+      desiredItem: item.desired_item || '',
+      coinValue: item.estimated_value || '',
+      images: [],
+      existingImageUrls: Array.isArray(item.image_urls) ? item.image_urls : []
+    })
+    setImagePreviews([])
+    setMessage('')
+    setIsFormOpen(true)
+    scrollToForm()
+  }
+
+  // ── cancel edit ────────────────────────────────────────────────
+  const handleCancel = () => {
+    resetForm()
     setIsFormOpen(false)
   }
 
+  // ── submit (create or update) ──────────────────────────────────
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setMessage('')
+
+    try {
+      // Upload any newly selected images
+      const newlyUploadedUrls = form.images.length > 0
+        ? await Promise.all(
+            form.images.map(async (file) => {
+              const url = await uploadImageToSupabase(file)
+              console.log('Uploaded:', file.name, url)
+              return url
+            })
+          )
+        : []
+
+      // Final image list = kept existing + newly uploaded
+      const finalImageUrls = [...form.existingImageUrls, ...newlyUploadedUrls]
+
+      const payload = {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        condition: form.condition,
+        image_urls: finalImageUrls
+      }
+
+      if (isEditing) {
+        // ── UPDATE existing listing ──
+        console.log('Updating listing:', editingItemId, payload)
+        const response = await api.put(`/items/${editingItemId}`, payload)
+        const updated = response.data.item
+        setListings((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))
+        setMessage('Listing updated successfully!')
+        resetForm()
+        setIsFormOpen(false)
+      } else {
+        // ── CREATE new listing ──
+        console.log('Creating listing:', payload)
+        const response = await api.post('/items', payload)
+        const created = response.data.item
+        setListings((prev) => [created, ...prev])
+        setMessage('Listing created successfully!')
+        resetForm()
+        setIsFormOpen(false)
+      }
+    } catch (error) {
+      console.error('Listing submit error:', error)
+      setMessage(error.response?.data?.error || error.message || 'Something went wrong. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // ── stats ──────────────────────────────────────────────────────
   const activeListings = listings.length
   const pendingTrades = 0
   const completedTrades = 0
@@ -87,7 +211,7 @@ export default function MyListingsPage() {
             Keep your inventory polished, visible, and ready for trade with a calmer, more premium workflow.
           </p>
         </div>
-        <button type="button" className="primary-button" onClick={() => setIsFormOpen((prev) => !prev)}>
+        <button type="button" className="primary-button" onClick={handleOpenCreateForm}>
           <Plus size={18} />
           <span>Add New Listing</span>
         </button>
@@ -157,17 +281,23 @@ export default function MyListingsPage() {
         </div>
       </div>
 
+      {/* ── Create / Edit Form ───────────────────────────────────── */}
       {isFormOpen && (
-        <form className="listing-form" onSubmit={handleSubmit}>
+        <form
+          ref={createListingRef}
+          className={`listing-form ${isFormHighlighting ? 'listing-form--highlight' : ''}`}
+          onSubmit={handleSubmit}
+        >
           <div className="form-heading">
             <div>
-              <p className="section-eyebrow">Create Listing</p>
-              <h2>Share a new item with the community</h2>
+              <p className="section-eyebrow">{isEditing ? 'Edit Listing' : 'Create Listing'}</p>
+              <h2>{isEditing ? 'Update your listing details' : 'Share a new item with the community'}</h2>
             </div>
             <p className="form-helper">Keep your offer details clear and compelling so swaps happen faster.</p>
           </div>
 
           <div className="form-grid">
+            {/* Image upload */}
             <div className="form-field form-field--full">
               <label>Upload Images</label>
               <div className="upload-area">
@@ -180,6 +310,44 @@ export default function MyListingsPage() {
                   <small>PNG, JPG, or WebP</small>
                 </div>
               </div>
+
+              {/* Existing images (when editing) */}
+              {form.existingImageUrls.length > 0 && (
+                <div className="image-preview-row">
+                  {form.existingImageUrls.map((url, index) => (
+                    <div key={`existing-${index}`} className="image-preview-item">
+                      <img src={url} alt={`existing ${index + 1}`} />
+                      <button
+                        type="button"
+                        className="image-remove-btn"
+                        onClick={() => removeExistingImage(index)}
+                        aria-label="Remove image"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Newly selected image previews */}
+              {imagePreviews.length > 0 && (
+                <div className="image-preview-row">
+                  {imagePreviews.map((src, index) => (
+                    <div key={`new-${index}`} className="image-preview-item">
+                      <img src={src} alt={`new preview ${index + 1}`} />
+                      <button
+                        type="button"
+                        className="image-remove-btn"
+                        onClick={() => removeNewImage(index)}
+                        aria-label="Remove image"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="form-field">
@@ -196,9 +364,15 @@ export default function MyListingsPage() {
 
             <div className="form-field">
               <label>Category</label>
-              <select name="category" value={form.category} onChange={handleChange}>
-                {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+              <select
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select Category</option>
+                {categoryNames.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
             </div>
@@ -244,20 +418,36 @@ export default function MyListingsPage() {
                 value={form.coinValue}
                 onChange={handleChange}
                 placeholder="Enter coin value"
-                required
               />
             </div>
           </div>
 
+          {message && <p className={`form-message ${message.includes('successfully') ? 'form-message--success' : 'form-message--error'}`}>{message}</p>}
+
           <div className="form-footer">
-            <button type="submit" className="primary-button">
+            {isEditing && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+            )}
+            <button type="submit" className="primary-button" disabled={isSubmitting}>
               <Upload size={18} />
-              <span>Upload Item</span>
+              <span>
+                {isSubmitting
+                  ? (isEditing ? 'Saving Changes...' : 'Creating Listing...')
+                  : (isEditing ? 'Save Changes' : 'Submit Listing')}
+              </span>
             </button>
           </div>
         </form>
       )}
 
+      {/* ── Listings Grid ────────────────────────────────────────── */}
       {listings.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state__icon">
@@ -272,32 +462,55 @@ export default function MyListingsPage() {
           {listings.map((item) => (
             <article key={item.id} className="listing-card">
               <div className="listing-card__media">
-                <img src={item.image} alt={item.title || item.name} />
+                <img
+                  src={
+                    Array.isArray(item.image_urls) && item.image_urls.length > 0
+                      ? item.image_urls[0]
+                      : item.image || '/placeholder.png'
+                  }
+                  alt={item.title || item.name}
+                />
               </div>
               <div className="listing-card__content">
                 <div className="listing-card__top">
                   <div className="listing-card__badges">
                     <span className="badge badge--category">{item.category}</span>
-                    <span className="badge badge--condition">{item.condition}</span>
+                    <span className="badge badge--condition">{mapConditionToDisplay(item.item_condition) || item.condition}</span>
                   </div>
-                  <div className="listing-card__status">Active</div>
+                  <div
+                    className="listing-card__status"
+                    style={{
+                      textTransform: 'capitalize',
+                      background:
+                        item.status === 'available' ? '#D1FAE5' :
+                        item.status === 'traded' ? '#FEE2E2' : '#FEF3C7',
+                      color:
+                        item.status === 'available' ? '#065F46' :
+                        item.status === 'traded' ? '#991B1B' : '#92400E',
+                      padding: '2px 10px',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {item.status || 'available'}
+                  </div>
                 </div>
                 <h3>{item.title || item.name}</h3>
-                <p>{item.description || item.name}</p>
+                <p>{item.description}</p>
                 <div className="listing-card__divider" />
                 <div className="listing-card__footer">
                   <div className="listing-card__meta">
                     <span className="meta-pill">
-                      <Eye size={15} />
-                      24 views
-                    </span>
-                    <span className="meta-pill">
-                      <Repeat2 size={15} />
-                      3 requests
+                      Listed {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
                     </span>
                   </div>
                   <div className="listing-card__actions">
-                    <button type="button" className="action-btn">
+                    <button
+                      type="button"
+                      className="action-btn"
+                      onClick={() => handleEdit(item)}
+                    >
                       <Pencil size={14} />
                       <span>Edit</span>
                     </button>
@@ -314,4 +527,18 @@ export default function MyListingsPage() {
       )}
     </section>
   )
+}
+
+// ── helpers ────────────────────────────────────────────────────────
+// Map the DB enum value back to the display label used in the form
+function mapConditionToDisplay(dbValue) {
+  if (!dbValue) return ''
+  const map = {
+    like_new: 'Excellent',
+    good: 'Good',
+    fair: 'Fair',
+    poor: 'Fair',
+    new: 'Excellent'
+  }
+  return map[dbValue.toLowerCase()] || dbValue
 }

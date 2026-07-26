@@ -6,7 +6,7 @@ import './Profile.css';
 const MAX_IMAGE_SIZE_MB = 2;
 
 export default function Profile() {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, refreshUser } = useAuth();
   const [fullName, setFullName] = useState('');
   const [profileImage, setProfileImage] = useState('');
   const [bio, setBio] = useState('');
@@ -62,6 +62,7 @@ export default function Profile() {
       });
 
       setProfileImage(res.data.profile_image);
+      await refreshUser();
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'Photo upload failed. Please try again.');
@@ -83,6 +84,7 @@ export default function Profile() {
         college,
       });
       setSaved(true);
+      await refreshUser();
     } catch (err) {
       setError(err.response?.data?.error || 'Save failed');
     }
@@ -96,11 +98,20 @@ export default function Profile() {
       <h2>Profile</h2>
 
       <div className="profile-photo-section">
-        <img
-          src={profileImage || 'https://placehold.co/96'}
-          alt="Profile"
-          className="profile-photo"
-        />
+        {profileImage ? (
+          <img
+            src={profileImage}
+            alt="Profile"
+            className="profile-photo"
+          />
+        ) : (
+          <div className="profile-photo profile-photo-placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+        )}
         <button
           type="button"
           className="profile-photo-edit"
