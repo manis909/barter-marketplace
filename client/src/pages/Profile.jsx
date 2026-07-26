@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import './Profile.css';
+
+const MAX_IMAGE_SIZE_MB = 2;
 
 export default function Profile() {
   const { currentUser, loading } = useAuth();
@@ -10,7 +13,9 @@ export default function Profile() {
   const [college, setCollege] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [ratingSummary, setRatingSummary] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -25,6 +30,45 @@ export default function Profile() {
         .catch(() => setRatingSummary(null));
     }
   }, [currentUser]);
+
+  async function handlePhotoSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setError('');
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.');
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      setError(`Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB.`);
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Upload goes through our own backend now, not directly to
+      // Supabase — avoids the RLS/auth mismatch, since the backend
+      // uses the service role key after verifying the user via
+      // requireAuth.
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const res = await api.post('/users/profile-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setProfileImage(res.data.profile_image);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Photo upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleSave(e) {
     e.preventDefault();
@@ -48,24 +92,45 @@ export default function Profile() {
   if (!currentUser) return <p>Please log in to view your profile.</p>;
 
   return (
-    <div>
+    <div className="profile-page">
       <h2>Profile</h2>
-      <img src={profileImage || 'https://placehold.co/96'} alt="avatar" width={96} height={96} />
-      <p>@{currentUser.username}</p>
+
+      <div className="profile-photo-section">
+        <img
+          src={profileImage || 'https://placehold.co/96'}
+          alt="Profile"
+          className="profile-photo"
+        />
+        <button
+          type="button"
+          className="profile-photo-edit"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? 'Uploading...' : 'Change Photo'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoSelect}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      <p className="profile-username">@{currentUser.username}</p>
       {ratingSummary && ratingSummary.avg_rating != null ? (
-  <p>★ {Number(ratingSummary.avg_rating).toFixed(1)} ({ratingSummary.total} review{Number(ratingSummary.total) === 1 ? '' : 's'})</p>
-     ) : (
-       <p>No ratings yet</p>
-    )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSave}>
+        <p>★ {Number(ratingSummary.avg_rating).toFixed(1)} ({ratingSummary.total} review{Number(ratingSummary.total) === 1 ? '' : 's'})</p>
+      ) : (
+        <p>No ratings yet</p>
+      )}
+
+      {error && <p className="profile-error">{error}</p>}
+
+      <form onSubmit={handleSave} className="profile-form">
         <label>
           Full Name
           <input value={fullName} onChange={e => setFullName(e.target.value)} />
-        </label>
-        <label>
-          Profile Image URL
-          <input value={profileImage} onChange={e => setProfileImage(e.target.value)} />
         </label>
         <label>
           College
@@ -75,8 +140,8 @@ export default function Profile() {
           Bio
           <textarea value={bio} onChange={e => setBio(e.target.value)} />
         </label>
-        <button type="submit">Save</button>
-        {saved && <span> Saved!</span>}
+        <button type="submit" className="profile-save">Save</button>
+        {saved && <span className="profile-saved"> Saved!</span>}
       </form>
     </div>
   );
