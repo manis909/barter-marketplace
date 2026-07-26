@@ -104,6 +104,13 @@ router.post("/", requireAuth, async (req, res) => {
       "Someone wants to trade with your item."
     ).catch(err => console.error("Notification error (POST /trades):", err));
 
+    const io = req.app.get("io");
+    try {
+      io.to(`user:${receiver_id}`).emit("tradeUpdated", tradeOffer);
+    } catch (socketErr) {
+      console.error("Socket emit error (POST /trades):", socketErr);
+    }
+
     res.status(201).json({
       success: true,
       tradeOffer,
@@ -310,6 +317,14 @@ router.patch("/:id/complete", requireAuth, async (req, res) => {
       "A trade you were part of has been marked as completed."
     ).catch(err => console.error("Notification error (PATCH /trades/:id/complete):", err));
 
+    const io = req.app.get("io");
+    try {
+      io.to(`user:${t.sender_id}`).emit("tradeUpdated", updatedTrade);
+      io.to(`user:${t.receiver_id}`).emit("tradeUpdated", updatedTrade);
+    } catch (socketErr) {
+      console.error("Socket emit error (PATCH /trades/:id/complete):", socketErr);
+    }
+
     res.json({
       success: true,
       tradeOffer: updatedTrade,
@@ -426,6 +441,14 @@ router.patch("/:id", requireAuth, async (req, res) => {
         "Trade Declined",
         "Your trade offer was declined."
       ).catch(err => console.error("Notification error (declined):", err));
+    }
+
+    const io = req.app.get("io");
+    try {
+      io.to(`user:${updatedTrade.sender_id}`).emit("tradeUpdated", updatedTrade);
+      io.to(`user:${updatedTrade.receiver_id}`).emit("tradeUpdated", updatedTrade);
+    } catch (socketErr) {
+      console.error("Socket emit error (PATCH /trades/:id):", socketErr);
     }
 
     res.json({

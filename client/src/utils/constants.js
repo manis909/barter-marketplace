@@ -42,6 +42,8 @@ export const ROUTES = {
   FEEDBACK: '/feedback',
   HELP: '/help',
   LOGOUT: '/logout',
+  MY_TRADES: '/my-trades',
+  TRADE_REQUESTS: '/trade-requests',
   CHAT: (tradeId) => `/chat/${tradeId}`,
 };
 
