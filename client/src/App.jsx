@@ -11,6 +11,7 @@ import MyListingsPage from './pages/MyListings';
 import MyTradesPage from './pages/MyTrades';
 import TradeRequestsPage from './pages/TradeRequests';
 import WishlistPage from './pages/Wishlist';
+import Wallet from "./pages/Wallet";
 import FeedbackPage from './pages/FeedbackReviews';
 import HelpSupportPage from './pages/HelpSupport';
 import LogoutPage from './pages/Logout';
@@ -44,6 +45,7 @@ function App() {
             <Route path="/my-trades" element={<MyTradesPage />} />
             <Route path="/trade-requests" element={<TradeRequestsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/help" element={<HelpSupportPage />} />
             <Route path="/logout" element={<LogoutPage />} />

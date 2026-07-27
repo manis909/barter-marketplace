@@ -199,16 +199,16 @@ export default function TradeRequestsPage() {
 }
 
 const pageStyle = {
-  padding: '32px 24px', maxWidth: 900, margin: '0 auto', background: '#FBF5EE', minHeight: '100vh', boxSizing: 'border-box',
+  padding: '32px 24px', maxWidth: 900, margin: '0 auto', background: '#eefbeeff', minHeight: '100vh', boxSizing: 'border-box',
 };
 
 const headerStyle = {
   marginBottom: 32,
   padding: '28px 24px',
   borderRadius: 24,
-  background: 'rgba(255,255,255,0.95)',
-  border: '1px solid rgba(224,122,95,0.18)',
-  boxShadow: '0 24px 60px rgba(208,150,120,0.12)',
+  background: 'rgba(255, 255, 255, 0.95)',
+  border: '1px solid rgba(255, 255, 255, 0.18)',
+  boxShadow: '0 24px 60px rgba(255, 255, 255, 0.12)',           
 };
 
 const heroBox = {
@@ -222,5 +222,5 @@ const errorBoxStyle = {
 
 const primaryBtnStyle = {
   marginTop: 18,
-  padding: '12px 22px', borderRadius: 14, border: 'none', background: '#C8624B', color: '#fff', cursor: 'pointer', fontWeight: 700,
+  padding: '12px 22px', borderRadius: 14, border: 'none', background: '#2b9955ff', color: '#fff', cursor: 'pointer', fontWeight: 700,
 };
