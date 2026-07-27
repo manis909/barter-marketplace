@@ -4,7 +4,7 @@ import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import './ItemDetail.css'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export default function ItemDetailPage() {
   const { id } = useParams()
@@ -35,7 +35,7 @@ export default function ItemDetailPage() {
     setLoading(true)
     setError('')
 
-    fetch(`${apiBaseUrl}/api/items/${id}`, { signal: controller.signal })
+    fetch(`${apiBaseUrl}/items/${id}`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) {
           throw new Error('Unable to load item details')
