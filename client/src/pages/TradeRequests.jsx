@@ -148,6 +148,8 @@ export default function TradeRequestsPage() {
     await fetchTrades();
   }, [fetchTrades]);
 
+  const activeRequests = trades.filter(trade => [TRADE_STATUS.PENDING, TRADE_STATUS.ACCEPTED].includes(trade.status));
+
   if (!authLoading && !currentUser) {
     return (
       <div style={pageStyle}>
@@ -186,7 +188,7 @@ export default function TradeRequestsPage() {
       ) : (
         <TradeSection
           title="Incoming Trade Requests"
-          trades={trades.filter(t => t.receiver_id === currentUser?.id)}
+          trades={activeRequests.filter(t => t.receiver_id === currentUser?.id)}
           emptyMessage="No trade requests yet."
           currentUserId={currentUser?.id}
           onStatusChange={handleStatusChange}
