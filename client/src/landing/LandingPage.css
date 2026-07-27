@@ -4,12 +4,12 @@
 
 :root {
   /* Warm Cream & Ivory Palette */
-  --lp-bg: #FAF6F0;              /* Soft Warm Cream */
+  --lp-bg: #ffffff;              /* Soft Warm Cream */
   --lp-bg-elevated: #FFFDF9;     /* Warm Ivory White */
   --lp-bg-card: rgba(255, 255, 255, 0.75);
   --lp-bg-card-hover: rgba(255, 255, 255, 0.92);
   --lp-border: rgba(224, 122, 95, 0.14);
-  --lp-border-warm: rgba(224, 122, 95, 0.35);
+  --lp-border-warm: rgba(45, 139, 53, 0.35);
   
   /* Text Colors for Light Theme */
   --lp-text-primary: #1C1917;    /* Deep Charcoal */

@@ -27,9 +27,7 @@ export default function LoginPage() {
     } catch (err) {
       const backendMessage = err.response?.data?.error;
 
-      if (backendMessage === 'Invalid credentials') {
-        setError('Email or password is incorrect.');
-      } else if (err.response) {
+      if (err.response) {
         setError(backendMessage || 'Login failed. Please try again.');
       } else {
         setError('Could not reach the server. Please check your connection and try again.');

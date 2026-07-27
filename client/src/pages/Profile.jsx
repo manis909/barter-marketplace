@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
 import './Profile.css';
 
 const MAX_IMAGE_SIZE_MB = 2;
+const COLLEGE_OPTIONS = ["ST. ANN'S COLLEGE FOR WOMEN"];
 
 export default function Profile() {
-  const { currentUser, loading, refreshUser } = useAuth();
+  const { userId } = useParams();
+  const { currentUser, loading: authLoading, refreshUser } = useAuth();
+
+  // If a userId is in the URL and it's not the logged-in user's own id,
+  // we're viewing someone else's profile — read-only, fetched fresh.
+  const isOwnProfile = !userId || (currentUser && userId === currentUser.id);
+  const profileIdToLoad = userId || currentUser?.id;
+
+  const [viewedUser, setViewedUser] = useState(null);
+  const [viewedUserLoading, setViewedUserLoading] = useState(false);
+
   const [fullName, setFullName] = useState('');
   const [profileImage, setProfileImage] = useState('');
   const [bio, setBio] = useState('');
@@ -17,19 +29,35 @@ export default function Profile() {
   const [ratingSummary, setRatingSummary] = useState(null);
   const fileInputRef = useRef(null);
 
+  // The user object currently being displayed, regardless of whose profile it is
+  const displayUser = isOwnProfile ? currentUser : viewedUser;
+
   useEffect(() => {
-    if (currentUser) {
+    if (isOwnProfile && currentUser) {
       setFullName(currentUser.full_name || '');
       setProfileImage(currentUser.profile_image || '');
       setBio(currentUser.bio || '');
       setCollege(currentUser.college || '');
+    }
+  }, [isOwnProfile, currentUser]);
 
-      // Ratings summary comes from Member 4's endpoint, not stored on users
-      api.get(`/ratings/user/${currentUser.id}`)
+  useEffect(() => {
+    if (!isOwnProfile && userId) {
+      setViewedUserLoading(true);
+      api.get(`/users/${userId}`)
+        .then(res => setViewedUser(res.data.user))
+        .catch(() => setViewedUser(null))
+        .finally(() => setViewedUserLoading(false));
+    }
+  }, [isOwnProfile, userId]);
+
+  useEffect(() => {
+    if (profileIdToLoad) {
+      api.get(`/ratings/user/${profileIdToLoad}`)
         .then(res => setRatingSummary(res.data.summary))
         .catch(() => setRatingSummary(null));
     }
-  }, [currentUser]);
+  }, [profileIdToLoad]);
 
   async function handlePhotoSelect(e) {
     const file = e.target.files[0];
@@ -50,10 +78,6 @@ export default function Profile() {
     setUploading(true);
 
     try {
-      // Upload goes through our own backend now, not directly to
-      // Supabase — avoids the RLS/auth mismatch, since the backend
-      // uses the service role key after verifying the user via
-      // requireAuth.
       const formData = new FormData();
       formData.append('photo', file);
 
@@ -90,17 +114,19 @@ export default function Profile() {
     }
   }
 
-  if (loading) return <p>Loading...</p>;
-  if (!currentUser) return <p>Please log in to view your profile.</p>;
+  if (isOwnProfile && authLoading) return <p>Loading...</p>;
+  if (isOwnProfile && !currentUser) return <p>Please log in to view your profile.</p>;
+  if (!isOwnProfile && viewedUserLoading) return <p>Loading profile...</p>;
+  if (!isOwnProfile && !viewedUser) return <p>This user couldn't be found.</p>;
 
   return (
     <div className="profile-page">
-      <h2>Profile</h2>
+      <h2>{isOwnProfile ? 'Profile' : `@${displayUser.username}`}</h2>
 
       <div className="profile-photo-section">
-        {profileImage ? (
+        {(isOwnProfile ? profileImage : displayUser.profile_image) ? (
           <img
-            src={profileImage}
+            src={isOwnProfile ? profileImage : displayUser.profile_image}
             alt="Profile"
             className="profile-photo"
           />
@@ -112,24 +138,29 @@ export default function Profile() {
             </svg>
           </div>
         )}
-        <button
-          type="button"
-          className="profile-photo-edit"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? 'Uploading...' : 'Change Photo'}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handlePhotoSelect}
-          style={{ display: 'none' }}
-        />
+        {isOwnProfile && (
+          <>
+            <button
+              type="button"
+              className="profile-photo-edit"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? 'Uploading...' : 'Change Photo'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoSelect}
+              style={{ display: 'none' }}
+            />
+          </>
+        )}
       </div>
 
-      <p className="profile-username">@{currentUser.username}</p>
+      {isOwnProfile && <p className="profile-username">@{displayUser.username}</p>}
+
       {ratingSummary && ratingSummary.avg_rating != null ? (
         <p>★ {Number(ratingSummary.avg_rating).toFixed(1)} ({ratingSummary.total} review{Number(ratingSummary.total) === 1 ? '' : 's'})</p>
       ) : (
@@ -138,22 +169,35 @@ export default function Profile() {
 
       {error && <p className="profile-error">{error}</p>}
 
-      <form onSubmit={handleSave} className="profile-form">
-        <label>
-          Full Name
-          <input value={fullName} onChange={e => setFullName(e.target.value)} />
-        </label>
-        <label>
-          College
-          <input value={college} onChange={e => setCollege(e.target.value)} />
-        </label>
-        <label>
-          Bio
-          <textarea value={bio} onChange={e => setBio(e.target.value)} />
-        </label>
-        <button type="submit" className="profile-save">Save</button>
-        {saved && <span className="profile-saved"> Saved!</span>}
-      </form>
+      {isOwnProfile ? (
+        <form onSubmit={handleSave} className="profile-form">
+          <label>
+            Full Name
+            <input value={fullName} onChange={e => setFullName(e.target.value)} />
+          </label>
+          <label>
+            College
+            <select value={college} onChange={e => setCollege(e.target.value)}>
+              <option value="">Select your college</option>
+              {COLLEGE_OPTIONS.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Bio
+            <textarea value={bio} onChange={e => setBio(e.target.value)} />
+          </label>
+          <button type="submit" className="profile-save">Save</button>
+          {saved && <span className="profile-saved"> Saved!</span>}
+        </form>
+      ) : (
+        <div className="profile-view-only">
+          {displayUser.full_name && <p><strong>Name:</strong> {displayUser.full_name}</p>}
+          {displayUser.college && <p><strong>College:</strong> {displayUser.college}</p>}
+          {displayUser.bio && <p><strong>Bio:</strong> {displayUser.bio}</p>}
+        </div>
+      )}
     </div>
   );
 }

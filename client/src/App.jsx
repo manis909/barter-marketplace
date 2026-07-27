@@ -19,6 +19,7 @@ import Notifications from './pages/Notifications';
 import ChatsPage from './pages/Chats';
 import LandingPage from './landing/LandingPage';
 import AppLayout from './components/AppLayout';
+import Wallet from "./pages/Wallet";
 import './App.css';
 
 function App() {
@@ -27,7 +28,7 @@ function App() {
       <BrowserRouter>
         <AppLayout>
           <Routes>
-            <Route path="/" element={<ExplorePage />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -35,6 +36,7 @@ function App() {
             <Route path="/item/:id" element={<ItemDetailPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/add-item" element={<AddItemPage />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/chats" element={<ChatsPage />} />
