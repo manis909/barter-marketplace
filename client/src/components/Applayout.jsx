@@ -8,14 +8,16 @@ import Navbar from './Navbar';
 import LandingNavbar from '../landing/components/LandingNavbar';
 
 const LANDING_ROUTES = ['/', '/landing'];
+const NO_NAVBAR_ROUTES = ['/login', '/signup'];
 
 function AppLayout({ children }) {
   const location = useLocation();
   const isLandingPage = LANDING_ROUTES.includes(location.pathname);
+  const hideNavbar = NO_NAVBAR_ROUTES.includes(location.pathname);
 
   return (
     <div className="app-shell">
-      {isLandingPage ? <LandingNavbar /> : <Navbar />}
+      {!hideNavbar && (isLandingPage ? <LandingNavbar /> : <Navbar />)}
       <main className="app-main">{children}</main>
     </div>
   );
