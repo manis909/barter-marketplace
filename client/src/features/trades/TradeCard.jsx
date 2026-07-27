@@ -1,9 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { TRADE_STATUS } from '../../utils/constants';
-import TradeModal from './TradeModal';
 
 const FALLBACK_IMAGE = 'https://placehold.co/120x100?text=No+Image';
+
+function normalizeMeta(parts) {
+  return parts.filter(Boolean).join(' · ') || 'Details unavailable';
+}
+
+function shortText(text) {
+  if (!text) return 'No description available.';
+  return text.length > 100 ? `${text.slice(0, 100).trim()}…` : text;
+}
 
 const STATUS_STYLE = {
   pending:   { bg: 'rgba(224,122,95,0.16)', color: '#C8624B' },
@@ -59,7 +67,6 @@ function buttonVariant(bg, disabled) {
 export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   const navigate = useNavigate();
 
-  const [showModal, setShowModal] = useState(false);
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -79,6 +86,18 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   const requestedTitle = trade.requested_item_title ?? 'Unknown item';
   const offeredImage = trade.offered_item_images?.[0] ?? FALLBACK_IMAGE;
   const requestedImage = trade.requested_item_images?.[0] ?? FALLBACK_IMAGE;
+  const offeredMeta = normalizeMeta([
+    trade.offered_item_category,
+    trade.offered_item_condition?.replace(/_/g, ' '),
+    trade.offered_item_value ? `Est. $${trade.offered_item_value}` : null,
+  ]);
+  const requestedMeta = normalizeMeta([
+    trade.requested_item_category,
+    trade.requested_item_condition?.replace(/_/g, ' '),
+    trade.requested_item_value ? `Est. $${trade.requested_item_value}` : null,
+  ]);
+  const offeredDescription = shortText(trade.offered_item_description);
+  const requestedDescription = shortText(trade.requested_item_description);
 
   const topLabel = isIncoming ? 'They offered' : 'You offered';
   const bottomLabel = isIncoming ? 'They want' : 'Requested';
@@ -155,43 +174,57 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
 
         <div style={{ padding: '20px 22px 18px' }}>
           <div style={{ display: 'grid', gap: 14, gridTemplateColumns: '1fr 1fr' }}>
-            <div style={{ display: 'flex', gap: 12, padding: 16, borderRadius: 24, background: 'rgba(248,237,229,0.75)', border: '1px solid rgba(224,122,95,0.16)' }}>
+            <Link
+              to={`/item/${trade.offered_item_id}`}
+              style={{
+                display: 'flex', gap: 12, padding: 16, borderRadius: 24,
+                background: 'rgba(248,237,229,0.9)', border: '1px solid rgba(224,122,95,0.16)',
+                color: 'inherit', textDecoration: 'none', transition: 'transform 0.18s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
               <img
                 src={offeredImage}
                 alt={offeredTitle}
                 onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
                 style={{ width: 84, height: 84, borderRadius: 20, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(224,122,95,0.16)' }}
               />
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text)' }}>
                   {topLabel}
                 </p>
                 <p style={{ margin: '6px 0 8px', fontSize: 16, fontWeight: 700, color: 'var(--text-h)' }}>{offeredTitle}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
-                  {trade.offered_item_condition ? `${trade.offered_item_condition.replace(/_/g, ' ')} · ` : ''}
-                  {trade.offered_item_value ? `Est. $${trade.offered_item_value}` : 'Value unknown'}
-                </p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>{offeredMeta}</p>
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{offeredDescription}</p>
               </div>
-            </div>
+            </Link>
 
-            <div style={{ display: 'flex', gap: 12, padding: 16, borderRadius: 24, background: 'rgba(237,246,255,0.82)', border: '1px solid rgba(37,99,235,0.14)' }}>
+            <Link
+              to={`/item/${trade.requested_item_id}`}
+              style={{
+                display: 'flex', gap: 12, padding: 16, borderRadius: 24,
+                background: 'rgba(237,246,255,0.95)', border: '1px solid rgba(37,99,235,0.14)',
+                color: 'inherit', textDecoration: 'none', transition: 'transform 0.18s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
               <img
                 src={requestedImage}
                 alt={requestedTitle}
                 onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
                 style={{ width: 84, height: 84, borderRadius: 20, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(37,99,235,0.16)' }}
               />
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text)' }}>
                   {bottomLabel}
                 </p>
                 <p style={{ margin: '6px 0 8px', fontSize: 16, fontWeight: 700, color: 'var(--text-h)' }}>{requestedTitle}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
-                  {trade.requested_item_condition ? `${trade.requested_item_condition.replace(/_/g, ' ')} · ` : ''}
-                  {trade.requested_item_value ? `Est. $${trade.requested_item_value}` : 'Value unknown'}
-                </p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>{requestedMeta}</p>
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{requestedDescription}</p>
               </div>
-            </div>
+            </Link>
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 16, color: 'var(--text)', fontSize: 13 }}>
@@ -211,11 +244,11 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
             <button
               type="button"
-              onClick={() => setShowModal(true)}
-              aria-label="View trade details"
+              onClick={() => navigate(`/item/${trade.requested_item_id}`)}
+              aria-label="View requested item details"
               style={{ ...actionButton('#ffffff', false), background: 'rgba(255,255,255,0.92)', color: 'var(--text-h)', border: '1px solid rgba(224,122,95,0.2)' }}
             >
-              View Details
+              View Request
             </button>
 
             {canChat && (
@@ -320,7 +353,6 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
         </div>
       )}
 
-      {showModal && <TradeModal trade={trade} onClose={() => setShowModal(false)} />}
     </>
   );
 }

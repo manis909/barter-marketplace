@@ -13,6 +13,13 @@
   margin: 0 auto;
 }
 
+.navbar-transparent {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .navbar-left,
 .navbar-center,
 .navbar-right {

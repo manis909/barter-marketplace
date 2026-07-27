@@ -7,12 +7,16 @@ import { User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import './Navbar.css'
 
+const TRANSPARENT_ROUTES = ['/login', '/signup']
+
 export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const { currentUser } = useAuth()
+
+  const isTransparent = TRANSPARENT_ROUTES.includes(location.pathname)
 
   useEffect(() => {
     setSearch(new URLSearchParams(location.search).get('search') || '')
@@ -40,7 +44,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="navbar">
+      <header className={isTransparent ? 'navbar navbar-transparent' : 'navbar'}>
         <div className="navbar-left">
           <Link to="/explore" className="navbar-brand">
             <div className="navbar-mark">⇄</div>
