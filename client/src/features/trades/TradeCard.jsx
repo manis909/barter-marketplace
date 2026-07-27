@@ -137,14 +137,13 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   return (
     <>
       <article
+        className={`trade-card glass curved-card ${hovered ? 'hovered' : ''}`}
         aria-label={`${headerLabel}: ${offeredTitle} for ${requestedTitle}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          borderRadius: 26,
           border: '1px solid rgba(224,122,95,0.18)',
           overflow: 'hidden',
-          background: 'rgba(255,255,255,0.92)',
           boxShadow: hovered ? '0 20px 50px rgba(208,150,120,0.16)' : '0 10px 30px rgba(208,150,120,0.08)',
           transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
           transition: 'transform 0.18s, box-shadow 0.18s',
