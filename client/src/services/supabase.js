@@ -17,7 +17,7 @@ export async function uploadImageToSupabase(file) {
     throw new Error('Supabase storage is not configured')
   }
 
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name ?? 'image.jpg'}`
   console.log('Uploading image to Supabase:', {
     fileName,
     fileSize: file.size,
