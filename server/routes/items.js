@@ -94,16 +94,16 @@ router.get('/', async (req, res) => {
     const values = ['available'];
 
     if (category) {
-      query += `AND i.category ILIKE $${values.length + 1} `;
+      query += ` AND i.category ILIKE $${values.length + 1}`;
       values.push(category);
     }
 
     if (search) {
-      query += `AND (i.title ILIKE $${values.length + 1} OR i.description ILIKE $${values.length + 1}) `;
+      query += ` AND (i.title ILIKE $${values.length + 1} OR i.description ILIKE $${values.length + 1})`;
       values.push(`%${search}%`);
     }
 
-    query += 'ORDER BY i.created_at DESC';
+    query += ' ORDER BY i.created_at DESC';
 
     const result = await db.query(query, values);
     res.json({ items: result.rows });

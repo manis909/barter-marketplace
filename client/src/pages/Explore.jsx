@@ -6,7 +6,7 @@ import CategorySection from '../components/CategorySection'
 import Footer from '../components/Footer'
 import './Explore.css'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const sectionMapping = [
   { title: 'Recommended Items' },
@@ -61,7 +61,7 @@ export default function ExplorePage() {
     }
 
     const query = params.toString()
-    const url = `${apiBaseUrl}/api/items${query ? `?${query}` : ''}`
+    const url = `${apiBaseUrl}/items${query ? `?${query}` : ''}`
 
     setLoading(true)
     setError('')
@@ -101,6 +101,8 @@ export default function ExplorePage() {
     }))
   }, [items])
 
+  const isFiltered = Boolean((activeCategory && activeCategory !== 'All') || search.trim())
+
   return (
     <div className="explore-page">
       <HeroBanner />
@@ -117,17 +119,24 @@ export default function ExplorePage() {
 
       {error ? <p className="section-label">{error}</p> : null}
 
-      {sectionMapping.map((section, index) => {
-        const sectionItems = normalizedItems.slice(index * 4, index * 4 + 4)
+      {isFiltered ? (
+        <CategorySection
+          title={activeCategory && activeCategory !== 'All' ? activeCategory : 'Search Results'}
+          items={normalizedItems}
+        />
+      ) : (
+        sectionMapping.map((section, index) => {
+          const sectionItems = normalizedItems.slice(index * 4, index * 4 + 4)
 
-        return (
-          <CategorySection
-            key={section.title}
-            title={section.title}
-            items={sectionItems}
-          />
-        )
-      })}
+          return (
+            <CategorySection
+              key={section.title}
+              title={section.title}
+              items={sectionItems}
+            />
+          )
+        })
+      )}
 
       <Footer />
     </div>
