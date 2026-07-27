@@ -11,6 +11,17 @@ router.post('/signup', async (req, res) => {
     return res.status(400).json({ error: 'Username, email, and password are required' });
   }
 
+  // Password strength: 8+ chars, at least one number, at least one symbol
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+  if (!/[0-9]/.test(password)) {
+    return res.status(400).json({ error: 'Password must include at least one number' });
+  }
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    return res.status(400).json({ error: 'Password must include at least one symbol' });
+  }
+
   // Generic email format check — no domain restriction (any provider allowed)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Must provide a valid email address' });
@@ -43,10 +54,10 @@ router.post('/login', async (req, res) => {
 
   const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
   const user = result.rows[0];
-  if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+  if (!user) return res.status(400).json({ error: 'Please sign up first.' });
 
   const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
+  if (!valid) return res.status(400).json({ error: 'Incorrect password. Please try again.' });
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 

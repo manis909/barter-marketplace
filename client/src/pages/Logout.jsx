@@ -9,7 +9,7 @@ export default function Logout() {
 
   function handleLogout() {
     logout()
-    navigate('/login', { replace: true })
+    navigate('/explore', { replace: true })
   }
 
   function handleCancel() {
