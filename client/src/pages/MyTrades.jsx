@@ -173,12 +173,14 @@ export default function MyTrades() {
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {
     return (
-      <div style={pageStyle}>
-        <PageHeader />
-        <div style={infoBoxStyle}>
-          <span style={{ fontSize: 28 }} aria-hidden="true">🔐</span>
-          <p style={{ margin: '8px 0 0', fontWeight: 500, color: 'var(--text-h)' }}>You're not logged in</p>
-          <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text)' }}>Please log in to view your trade offers.</p>
+      <div style={{ background: '#ffffff', minHeight: '100vh', width: '100%' }}>
+        <div style={pageStyle}>
+          <PageHeader />
+          <div style={infoBoxStyle}>
+            <span style={{ fontSize: 28 }} aria-hidden="true">🔐</span>
+            <p style={{ margin: '8px 0 0', fontWeight: 500, color: 'var(--text-h)' }}>You're not logged in</p>
+            <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text)' }}>Please log in to view your trade offers.</p>
+          </div>
         </div>
       </div>
     );
@@ -187,19 +189,21 @@ export default function MyTrades() {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading || authLoading) {
     return (
-      <div style={pageStyle} aria-busy="true" aria-label="Loading trades">
-        <style>{SHIMMER_CSS}</style>
-        <PageHeader />
-        <div style={{ marginBottom: 32 }}>
-          <div className="skeleton" style={{ height: 16, width: 140, marginBottom: 14 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <SkeletonCard /><SkeletonCard />
+      <div style={{ background: '#ffffff', minHeight: '100vh', width: '100%' }}>
+        <div style={pageStyle} aria-busy="true" aria-label="Loading trades">
+          <style>{SHIMMER_CSS}</style>
+          <PageHeader />
+          <div style={{ marginBottom: 32 }}>
+            <div className="skeleton" style={{ height: 16, width: 140, marginBottom: 14 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <SkeletonCard /><SkeletonCard />
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="skeleton" style={{ height: 16, width: 120, marginBottom: 14 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <SkeletonCard />
+          <div>
+            <div className="skeleton" style={{ height: 16, width: 120, marginBottom: 14 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <SkeletonCard />
+            </div>
           </div>
         </div>
       </div>
@@ -209,19 +213,21 @@ export default function MyTrades() {
   // ── Error ─────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div style={pageStyle}>
-        <PageHeader />
-        <div role="alert" style={{ padding: '24px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', textAlign: 'center' }}>
-          <span style={{ fontSize: 28 }} aria-hidden="true">⚠️</span>
-          <p style={{ margin: '8px 0 4px', fontWeight: 600, color: '#dc2626' }}>Could not load your trades</p>
-          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text)' }}>{error}</p>
-          <button type="button" onClick={fetchTrades} style={retryBtnStyle}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            onFocus={e => (e.currentTarget.style.outline = '2px solid #dc2626')}
-            onBlur={e => (e.currentTarget.style.outline = 'none')}>
-            Try again
-          </button>
+      <div style={{ background: '#ffffff', minHeight: '100vh', width: '100%' }}>
+        <div style={pageStyle}>
+          <PageHeader />
+          <div role="alert" style={{ padding: '24px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', textAlign: 'center' }}>
+            <span style={{ fontSize: 28 }} aria-hidden="true">⚠️</span>
+            <p style={{ margin: '8px 0 4px', fontWeight: 600, color: '#dc2626' }}>Could not load your trades</p>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text)' }}>{error}</p>
+            <button type="button" onClick={fetchTrades} style={retryBtnStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              onFocus={e => (e.currentTarget.style.outline = '2px solid #dc2626')}
+              onBlur={e => (e.currentTarget.style.outline = 'none')}>
+              Try again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -229,18 +235,19 @@ export default function MyTrades() {
 
   // ── Normal ────────────────────────────────────────────────────────────────
   return (
-    <div style={pageStyle}>
-      <PageHeader />
+    <div style={{ background: '#ffffff', minHeight: '100vh', width: '100%' }}>
+      <div style={pageStyle}>
+        <PageHeader />
 
       {trades.length === 0 ? (
         <div style={{ ...infoBoxStyle, marginTop: 0 }}>
           <span style={{ fontSize: 36 }} aria-hidden="true">🤝</span>
           <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>No outgoing trades yet</p>
-          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text)', maxWidth: 340 }}>
+          <p style={{ margin: '0 auto 16px', fontSize: 14, color: 'var(--text)', maxWidth: 340 }}>
             Send a trade offer or respond to incoming requests to get the swap started.
           </p>
           <button type="button" onClick={() => navigate('/explore')}
-            style={{ padding: '10px 22px', borderRadius: 14, border: 'none', background: '#C8624B', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+            style={{ padding: '10px 22px', borderRadius: 14, border: 'none', background: '#1F4D3D', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
             Explore Items
           </button>
         </div>
@@ -288,6 +295,7 @@ export default function MyTrades() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -304,7 +312,7 @@ function PageHeader() {
 }
 
 const pageStyle = {
-  padding: '32px 24px', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box', minHeight: '100vh', background: '#FCF3ED',
+  padding: '32px 24px', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box', minHeight: '100vh',
 };
 
 const infoBoxStyle = {
