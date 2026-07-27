@@ -386,12 +386,13 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
   return (
     <>
       <div
-        className={`glass curved-card ${hovered ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
+          borderRadius: 24,
           border: '1px solid rgba(224,122,95,0.18)',
           padding: '20px',
+          background: 'rgba(255,255,255,0.92)',
           opacity: isUnavailable ? 0.75 : 1,
           boxShadow: hovered ? '0 22px 50px rgba(208,150,120,0.16)' : '0 12px 28px rgba(208,150,120,0.10)',
           transform: hovered ? 'translateY(-2px)' : 'translateY(0)',

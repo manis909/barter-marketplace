@@ -1,22 +1,33 @@
-import '../App.css';
 import './LandingPage.css';
-import { useNavigate } from 'react-router-dom';
+import LandingNavbar from './components/LandingNavbar';
+import HeroSection from './components/HeroSection';
+import TradeCategoriesSection from './components/TradeCategoriesSection';
+import MarketplaceShowcaseSection from './components/MarketplaceShowcaseSection';
+import HowItWorksSection from './components/HowItWorksSection';
+import FinalCTASection from './components/FinalCTASection';
+import LandingFooter from './components/LandingFooter';
 
 export default function LandingPage() {
-  const navigate = useNavigate();
-
   return (
-    <div className="center-screen" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}>
-      <div style={{ textAlign: 'center', width: '100%' }}>
-        <div className="drift-wrap">
-          <div className="drift-text welcome-drift">Welcome to Barter</div>
-        </div>
+    <div className="landing-root">
+      {/* Soft Background Orbs */}
+      <div className="lp-ambient-orb lp-orb-1" />
+      <div className="lp-ambient-orb lp-orb-2" />
 
-        <div style={{ marginTop: 28, display: 'flex', gap: 18, justifyContent: 'center' }}>
-          <button className="glass-btn" onClick={() => navigate('/login')}>Login</button>
-          <button className="glass-btn" onClick={() => navigate('/signup')}>Sign Up</button>
-        </div>
-      </div>
+      {/* Navigation */}
+      <LandingNavbar />
+
+      {/* Main Content */}
+      <main>
+        <HeroSection />
+        <TradeCategoriesSection />
+        <MarketplaceShowcaseSection />
+        <HowItWorksSection />
+        <FinalCTASection />
+      </main>
+
+      {/* Footer */}
+      <LandingFooter />
     </div>
   );
 }
