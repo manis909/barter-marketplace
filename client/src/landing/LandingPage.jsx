@@ -6,7 +6,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="center-screen" style={{ background: 'linear-gradient(180deg, #FBFBFB, #F6F5F0)' }}>
+    <div className="center-screen" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}>
       <div className="container" style={{ textAlign: 'center' }}>
         <div className="drift-wrap">
           <div className="drift-text welcome-drift">Welcome to Barter</div>
