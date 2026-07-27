@@ -20,7 +20,6 @@ import Notifications from './pages/Notifications';
 import ChatsPage from './pages/Chats';
 import LandingPage from './landing/LandingPage';
 import AppLayout from './components/AppLayout';
-import Wallet from "./pages/Wallet";
 import './App.css';
 
 function App() {
@@ -45,7 +44,6 @@ function App() {
             <Route path="/my-trades" element={<MyTradesPage />} />
             <Route path="/trade-requests" element={<TradeRequestsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
-            <Route path="/wallet" element={<Wallet />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/help" element={<HelpSupportPage />} />
             <Route path="/logout" element={<LogoutPage />} />
