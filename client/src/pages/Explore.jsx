@@ -14,38 +14,14 @@ const sectionMapping = [
   { title: 'Trending Items' }
 ]
 
-const carouselSlides = [
-  {
-    title: 'Advertise your trades to a trusted community',
-    subtitle: 'Promote items, connect with local traders, and complete exchanges confidently with every listing.'
-  },
-  {
-    title: 'Trade smarter with curated offers',
-    subtitle: 'Find the best matches in seconds using verified listings and transparent trade details.'
-  },
-  {
-    title: 'A premium barter experience',
-    subtitle: 'Enjoy a clean marketplace with simple browsing, secure conversations, and faster exchanges.'
-  }
-]
-
 export default function ExplorePage() {
   const location = useLocation()
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState(() => new URLSearchParams(location.search).get('category') || '')
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
-  const [bannerIndex, setBannerIndex] = useState(0)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setBannerIndex((current) => (current + 1) % carouselSlides.length)
-    }, 5000)
-
-    return () => clearInterval(timer)
-  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -128,32 +104,6 @@ export default function ExplorePage() {
   return (
     <div className="explore-page">
       <HeroBanner />
-
-      <div className="banner-carousel-section">
-        <div className="banner-carousel">
-          {carouselSlides.map((slide, index) => (
-            <div
-              key={slide.title}
-              className={index === bannerIndex ? 'banner-slide active' : 'banner-slide'}
-            >
-              <p className="banner-slide-label">Marketplace Spotlight</p>
-              <h2>{slide.title}</h2>
-              <p>{slide.subtitle}</p>
-            </div>
-          ))}
-        </div>
-        <div className="banner-dots">
-          {carouselSlides.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              className={index === bannerIndex ? 'banner-dot active' : 'banner-dot'}
-              onClick={() => setBannerIndex(index)}
-              aria-label={`Show slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      </div>
 
       <CategoryFilter activeCategory={activeCategory} onSelect={setActiveCategory} />
 

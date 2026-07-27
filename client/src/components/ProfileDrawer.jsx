@@ -21,7 +21,7 @@ const primaryItems = [
   { label: 'My Listings', icon: Box, path: '/my-listings' },
   { label: 'My Trades', icon: Repeat, path: '/my-trades' },
   { label: 'Trade Requests', icon: FileText, path: '/trade-requests' },
-  { label: 'Chats', icon: MessageCircle },
+  { label: 'Chats', icon: MessageCircle, path: '/chats' },
   { label: 'Wishlist', icon: Heart, path: '/wishlist' },
   { label: 'Wallet', icon: CreditCard },
   { label: 'Feedback & Reviews', icon: Star, path: '/feedback' },
