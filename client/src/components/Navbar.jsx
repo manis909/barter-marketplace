@@ -12,8 +12,12 @@ const TRANSPARENT_ROUTES = ['/login', '/signup']
 export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
+
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
+  const [search, setSearch] = useState(
+    () => new URLSearchParams(location.search).get('search') || ''
+  )
+
   const { currentUser } = useAuth()
 
   const isTransparent = TRANSPARENT_ROUTES.includes(location.pathname)
@@ -26,18 +30,21 @@ export default function Navbar() {
     setSearch(event.target.value)
   }
 
-  // Called when the user presses Enter or clicks the search icon
   const handleSearch = (query) => {
     const params = new URLSearchParams(location.search)
+
     if (query) {
       params.set('search', query)
     } else {
       params.delete('search')
     }
-    navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+
+    navigate({
+      pathname: '/explore',
+      search: params.toString() ? `?${params.toString()}` : '',
+    })
   }
 
-  // Called when the user clicks a suggestion row
   const handleSelect = (item) => {
     navigate(`/item/${item.id}`)
   }
@@ -62,27 +69,55 @@ export default function Navbar() {
           />
         </div>
 
-        <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div
+          className="navbar-right"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+          }}
+        >
           {currentUser ? (
-            <button
-              type="button"
-              className="profile-button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open profile drawer"
-            >
-              <User className="profile-icon" size={20} />
-            </button>
+            <>
+              <button
+                type="button"
+                className="profile-button"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open profile drawer"
+              >
+                <User className="profile-icon" size={20} />
+              </button>
+
+              <Link to="/explore" className="navbar-link">
+                Explore
+              </Link>
+
+              <NotificationBell />
+            </>
           ) : (
-            <Link to="/signup" className="navbar-link">signup</Link>
+            <>
+              <Link to="/login" className="navbar-link">
+                Login
+              </Link>
+
+              <Link to="/signup" className="navbar-link">
+                Sign Up
+              </Link>
+
+              <Link to="/explore" className="navbar-link">
+                Explore
+              </Link>
+            </>
           )}
-
-          <Link to="/explore" className="navbar-link">Explore</Link>
-
-          {currentUser && <NotificationBell />}
         </div>
       </header>
 
-      {currentUser && <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
+      {currentUser && (
+        <ProfileDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
     </>
   )
 }

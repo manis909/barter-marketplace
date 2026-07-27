@@ -5,19 +5,16 @@
 
 import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
-import LandingNavbar from '../landing/components/LandingNavbar';
 
-const LANDING_ROUTES = ['/', '/landing'];
-const NO_NAVBAR_ROUTES = ['/login', '/signup'];
+const NO_NAVBAR_ROUTES = ['/', '/landing', '/login', '/signup'];
 
 function AppLayout({ children }) {
   const location = useLocation();
-  const isLandingPage = LANDING_ROUTES.includes(location.pathname);
   const hideNavbar = NO_NAVBAR_ROUTES.includes(location.pathname);
 
   return (
     <div className="app-shell">
-      {!hideNavbar && (isLandingPage ? <LandingNavbar /> : <Navbar />)}
+      {!hideNavbar && <Navbar />}
       <main className="app-main">{children}</main>
     </div>
   );

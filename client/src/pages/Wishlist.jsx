@@ -7,6 +7,12 @@ import api from '../services/api';
 
 const REMOVE_ENDPOINT_READY = true;
 
+// ── Brand tokens (matches login page: dark green + lime accent) ─────────────
+const BRAND_GREEN = '#1F4D3D';      // deep forest green — from the logo box / login gradient
+const BRAND_GREEN_DARK = '#163A2E'; // for hover states
+const BRAND_LIME = '#C6F24E';       // lime-green — from the "Log In" button
+const BRAND_LIME_TEXT = '#163A2E';  // dark text that sits on lime buttons
+
 // Shimmer animation — same as MyTrades
 const SHIMMER_CSS = `
 @keyframes shimmer {
@@ -34,7 +40,7 @@ function SkeletonCard() {
         border: '1px solid var(--border)',
         borderRadius: 10,
         padding: '14px 16px',
-        background: 'var(--social-bg)',
+        background: '#fff',
         display: 'flex',
         gap: 14,
         alignItems: 'center',
@@ -144,6 +150,7 @@ export default function Wishlist() {
           <SkeletonCard />
         </div>
       </div>
+      
     );
   }
 
@@ -194,7 +201,7 @@ export default function Wishlist() {
           <p style={{ margin: '10px 0 4px', fontWeight: 600, color: 'var(--text-h)', fontSize: 16 }}>
             Your wishlist is empty
           </p>
-          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text)', maxWidth: 320 }}>
+          <p style={{ margin: '0 auto 16px', fontSize: 14, color: 'var(--text)', maxWidth: 320 }}>
             Browse items and save the ones you want to trade for.
           </p>
           <button
@@ -204,12 +211,12 @@ export default function Wishlist() {
               padding: '12px 24px',
               borderRadius: 16,
               border: 'none',
-              background: '#C8624B',
-              color: '#fff',
+              background: BRAND_LIME,
+              color: BRAND_LIME_TEXT,
               cursor: 'pointer',
               fontSize: 14,
               fontWeight: 700,
-              boxShadow: '0 12px 28px rgba(200,98,75,0.22)',
+              boxShadow: `0 12px 28px rgba(31,77,61,0.22)`,
             }}
           >
             Explore Items
@@ -243,8 +250,8 @@ export default function Wishlist() {
             bottom: 24,
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'var(--text-h)',
-            color: 'var(--bg)',
+            background: BRAND_GREEN,
+            color: '#fff',
             padding: '10px 20px',
             borderRadius: 30,
             display: 'flex',
@@ -261,8 +268,8 @@ export default function Wishlist() {
             type="button"
             onClick={handleUndo}
             style={{
-              background: 'var(--accent)',
-              color: '#fff',
+              background: BRAND_LIME,
+              color: BRAND_LIME_TEXT,
               border: 'none',
               borderRadius: 16,
               padding: '3px 12px',
@@ -282,7 +289,7 @@ export default function Wishlist() {
 // ── Page header ───────────────────────────────────────────────────────────────
 function PageHeader({ count }) {
   return (
-    <div style={{ marginBottom: 28, padding: '26px 24px', borderRadius: 24, background: 'rgba(255,255,255,0.94)', border: '1px solid rgba(224,122,95,0.18)', boxShadow: '0 22px 50px rgba(208,150,120,0.12)' }}>
+    <div style={{ marginBottom: 28, padding: '26px 24px', borderRadius: 24, background: '#ffffff', border: `1px solid rgba(31,77,61,0.16)`, boxShadow: `0 22px 50px rgba(31,77,61,0.10)` }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text-h)' }}>My Wishlist</h1>
         {count > 0 && (
@@ -291,8 +298,8 @@ function PageHeader({ count }) {
             style={{
               fontSize: 13,
               fontWeight: 700,
-              color: '#C8624B',
-              background: 'rgba(200,98,75,0.12)',
+              color: BRAND_GREEN,
+              background: 'rgba(31,77,61,0.10)',
               borderRadius: 999,
               padding: '6px 14px',
             }}
@@ -386,14 +393,15 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
   return (
     <>
       <div
-        className={`glass curved-card ${hovered ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          border: '1px solid rgba(224,122,95,0.18)',
+          borderRadius: 24,
+          border: `1px solid rgba(31,77,61,0.16)`,
           padding: '20px',
+          background: '#ffffff',
           opacity: isUnavailable ? 0.75 : 1,
-          boxShadow: hovered ? '0 22px 50px rgba(208,150,120,0.16)' : '0 12px 28px rgba(208,150,120,0.10)',
+          boxShadow: hovered ? `0 22px 50px rgba(31,77,61,0.14)` : `0 12px 28px rgba(31,77,61,0.08)`,
           transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
           transition: 'transform 0.2s, box-shadow 0.2s, opacity 0.2s',
         }}
@@ -409,7 +417,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
               borderRadius: 20,
               objectFit: 'cover',
               flexShrink: 0,
-              border: '1px solid rgba(224,122,95,0.18)',
+              border: `1px solid rgba(31,77,61,0.16)`,
             }}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -437,7 +445,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               padding: '10px 18px', borderRadius: 16, fontSize: 13, fontWeight: 700,
-              background: '#C8624B', color: '#fff', textDecoration: 'none',
+              background: BRAND_GREEN, color: '#fff', textDecoration: 'none',
               minWidth: 100,
             }}
           >
@@ -451,8 +459,8 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 padding: '10px 18px', borderRadius: 16, fontSize: 13, fontWeight: 700,
-                background: 'transparent', border: '1px solid rgba(37,99,235,0.22)',
-                color: '#2563EB', cursor: 'pointer', minWidth: 120,
+                background: 'transparent', border: `1px solid rgba(31,77,61,0.3)`,
+                color: BRAND_GREEN, cursor: 'pointer', minWidth: 120,
               }}
             >
               Offer Trade
@@ -530,7 +538,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
                 </p>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button type="button" style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #E4E2D9', background: 'none', cursor: 'pointer', fontSize: 13 }} onClick={() => setTradeModalOpen(false)}>Cancel</button>
-                  <Link to="/add-item" style={{ padding: '7px 16px', borderRadius: 7, background: 'var(--accent)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600 }} onClick={() => setTradeModalOpen(false)}>+ Add Item</Link>
+                  <Link to="/add-item" style={{ padding: '7px 16px', borderRadius: 7, background: BRAND_GREEN, color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600 }} onClick={() => setTradeModalOpen(false)}>+ Add Item</Link>
                 </div>
               </>
             ) : (
@@ -563,7 +571,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
 
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button type="button" style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #E4E2D9', background: 'none', cursor: 'pointer', fontSize: 13 }} onClick={() => setTradeModalOpen(false)} disabled={submitting}>Cancel</button>
-                  <button type="submit" style={{ padding: '7px 18px', borderRadius: 7, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} disabled={submitting}>
+                  <button type="submit" style={{ padding: '7px 18px', borderRadius: 7, background: BRAND_GREEN, color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} disabled={submitting}>
                     {submitting ? 'Sending...' : 'Send Trade Offer'}
                   </button>
                 </div>
@@ -582,14 +590,16 @@ const pageStyle = {
   margin: '0 auto',
   textAlign: 'left',
   boxSizing: 'border-box',
+  background: '#ffffff',
 };
 
 const infoBoxStyle = {
   textAlign: 'center',
   padding: '48px 24px',
-  border: '1px dashed var(--border)',
+  border: '1px dashed rgba(31,77,61,0.25)',
   borderRadius: 10,
   color: 'var(--text)',
+  background: '#ffffff',
 };
 
 const retryBtnStyle = {
