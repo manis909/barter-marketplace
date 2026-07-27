@@ -7,7 +7,7 @@ export default function LandingPage() {
 
   return (
     <div className="center-screen" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}>
-      <div className="container" style={{ textAlign: 'center' }}>
+      <div style={{ textAlign: 'center', width: '100%' }}>
         <div className="drift-wrap">
           <div className="drift-text welcome-drift">Welcome to Barter</div>
         </div>

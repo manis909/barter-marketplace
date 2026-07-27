@@ -171,8 +171,8 @@ select:focus {
 .center-screen { min-height: 100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; }
 
 .welcome-drift { font-size: clamp(28px, 6vw, 64px); font-weight: 900; color: var(--color-primary-dark); white-space: nowrap; overflow: hidden; display: inline-block; }
-.drift-wrap { width: 100%; display:flex; justify-content:center; overflow:hidden }
-.drift-text { display:inline-block; transform: translateX(-30%); animation: drift 8s linear infinite; }
-@keyframes drift { 0% { transform: translateX(-30%);} 50% { transform: translateX(30%);} 100% { transform: translateX(-30%);} }
+.drift-wrap { width: 100%; display:flex; justify-content:center; overflow:hidden; height: 100vh; align-items: center; }
+.drift-text { display:inline-block; transform: translateX(-30%); animation: drift 6s linear 1 forwards; }
+@keyframes drift { 0% { transform: translateX(-30%);} 100% { transform: translateX(30%);} }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 18px; box-sizing: border-box; }
