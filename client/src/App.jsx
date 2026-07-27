@@ -33,6 +33,7 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/item/:id" element={<ItemDetailPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/add-item" element={<AddItemPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
