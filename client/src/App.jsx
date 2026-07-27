@@ -36,6 +36,7 @@ function App() {
             <Route path="/item/:id" element={<ItemDetailPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/add-item" element={<AddItemPage />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/chats" element={<ChatsPage />} />
@@ -43,7 +44,6 @@ function App() {
             <Route path="/my-trades" element={<MyTradesPage />} />
             <Route path="/trade-requests" element={<TradeRequestsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
-            <Route path="/wallet" element={<Wallet />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/help" element={<HelpSupportPage />} />
             <Route path="/logout" element={<LogoutPage />} />
