@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import HeroBanner from '../components/HeroBanner'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
 import Footer from '../components/Footer'
@@ -109,8 +108,7 @@ useEffect(() => {
 
   return (
     <div className="explore-page">
-      <HeroBanner />
-
+    
       <CategoryFilter activeCategory={activeCategory} onSelect={setActiveCategory} />
 
       <div className="market-summary" ref={resultsRef}>

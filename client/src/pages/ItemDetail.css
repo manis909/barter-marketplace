@@ -24,9 +24,10 @@
 .detail-main-image {
   width: 100%;
   height: 540px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 20px;
   border: 1px solid #E4E2D9;
+  background-color: #F5F4F0;
 }
 
 .detail-thumbs {
