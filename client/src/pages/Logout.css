@@ -1,40 +1,19 @@
-.logout-page {
-  min-height: calc(100vh - 120px);
-  display: grid;
-  place-items: center;
-}
-
-.logout-card {
-  width: min(520px, 100%);
-  padding: 34px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  display: grid;
-  gap: 18px;
-  text-align: center;
-}
-
-.logout-card h1 {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: 1.9rem;
-}
-
-.logout-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
 .logout-actions {
   display: flex;
-  justify-content: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-.button-primary,
-.button-secondary {
-  width: min(140px, 100%);
+.logout-actions .auth-submit {
+  margin-top: 0;
+}
+
+.auth-submit-secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.auth-submit-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
 }

@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import HeroBanner from '../components/HeroBanner'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
 import Footer from '../components/Footer'
@@ -22,6 +21,7 @@ export default function ExplorePage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const resultsRef = useRef(null)
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -47,6 +47,9 @@ export default function ExplorePage() {
       navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
     }
   }, [activeCategory, location.pathname, location.search, navigate, search])
+useEffect(() => {
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [activeCategory])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -105,11 +108,10 @@ export default function ExplorePage() {
 
   return (
     <div className="explore-page">
-      <HeroBanner />
-
+    
       <CategoryFilter activeCategory={activeCategory} onSelect={setActiveCategory} />
 
-      <div className="market-summary">
+      <div className="market-summary" ref={resultsRef}>
         <div>
           <p className="section-label">Marketplace</p>
           <h2>Trade items with trusted local members</h2>

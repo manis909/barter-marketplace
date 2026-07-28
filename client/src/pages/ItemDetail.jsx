@@ -166,7 +166,6 @@ export default function ItemDetailPage() {
         </div>
 
         <div className="detail-copy">
-          <p className="detail-category">{normalizedItem.category} • {normalizedItem.condition}</p>
           <h1>{normalizedItem.title}</h1>
           <p className="detail-description">{normalizedItem.description}</p>
           <div className="detail-info-grid">
