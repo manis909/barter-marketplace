@@ -4,7 +4,6 @@ import { getMyTrades } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 
-// Shimmer animation for skeleton loaders (matches MyTrades.jsx conventions)
 const SHIMMER_CSS = `
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
@@ -16,10 +15,12 @@ const SHIMMER_CSS = `
   animation: shimmer 1.4s infinite linear;
   border-radius: 8px;
 }
+.chat-username {
+  color: #111111 !important;
+  font-weight: 700 !important;
+}
 `;
 
-// Status badge colors — kept local since this page only needs the label + color,
-// not the full trade-action logic that TradeCard.jsx owns.
 const STATUS_STYLES = {
   pending:   { bg: 'rgba(234,179,8,0.12)',  color: '#a16207', label: 'Pending' },
   accepted:  { bg: 'rgba(22,163,74,0.12)',  color: '#16a34a', label: 'Accepted' },
@@ -55,7 +56,6 @@ function SkeletonRow() {
   );
 }
 
-// Picks the initial letter for the little avatar circle
 function initialOf(name) {
   return (name || '?').trim().charAt(0).toUpperCase();
 }
@@ -89,7 +89,6 @@ export default function Chats() {
 
   const userId = currentUser?.id;
 
-  // Not logged in
   if (!authLoading && !currentUser) {
     return (
       <div style={pageStyle}>
@@ -103,7 +102,6 @@ export default function Chats() {
     );
   }
 
-  // Loading
   if (loading || authLoading) {
     return (
       <div style={pageStyle} aria-busy="true" aria-label="Loading chats">
@@ -116,7 +114,6 @@ export default function Chats() {
     );
   }
 
-  // Error
   if (error) {
     return (
       <div style={pageStyle}>
@@ -133,7 +130,6 @@ export default function Chats() {
     );
   }
 
-  // Empty
   if (trades.length === 0) {
     return (
       <div style={pageStyle}>
@@ -153,17 +149,14 @@ export default function Chats() {
     );
   }
 
-  // Normal — list every trade as a conversation row
   return (
     <div style={pageStyle}>
+      <style>{SHIMMER_CSS}</style>
       <PageHeader />
       <ul role="list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {trades.map(trade => {
           const isSender = trade.sender_id === userId;
           const otherUsername = isSender ? trade.receiver_username : trade.sender_username;
-          // The item at the center of this trade — show the one the other
-          // person owns (what was requested), since that's usually the
-          // more recognizable anchor for "what is this chat about".
           const itemTitle = trade.requested_item_title;
 
           return (
@@ -179,7 +172,7 @@ export default function Chats() {
                   {initialOf(otherUsername)}
                 </span>
                 <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                  <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: 'var(--text-h)' }}>
+                  <span className="chat-username" style={{ display: 'block', fontWeight: 600, fontSize: 14, color: 'var(--text-h)' }}>
                     {otherUsername || 'Unknown user'}
                   </span>
                   <span style={{

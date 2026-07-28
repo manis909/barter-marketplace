@@ -11,6 +11,7 @@ import MyListingsPage from './pages/MyListings';
 import MyTradesPage from './pages/MyTrades';
 import TradeRequestsPage from './pages/TradeRequests';
 import WishlistPage from './pages/Wishlist';
+import Wallet from "./pages/Wallet";
 import FeedbackPage from './pages/FeedbackReviews';
 import HelpSupportPage from './pages/HelpSupport';
 import LogoutPage from './pages/Logout';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/item/:id" element={<ItemDetailPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/add-item" element={<AddItemPage />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/chats" element={<ChatsPage />} />

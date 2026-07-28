@@ -77,6 +77,13 @@
 
 .undo-toast__bar-fill {
   height: 100%;
+  width: 100%;
   background: #3D6E63;
-  transition: width 0.1s linear;
+  transform-origin: left center;
+  animation: toast-progress 7s linear forwards;
+}
+
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
 }

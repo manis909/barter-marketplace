@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   CheckCircle2,
   Clock3,
+  Crop,
   ImagePlus,
   Package,
   Pencil,
@@ -16,6 +17,7 @@ import api from '../services/api'
 import { uploadImageToSupabase } from '../services/supabase'
 import { categoryNames } from '../data/categories'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
+import ImageCropModal from '../components/ImageCropModal'
 import UndoToast from '../components/UndoToast'
 import './MyListings.css'
 
@@ -49,7 +51,15 @@ export default function MyListingsPage() {
   // ── delete / undo state ────────────────────────────────────────
   const [confirmItem, setConfirmItem]     = useState(null)  // item pending confirmation
   const [pendingDelete, setPendingDelete] = useState(null)  // item removed but undoable
-  const undoTimerRef = useRef(null)
+  const undoTimerRef     = useRef(null)
+  // Keep a ref in sync with pendingDelete so async callbacks always
+  // read the current value without creating stale closures.
+  const pendingDeleteRef = useRef(null)
+
+  // ── crop state ─────────────────────────────────────────────────
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [cropImageIndex, setCropImageIndex] = useState(null)
+  const [cropImageSrc, setCropImageSrc] = useState(null)
 
   // ── load listings ──────────────────────────────────────────────
   const loadMyListings = async () => {
@@ -77,15 +87,56 @@ export default function MyListingsPage() {
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files)
     console.log('Selected files:', files.map((f) => ({ name: f.name, size: f.size, type: f.type })))
+    // Revoke any previous object URLs to avoid memory leaks
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url))
     setForm((prev) => ({ ...prev, images: files }))
     setImagePreviews(files.map((f) => URL.createObjectURL(f)))
   }
 
   const removeNewImage = (index) => {
+    URL.revokeObjectURL(imagePreviews[index])
     const newImages = form.images.filter((_, i) => i !== index)
     const newPreviews = imagePreviews.filter((_, i) => i !== index)
     setForm((prev) => ({ ...prev, images: newImages }))
     setImagePreviews(newPreviews)
+  }
+
+  // ── crop handlers ──────────────────────────────────────────────
+  // Open the crop modal for a specific image slot
+  const handleOpenCrop = (index) => {
+    setCropImageIndex(index)
+    setCropImageSrc(imagePreviews[index])
+    setCropModalOpen(true)
+  }
+
+  // User cancelled cropping — just close, leave the image untouched
+  const handleCropCancel = () => {
+    setCropModalOpen(false)
+    setCropImageIndex(null)
+    setCropImageSrc(null)
+  }
+
+  // User confirmed a crop — replace the File/Blob and preview at that slot
+  const handleCropApply = (croppedBlob) => {
+    const index = cropImageIndex
+    setCropModalOpen(false)
+    setCropImageIndex(null)
+    setCropImageSrc(null)
+
+    // Revoke the old preview URL, then build a new one from the blob
+    URL.revokeObjectURL(imagePreviews[index])
+    const newPreviewUrl = URL.createObjectURL(croppedBlob)
+
+    setForm((prev) => {
+      const updatedImages = [...prev.images]
+      updatedImages[index] = croppedBlob
+      return { ...prev, images: updatedImages }
+    })
+    setImagePreviews((prev) => {
+      const updated = [...prev]
+      updated[index] = newPreviewUrl
+      return updated
+    })
   }
 
   const removeExistingImage = (index) => {
@@ -214,7 +265,8 @@ export default function MyListingsPage() {
     // Optimistically remove from the visible list
     setListings((prev) => prev.filter((l) => l.id !== item.id))
 
-    // Park the item so Undo can restore it
+    // Park the item so Undo can restore it; mirror to ref immediately
+    pendingDeleteRef.current = item
     setPendingDelete(item)
 
     // Clear any previous undo timer
@@ -224,20 +276,31 @@ export default function MyListingsPage() {
   // Undo clicked — restore the item to the list in its original position
   const handleUndo = () => {
     clearTimeout(undoTimerRef.current)
+    const item = pendingDeleteRef.current
+    pendingDeleteRef.current = null
     setPendingDelete(null)
-    setListings((prev) => {
-      // Re-insert sorted by created_at descending so it lands in the right spot
-      const restored = [...prev, pendingDelete].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    if (item) {
+      setListings((prev) =>
+        // Re-insert sorted by created_at descending so it lands in the right spot
+        [...prev, item].sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        )
       )
-      return restored
-    })
+    }
   }
 
-  // Toast timer expired — fire the real DELETE request
-  const handleDeleteExpire = async () => {
-    const item = pendingDelete
+  // Toast timer expired — fire the real DELETE request.
+  // Wrapped in useCallback so the reference stays stable across renders;
+  // this prevents UndoToast's useEffect([onExpire]) from restarting the
+  // 7-second timer every time the parent re-renders.
+  const handleDeleteExpire = useCallback(async () => {
+    // Read from the ref, not from component state, to avoid a stale closure.
+    const item = pendingDeleteRef.current
+    pendingDeleteRef.current = null
     setPendingDelete(null)
+
+    if (!item) return   // already handled (e.g. undo was clicked)
+
     try {
       await api.delete(`/items/${item.id}`)
     } catch (error) {
@@ -249,7 +312,7 @@ export default function MyListingsPage() {
         )
       )
     }
-  }
+  }, []) // no deps — intentionally reads via ref, not state
 
   // ── stats ──────────────────────────────────────────────────────
   const activeListings = listings.length
@@ -395,6 +458,15 @@ export default function MyListingsPage() {
                   {imagePreviews.map((src, index) => (
                     <div key={`new-${index}`} className="image-preview-item">
                       <img src={src} alt={`new preview ${index + 1}`} />
+                      <button
+                        type="button"
+                        className="image-crop-btn"
+                        onClick={() => handleOpenCrop(index)}
+                        aria-label="Crop image"
+                        title="Crop image"
+                      >
+                        <Crop size={11} />
+                      </button>
                       <button
                         type="button"
                         className="image-remove-btn"
@@ -592,6 +664,15 @@ export default function MyListingsPage() {
         itemTitle={confirmItem.title}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmItem(null)}
+      />
+    )}
+
+    {/* ── Crop modal ───────────────────────────────────────────── */}
+    {cropModalOpen && cropImageSrc && (
+      <ImageCropModal
+        imageSrc={cropImageSrc}
+        onCrop={handleCropApply}
+        onCancel={handleCropCancel}
       />
     )}
 

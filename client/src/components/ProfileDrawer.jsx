@@ -23,7 +23,7 @@ const primaryItems = [
   { label: 'Trade Requests', icon: FileText, path: '/trade-requests' },
   { label: 'Chats', icon: MessageCircle, path: '/chats' },
   { label: 'Wishlist', icon: Heart, path: '/wishlist' },
-  { label: 'Wallet', icon: CreditCard },
+  { label: 'Wallet', icon: CreditCard, path: '/wallet' },
   { label: 'Feedback & Reviews', icon: Star, path: '/feedback' },
 ]
 

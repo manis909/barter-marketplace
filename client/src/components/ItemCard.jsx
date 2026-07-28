@@ -135,10 +135,16 @@ export default function ItemCard({ item }) {
           </div>
           <h3>{item.title}</h3>
           <div className="item-rating">
-            <span>Owner {ownerName}</span>
-            <span>Owner {ownerRating.toFixed(1)}</span>
-            <span>Trade {tradeRating.toFixed(1)}</span>
-          </div>
+  <Link
+    to={`/profile/${item.owner_id}`}
+    onClick={(e) => e.stopPropagation()}
+    style={{ color: 'inherit', textDecoration: 'none' }}
+  >
+    <span style={{ textDecoration: 'underline' }}>Owner {ownerName}</span>
+  </Link>
+  <span>Owner {ownerRating.toFixed(1)}</span>
+  <span>Trade {tradeRating.toFixed(1)}</span>
+</div>
         </div>
         <div className="item-actions">
           {!isOwner && item.status === 'available' ? (

@@ -8,7 +8,7 @@ import axios from 'axios';
 import { getToken } from '../utils/storage';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://10.65.98.146:5000/api',
   timeout: 10000, // 10s — fails loudly instead of hanging forever on a dead backend
   headers: {
     'Content-Type': 'application/json',
