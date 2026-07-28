@@ -23,7 +23,7 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login', { email, password });
       login(res.data.user, res.data.token);
-      navigate(ROUTES.PROFILE);
+      navigate(ROUTES.EXPLORE);
     } catch (err) {
       const backendMessage = err.response?.data?.error;
 
