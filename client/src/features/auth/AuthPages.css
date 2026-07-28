@@ -180,7 +180,7 @@
   border: none !important;
   box-shadow: none !important;
   cursor: pointer;
-  color: #6b7280 !important;
+  color: var(--color-accent) !important;
   padding: 0 !important;
   margin: 0 14px 0 0 !important;
   width: 20px !important;
@@ -200,7 +200,7 @@
 }
 
 .barter-auth-eye-toggle:hover {
-  color: var(--color-primary) !important;
+  color: var(--color-accent-hover) !important;
   background: transparent !important;
 }
 
