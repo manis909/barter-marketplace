@@ -1,9 +1,10 @@
 export const categoryNames = [
+  'Books',
+  'Electronics',
   'Fashion & Accessories',
   'Home & Living',
-  'Electronics',
-  'Books & Education',
+  'Gaming',
+  'Musical Instruments',
   'Sports & Fitness',
-  'Toys & Games',
   'Others'
 ]

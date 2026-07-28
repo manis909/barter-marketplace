@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
+    ArrowLeft,
   CheckCircle2,
   Clock3,
   Crop,
@@ -46,6 +49,7 @@ export default function MyListingsPage() {
   const [message, setMessage] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [editingItemId, setEditingItemId] = useState(null)
+  const [activeFilter, setActiveFilter] = useState('All')
   const createListingRef = useRef(null)
 
   // ── delete / undo state ────────────────────────────────────────
@@ -315,14 +319,46 @@ export default function MyListingsPage() {
   }, []) // no deps — intentionally reads via ref, not state
 
   // ── stats ──────────────────────────────────────────────────────
-  const activeListings = listings.length
-  const pendingTrades = 0
-  const completedTrades = 0
+ // ── stats ──────────────────────────────────────────────────────
+  const activeListings = listings.filter((item) => item.status === 'available').length
+  const completedTrades = listings.filter((item) => item.status === 'traded').length
+  const pendingTrades = listings.filter((item) => item.status === 'pending').length
+
+  // ── filtered listings based on active tab ────────────────────────
+  const filteredListings = listings.filter((item) => {
+    if (activeFilter === 'All')       return true
+    if (activeFilter === 'Active')    return item.status === 'available'
+    if (activeFilter === 'Pending')   return item.status === 'pending'
+    if (activeFilter === 'Completed') return item.status === 'traded'
+    return true
+  })
 
   return (
     <>
     <section className="my-listings-page">
       <header className="my-listings-hero">
+      <Link
+          to="/explore"
+          aria-label="Back to Explore"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            background: '#FFFFFF',
+            border: '1px solid #E4E2D9',
+            color: '#1C1917',
+            marginBottom: '16px',
+            textDecoration: 'none',
+            transition: 'background 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#F5F4F0'}
+          onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+        >
+          <ArrowLeft size={20} />
+        </Link>
         <div className="hero-copy">
           <div className="hero-badge">
             <Package size={16} />
@@ -390,12 +426,13 @@ export default function MyListingsPage() {
           <Search size={18} />
           <input type="text" placeholder="Search your listings..." />
         </label>
-        <div className="filter-chips">
+      <div className="filter-chips">
           {filterOptions.map((option) => (
             <button
               key={option}
               type="button"
-              className={`filter-chip ${option === 'All' ? 'is-active' : ''}`}
+              className={`filter-chip ${option === activeFilter ? 'is-active' : ''}`}
+              onClick={() => setActiveFilter(option)}
             >
               {option}
             </button>
@@ -579,7 +616,7 @@ export default function MyListingsPage() {
       )}
 
       {/* ── Listings Grid ────────────────────────────────────────── */}
-      {listings.length === 0 ? (
+      {filteredListings.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state__icon">
             <Package size={34} />
@@ -590,7 +627,7 @@ export default function MyListingsPage() {
         </div>
       ) : (
         <div className="listings-grid">
-          {listings.map((item) => (
+          {filteredListings.map((item) => (
             <article key={item.id} className="listing-card">
               <div className="listing-card__media">
                 <img

@@ -6,8 +6,7 @@
 import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 
-const NO_NAVBAR_ROUTES = ['/', '/landing', '/login', '/signup'];
-
+const NO_NAVBAR_ROUTES = ['/', '/landing', '/login', '/signup', '/logout'];
 function AppLayout({ children }) {
   const location = useLocation();
   const hideNavbar = NO_NAVBAR_ROUTES.includes(location.pathname);
