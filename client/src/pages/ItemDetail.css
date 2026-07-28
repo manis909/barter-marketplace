@@ -3,6 +3,13 @@
   gap: 28px;
 }
 
+.detail-loading {
+  padding: 60px 0;
+  text-align: center;
+  color: #5F5B52;
+  font-size: 1rem;
+}
+
 .detail-back {
   color: #3D6E63;
   text-decoration: none;

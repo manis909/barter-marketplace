@@ -170,6 +170,27 @@ router.put('/:id', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT i.*, u.username AS owner_name, u.id AS owner_id
+       FROM items i
+       JOIN users u ON u.id = i.owner_id
+       WHERE i.id = $1`,
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    res.json({ item: result.rows[0] });
+  } catch (err) {
+    console.error('GET /items/:id error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.delete('/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
 
