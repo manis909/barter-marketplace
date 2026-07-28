@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
-import './Logout.css'
+import AuthBackground from '../features/auth/AuthBackground'
+import '../features/auth/AuthPages.css'
 
 export default function Logout() {
   const { logout } = useAuth()
@@ -13,27 +13,24 @@ export default function Logout() {
   }
 
   function handleCancel() {
-    navigate('/profile', { replace: true })
+    navigate('/explore', { replace: true })
   }
 
   return (
-    <main className="logout-page">
-      <div className="logout-card">
-        <p className="section-label">Confirm Logout</p>
-        <h1>Are you sure you want to logout?</h1>
-        <p className="section-copy">
-          You will be returned to the login screen and your current session will end.
-        </p>
+    <div className="auth-page">
+      <AuthBackground />
+      <div className="auth-card">
+        <h2>Are you sure you want to logout?</h2>
 
         <div className="logout-actions">
-          <button type="button" className="button-secondary" onClick={handleCancel}>
+          <button type="button" className="auth-submit auth-submit-secondary" onClick={handleCancel}>
             Cancel
           </button>
-          <button type="button" className="button-primary" onClick={handleLogout}>
+          <button type="button" className="auth-submit" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
