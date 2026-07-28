@@ -138,6 +138,10 @@ export default function TradeRequestsPage() {
   }, [authLoading, currentUser, fetchTrades]);
 
   const handleStatusChange = useCallback(async (tradeId, newStatus) => {
+    if (newStatus === 'refresh') {
+      await fetchTrades();
+      return;
+    }
     if (newStatus === TRADE_STATUS.ACCEPTED) {
       await acceptTrade(tradeId);
     } else if (newStatus === TRADE_STATUS.DECLINED) {

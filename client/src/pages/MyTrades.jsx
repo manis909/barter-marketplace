@@ -146,6 +146,10 @@ export default function MyTrades() {
 
   // ── Accept / Decline ─────────────────────────────────────────────────────
   const handleStatusChange = useCallback(async (tradeId, newStatus) => {
+    if (newStatus === 'refresh') {
+      await fetchTrades();
+      return;
+    }
     let updatedData;
     if (newStatus === TRADE_STATUS.ACCEPTED) {
       updatedData = await acceptTrade(tradeId);
@@ -166,10 +170,17 @@ export default function MyTrades() {
   }, [fetchTrades]);
 
   // ── Derived splits ────────────────────────────────────────────────────────
-  const userId       = currentUser?.id;
-  const outgoing     = trades.filter(t => t.sender_id === userId);
-  const activeTrades = outgoing.filter(t => t.status === TRADE_STATUS.PENDING || t.status === TRADE_STATUS.ACCEPTED);
-  const pastTrades   = outgoing.filter(t => t.status === TRADE_STATUS.COMPLETED || t.status === TRADE_STATUS.DECLINED);
+  const userId     = currentUser?.id;
+  // Show ALL trades the user is part of, split by lifecycle stage.
+  // Filtering only to outgoing previously caused the completion bug because
+  // incoming accepted trades never appeared and Mark Completed was unreachable.
+  const activeTrades = trades.filter(t =>
+    t.status === TRADE_STATUS.PENDING || t.status === TRADE_STATUS.ACCEPTED
+  );
+  const pastTrades = trades.filter(t =>
+    t.status === TRADE_STATUS.COMPLETED || t.status === TRADE_STATUS.DECLINED ||
+    t.status === TRADE_STATUS.CANCELLED
+  );
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {

@@ -114,6 +114,31 @@ CREATE TABLE trade_offers (
     CONSTRAINT fk_requested_item
         FOREIGN KEY (requested_item_id) REFERENCES items(id) ON DELETE CASCADE
 );
+-- For multi-item trades 
+CREATE TABLE trade_offer_items (
+  id SERIAL PRIMARY KEY,
+  trade_id UUID REFERENCES trade_offers(id),
+  item_id UUID REFERENCES items(id),
+  role TEXT CHECK (role IN ('offered', 'requested'))
+);
+-- This replaces the single offered_item_id/requested_item_id columns
+-- with a join table supporting many-to-one on each side
+
+-- For two-user completion confirmation 
+ALTER TABLE trade_offers ADD COLUMN sender_confirmed BOOLEAN DEFAULT FALSE;
+ALTER TABLE trade_offers ADD COLUMN receiver_confirmed BOOLEAN DEFAULT FALSE;
+
+-- For "Request More Items" / counter-offers 
+ALTER TABLE trade_offers ADD COLUMN counter_note TEXT;
+ALTER TABLE trade_offers ADD COLUMN needs_more_items BOOLEAN DEFAULT FALSE;
+
+-- For the trade timeline 
+CREATE TABLE trade_events (
+  id SERIAL PRIMARY KEY,
+  trade_id UUID REFERENCES trade_offers(id),
+  event_type TEXT, -- 'offer_sent', 'requested_more', 'offer_updated', 'accepted', 'completed'
+  created_at TIMESTAMP DEFAULT NOW()
+);
 
 -- ------------------------------------------------------------
 -- Member 4 — Chat & Meetup

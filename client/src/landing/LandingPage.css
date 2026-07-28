@@ -14,12 +14,21 @@
   height: 100vh;
   object-fit: cover;
   z-index: 0;
-  /* Deliberately no filter/dim applied — video shown at full clarity */
+}
+
+.landing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.18); /* subtle — just enough to protect text contrast across the video loop */
 }
 
 .landing-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -40,6 +49,26 @@
     0 4px 20px rgba(0, 0, 0, 0.5),
     0 0 40px rgba(0, 0, 0, 0.3);
 }
+
+@keyframes landingFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-fade-in {
+  opacity: 0;
+  animation: landingFadeIn 0.6s ease-out forwards;
+}
+
+.landing-fade-1 { animation-delay: 0.1s; }
+.landing-fade-2 { animation-delay: 0.3s; }
+.landing-fade-3 { animation-delay: 0.5s; }
 
 .landing-highlight {
   color: #c6e930;

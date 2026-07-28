@@ -11,7 +11,7 @@ export default function Wallet() {
     >
       <div
         style={{
-          maxWidth: "1000px",
+          maxWidth: "900px",
           margin: "0 auto",
           padding: "24px",
         }}
