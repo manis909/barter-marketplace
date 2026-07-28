@@ -663,6 +663,7 @@
 
 @media (max-width: 760px) {
   .my-listings-hero {
+    position: relative;
     flex-direction: column;
     padding: 22px;
   }
