@@ -15,11 +15,11 @@ import Wallet from "./pages/Wallet";
 import FeedbackPage from './pages/FeedbackReviews';
 import HelpSupportPage from './pages/HelpSupport';
 import LogoutPage from './pages/Logout';
-import ChatPage from './pages/Chat';
 import Notifications from './pages/Notifications';
-import ChatsPage from './pages/Chats';
 import LandingPage from './landing/LandingPage';
 import AppLayout from './components/AppLayout';
+import ChatsPage from './pages/Chats';
+import ChatPage from './pages/Chat';
 import './App.css';
 
 function App() {
@@ -48,6 +48,8 @@ function App() {
             <Route path="/help" element={<HelpSupportPage />} />
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/chat/:tradeId" element={<ChatPage />} />
+            <Route path="/skills" element={<div style={{ padding: 40 }}>Skillter — coming soon</div>} />
+            <Route path="/rent" element={<div style={{ padding: 40 }}>Renter — coming soon</div>} />
           </Routes>
         </AppLayout>
       </BrowserRouter>
