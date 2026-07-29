@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Heart, User, Star } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import { addWishlist, removeWishlist } from '../services/tradeService'
@@ -9,14 +11,14 @@ export default function ItemCard({ item }) {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
 
-  const image = item.image || item.image_urls?.[0] || 'https://via.placeholder.com/300x200?text=Barter+Item'
-  const condition = item.condition || item.item_condition || 'good'
+  const image = item.image || item.image_urls?.[0] || 'https://via.placeholder.com/300x220?text=Barter'
+  const condition = item.condition || item.item_condition || 'Good'
+  const category = item.category || 'General'
+
   const ownerRating = typeof item.ownerRating === 'number'
     ? item.ownerRating
     : (typeof item.owner_rating === 'number' ? item.owner_rating : 4.5)
-  const tradeRating = typeof item.tradeRating === 'number'
-    ? item.tradeRating
-    : (typeof item.trade_rating === 'number' ? item.trade_rating : 4.5)
+
   const ownerName = item.ownerName || item.owner_name || 'Owner'
 
   // Trade modal state
@@ -44,7 +46,7 @@ export default function ItemCard({ item }) {
 
     try {
       const res = await api.get('/items/mine')
-      const available = (res.data.items || []).filter(i => i.status === 'available')
+      const available = (res.data.items || []).filter((i) => i.status === 'available')
       setMyItems(available)
       if (available.length > 0) setSelectedOfferedItemId(available[0].id)
     } catch {
@@ -106,153 +108,149 @@ export default function ItemCard({ item }) {
     }
   }
 
-  const isOwner = currentUser && (currentUser.id === item.owner_id)
+  const isOwner = currentUser && currentUser.id === item.owner_id
 
   return (
     <>
-      <article className="item-card">
-        <div className="item-media">
-          <img src={image} alt={item.title} />
+      <motion.article
+        className="compact-item-card"
+        whileHover={{ y: -3 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+      >
+        {/* Image Media Container */}
+        <div className="card-media-wrapper">
+          <img src={image} alt={item.title} className="card-image" />
           <button
             type="button"
-            className="wishlist-button"
+            className={`glass-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
             aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             onClick={handleWishlistToggle}
             disabled={wishlistLoading}
-            style={{
-              color: wishlisted ? '#C8624B' : undefined,
-              opacity: wishlistLoading ? 0.5 : 1,
-              cursor: wishlistLoading ? 'wait' : 'pointer',
-            }}
           >
-            {wishlisted ? '♥' : '♡'}
+            <Heart
+              size={15}
+              className={`heart-icon ${wishlisted ? 'filled' : ''}`}
+            />
           </button>
         </div>
-        <div className="item-content">
-          <div className="item-meta">
-            <span>{item.category}</span>
-            <span>{condition}</span>
+
+        {/* Compact Content Density */}
+        <div className="card-body">
+          {/* Row 1: Category & Condition Pill Badges */}
+          <div className="card-badges-row">
+            <span className="pill-badge category-pill">{category}</span>
+            <span className="pill-badge condition-pill">{condition}</span>
           </div>
-          <h3>{item.title}</h3>
-          <div className="item-rating">
-  <Link
-    to={`/profile/${item.owner_id}`}
-    onClick={(e) => e.stopPropagation()}
-    style={{ color: 'inherit', textDecoration: 'none' }}
-  >
-    <span style={{ textDecoration: 'underline' }}>Owner {ownerName}</span>
-  </Link>
-  <span>Owner {ownerRating.toFixed(1)}</span>
-  <span>Trade {tradeRating.toFixed(1)}</span>
-</div>
+
+          {/* Row 2: 2-Line Truncated Title */}
+          <h3 className="card-title" title={item.title}>
+            {item.title}
+          </h3>
+
+          {/* Row 3: Owner & Rating (Single Compact Row) */}
+          <div className="card-owner-rating-row">
+            <div className="owner-box">
+              <User size={12} className="meta-icon" />
+              <Link
+                to={`/profile/${item.owner_id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="owner-link"
+              >
+                {ownerName}
+              </Link>
+            </div>
+            <div className="rating-box">
+              <Star size={12} className="star-icon filled" />
+              <span>{ownerRating.toFixed(1)}</span>
+            </div>
+          </div>
+
+          {/* Row 4: Clean Icon-Free Equal-Width Buttons */}
+          <div className="card-actions-row">
+            {!isOwner && item.status === 'available' ? (
+              <button
+                type="button"
+                className="btn-compact btn-compact-secondary"
+                onClick={handleOfferTradeClick}
+              >
+                Offer Trade
+              </button>
+            ) : isOwner ? (
+              <span className="card-status-pill owner-pill">Mine</span>
+            ) : (
+              <span className="card-status-pill unavailable-pill">Unavailable</span>
+            )}
+            <Link to={`/item/${item.id}`} className="btn-compact btn-compact-primary">
+              View Details
+            </Link>
+          </div>
         </div>
-        <div className="item-actions">
-          {!isOwner && item.status === 'available' ? (
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={handleOfferTradeClick}
-            >
-              Offer Trade
-            </button>
-          ) : isOwner ? (
-            <span style={{ fontSize: 12, color: '#78716C', alignSelf: 'center' }}>Your listing</span>
-          ) : (
-            <span style={{ fontSize: 12, color: '#C8624B', alignSelf: 'center' }}>Unavailable</span>
-          )}
-          <Link to={`/item/${item.id}`} className="primary-button">View Details</Link>
-        </div>
-      </article>
+      </motion.article>
 
       {/* Trade Proposal Modal */}
       {modalOpen && (
-        <div
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2000, padding: 20,
-          }}
-          onClick={closeModal}
-        >
-          <div
-            style={{
-              background: '#fff', borderRadius: 18, padding: 28,
-              maxWidth: 460, width: '100%',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.18)',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 6px', color: '#1C1917' }}>
-              Propose a Trade
-            </h2>
-            <p style={{ fontSize: 13, color: '#57534E', margin: '0 0 18px' }}>
+        <div className="trade-modal-backdrop" onClick={closeModal}>
+          <div className="trade-modal-container" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Propose a Trade</h2>
+            <p className="modal-subtitle">
               Offer one of your items in exchange for <strong>{item.title}</strong>.
             </p>
 
             {tradeError && (
-              <div style={{
-                background: '#FEF2F2', border: '1px solid #FCA5A5',
-                color: '#991B1B', padding: '9px 13px', borderRadius: 8,
-                fontSize: 13, marginBottom: 14,
-              }}>
-                {tradeError}
-              </div>
+              <div className="modal-error-banner">{tradeError}</div>
             )}
 
             {loadingItems ? (
-              <p style={{ fontSize: 14, color: '#57534E' }}>Loading your items...</p>
+              <p className="modal-loading-text">Loading your items...</p>
             ) : myItems.length === 0 ? (
               <>
-                <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 16 }}>
+                <p className="modal-warning-text">
                   You have no available items to trade. List one first!
                 </p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                  <button type="button" className="secondary-button" onClick={closeModal}>Cancel</button>
-                  <Link to="/add-item" className="primary-button" onClick={closeModal}>+ Add Item</Link>
+                <div className="modal-actions-row">
+                  <button type="button" className="btn-modal-cancel" onClick={closeModal}>
+                    Cancel
+                  </button>
+                  <Link to="/add-item" className="btn-modal-submit" onClick={closeModal}>
+                    + Add Item
+                  </Link>
                 </div>
               </>
             ) : (
               <form onSubmit={handleSubmitTrade}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 5 }}>
-                  Your Item to Offer:
-                </label>
+                <label className="modal-label">Your Item to Offer:</label>
                 <select
                   value={selectedOfferedItemId}
-                  onChange={e => setSelectedOfferedItemId(e.target.value)}
-                  style={{
-                    width: '100%', padding: '9px 12px', borderRadius: 8,
-                    border: '1px solid #E4E2D9', fontSize: 14, marginBottom: 14,
-                    background: '#F9F8F6',
-                  }}
+                  onChange={(e) => setSelectedOfferedItemId(e.target.value)}
+                  className="modal-select"
                 >
-                  {myItems.map(i => (
+                  {myItems.map((i) => (
                     <option key={i.id} value={i.id}>
                       {i.title} {i.estimated_value ? `(Est. $${i.estimated_value})` : ''}
                     </option>
                   ))}
                 </select>
 
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 5 }}>
-                  Message (Optional):
-                </label>
+                <label className="modal-label">Message (Optional):</label>
                 <textarea
                   rows={3}
                   placeholder="Hi! I'd love to swap my item..."
                   value={tradeMessage}
-                  onChange={e => setTradeMessage(e.target.value)}
-                  style={{
-                    width: '100%', padding: '9px 12px', borderRadius: 8,
-                    border: '1px solid #E4E2D9', fontSize: 14, marginBottom: 18,
-                    background: '#F9F8F6', resize: 'none',
-                  }}
+                  onChange={(e) => setTradeMessage(e.target.value)}
+                  className="modal-textarea"
                 />
 
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                  <button type="button" className="secondary-button" onClick={closeModal} disabled={submitting}>
+                <div className="modal-actions-row">
+                  <button
+                    type="button"
+                    className="btn-modal-cancel"
+                    onClick={closeModal}
+                    disabled={submitting}
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="primary-button" disabled={submitting}>
+                  <button type="submit" className="btn-modal-submit" disabled={submitting}>
                     {submitting ? 'Sending...' : 'Send Trade Offer'}
                   </button>
                 </div>

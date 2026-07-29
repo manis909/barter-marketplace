@@ -1,91 +1,422 @@
-.item-card {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 16px;
-  padding: 18px;
-  border-radius: 14px;
-  border: 1px solid #E4E2D9;
+/* ItemCard.css - Compact, Clean & High-Density Card Design */
+
+.compact-item-card {
+  display: flex;
+  flex-direction: column;
   background: #FFFFFF;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.item-card:hover {
-  transform: translateY(-2px);
-  border-color: #D8DDD7;
-}
-
-.item-media {
-  position: relative;
+  border: 1px solid #E4E2D9;
   border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.compact-item-card:hover {
+  border-color: #C9DBD2;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Image Container (~65-70% of Card Height, Aspect 4:3) */
+.card-media-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   background-color: #F5F4F0;
+  overflow: hidden;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.compact-item-card:hover .card-image {
+  transform: scale(1.03);
+}
+
+/* Floating Wishlist Button */
+.glass-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  z-index: 5;
 }
 
-.item-media img {
-  width: 100%;
-  height: 220px;
-  object-fit: contain;
+.glass-wishlist-btn:hover {
+  background: rgba(255, 255, 255, 0.98);
+  transform: scale(1.06);
 }
 
-.wishlist-button {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(36, 35, 31, 0.12);
-  background: rgba(255, 255, 255, 0.96);
-  color: #3D6E63;
-  font-size: 0.95rem;
-  display: grid;
-  place-items: center;
-}
-
-.item-content {
-  display: grid;
-  gap: 12px;
-}
-
-.item-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.heart-icon {
   color: #5F5B52;
-  font-size: 0.88rem;
+  transition: color 0.2s ease, fill 0.2s ease;
 }
 
-.item-meta span {
-  background: #F6F5F0;
-  padding: 6px 10px;
-  border-radius: 12px;
+.heart-icon.filled {
+  color: #DC2626;
+  fill: #DC2626;
 }
 
-.item-card h3 {
+.glass-wishlist-btn.wishlisted {
+  background: rgba(254, 226, 226, 0.9);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Content Body & High Density Hierarchy */
+.card-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+/* Row 1: Category & Condition Pill Badges (Single Compact Row) */
+.card-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.pill-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.category-pill {
+  background: #E4F0ED;
+  color: #2F5B4D;
+  border: 1px solid rgba(47, 91, 77, 0.15);
+}
+
+.condition-pill {
+  background: #F3F4F6;
+  color: #4B5563;
+  border: 1px solid rgba(75, 85, 99, 0.15);
+}
+
+/* Row 2: 2-Line Truncated Title */
+.card-title {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.4;
   font-family: 'Fraunces', serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #1C1917;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.item-rating {
+/* Row 3: Owner & Rating (Single Compact Row) */
+.card-owner-rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #57534E;
+}
+
+.owner-box,
+.rating-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-icon {
+  color: #3D6E63;
+}
+
+.owner-link {
+  color: #2F5B4D;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90px;
+}
+
+.owner-link:hover {
+  text-decoration: underline;
+  color: #1C1917;
+}
+
+.rating-box {
+  font-weight: 700;
+  color: #24231F;
+}
+
+.rating-box .star-icon.filled {
+  color: #EAB308;
+  fill: #EAB308;
+}
+
+/* Row 4: Compact Equal-Width Icon-Free Buttons (Height 36px, Font 13-14px) */
+.card-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.btn-compact {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 0.84rem; /* ~13.5px */
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-compact-primary {
+  background: #3D6E63;
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 2px 6px rgba(61, 110, 99, 0.18);
+}
+
+.btn-compact-primary:hover {
+  background: #2F5B4D;
+}
+
+.btn-compact-secondary {
+  background: #F6F5F0;
+  color: #2F5B4D;
+  border: 1px solid #C9DBD2;
+}
+
+.btn-compact-secondary:hover {
+  background: #EAF2EE;
+  border-color: #3D6E63;
+}
+
+.card-status-pill {
+  flex: 1;
+  height: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.owner-pill {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px dashed #D1D5DB;
+}
+
+.unavailable-pill {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+}
+
+/* Trade Proposal Modal */
+.trade-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.trade-modal-container {
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: #1C1917;
+}
+
+.modal-subtitle {
+  font-size: 0.88rem;
+  color: #57534E;
+  margin: 0 0 16px;
+}
+
+.modal-error-banner {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.modal-loading-text,
+.modal-warning-text {
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+}
+
+.modal-warning-text {
+  color: #DC2626;
+}
+
+.modal-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1C1917;
+  margin-bottom: 5px;
+}
+
+.modal-select,
+.modal-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #E4E2D9;
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+  background: #F9F8F6;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.modal-select:focus,
+.modal-textarea:focus {
+  outline: none;
+  border-color: #3D6E63;
+}
+
+.modal-textarea {
+  resize: none;
+}
+
+.modal-actions-row {
   display: flex;
   gap: 10px;
-  color: #5F5B52;
-  font-size: 0.88rem;
+  justify-content: flex-end;
 }
 
-.item-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.btn-modal-cancel {
+  background: #F6F5F0;
+  border: 1px solid #E4E2D9;
+  color: #24231F;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-@media (max-width: 660px) {
-  .item-media img {
-    height: 220px;
+.btn-modal-submit {
+  background: #3D6E63;
+  border: none;
+  color: #FFFFFF;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS (2-Column Mobile Layout)
+   ============================================================ */
+@media (max-width: 640px) {
+  .card-body {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .card-title {
+    font-size: 0.85rem;
+  }
+
+  .card-owner-rating-row {
+    font-size: 0.76rem;
+  }
+
+  .owner-link {
+    max-width: 65px;
+  }
+
+  .glass-wishlist-btn {
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .pill-badge {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .btn-compact {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 4px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .card-status-pill {
+    height: 34px;
+    min-height: 34px;
+    border-radius: 8px;
+    font-size: 0.76rem;
   }
 }
