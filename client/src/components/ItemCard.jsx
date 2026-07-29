@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, User, Star } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
-import { addWishlist, removeWishlist } from '../services/tradeService'
+import { addWishlist, removeWishlist, getWishlist } from '../services/tradeService'
 import './ItemCard.css'
 
 export default function ItemCard({ item }) {
@@ -33,6 +33,31 @@ export default function ItemCard({ item }) {
   // Wishlist state
   const [wishlisted, setWishlisted] = useState(false)
   const [wishlistLoading, setWishlistLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkWishlistStatus() {
+      if (!currentUser) return
+      try {
+        const data = await getWishlist()
+        const wishlistItems = data.items || data.wishlist || (Array.isArray(data) ? data : [])
+        const isWishlisted = wishlistItems.some((w) => {
+          const wId = w.item_id || w.id || (w.item && w.item.id)
+          return wId === item.id
+        })
+        if (!cancelled) {
+          setWishlisted(isWishlisted)
+        }
+      } catch (err) {
+        console.error('Failed to check wishlist status:', err)
+      }
+    }
+
+    checkWishlistStatus()
+
+    return () => { cancelled = true }
+  }, [item.id, currentUser])
 
   async function handleOfferTradeClick() {
     if (!currentUser) {

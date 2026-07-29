@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
     ArrowLeft,
-  CheckCircle2,
-  Clock3,
   Crop,
   ImagePlus,
   Package,
@@ -12,7 +10,6 @@ import {
   Plus,
   Search,
   Trash2,
-  Trophy,
   Upload,
   X
 } from 'lucide-react'
@@ -351,11 +348,7 @@ export default function MyListingsPage() {
     }
   }, []) // no deps — intentionally reads via ref, not state
 
-  // ── stats ──────────────────────────────────────────────────────
- // ── stats ──────────────────────────────────────────────────────
-  const activeListings = listings.filter((item) => item.status === 'available').length
-  const completedTrades = listings.filter((item) => item.status === 'traded').length
-  const pendingTrades = listings.filter((item) => item.status === 'pending').length
+
 
   // ── filtered listings based on active tab ────────────────────────
   const filteredListings = listings.filter((item) => {
@@ -408,51 +401,6 @@ export default function MyListingsPage() {
         </button>
       </header>
 
-      <div className="stats-grid">
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <Package size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Total Listings</p>
-            <p className="stat-card__value">{listings.length}</p>
-            <p className="stat-card__meta">Items currently live</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <CheckCircle2 size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Active Listings</p>
-            <p className="stat-card__value">{activeListings}</p>
-            <p className="stat-card__meta">Ready for trade</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <Clock3 size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Pending Trades</p>
-            <p className="stat-card__value">{pendingTrades}</p>
-            <p className="stat-card__meta">Awaiting review</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <Trophy size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Completed Trades</p>
-            <p className="stat-card__value">{completedTrades}</p>
-            <p className="stat-card__meta">Successful swaps</p>
-          </div>
-        </article>
-      </div>
 
       <div className="toolbar">
         <label className="search-field">

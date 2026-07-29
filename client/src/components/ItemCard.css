@@ -30,12 +30,8 @@
 .card-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.3s ease;
-}
-
-.compact-item-card:hover .card-image {
-  transform: scale(1.03);
 }
 
 /* Floating Wishlist Button */
@@ -43,40 +39,42 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(61, 110, 99, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transition: all 0.2s ease;
   z-index: 5;
 }
 
 .glass-wishlist-btn:hover {
-  background: rgba(255, 255, 255, 0.98);
+  background: #F0F7F4;
   transform: scale(1.06);
 }
 
 .heart-icon {
-  color: #5F5B52;
+  color: #3D6E63;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2px;
   transition: color 0.2s ease, fill 0.2s ease;
 }
 
 .heart-icon.filled {
   color: #DC2626;
   fill: #DC2626;
+  stroke: #DC2626;
 }
 
 .glass-wishlist-btn.wishlisted {
-  background: rgba(254, 226, 226, 0.9);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: #FFFFFF;
+  border-color: rgba(220, 38, 38, 0.25);
 }
 
 /* Content Body & High Density Hierarchy */
@@ -394,9 +392,9 @@
   .glass-wishlist-btn {
     top: 6px;
     right: 6px;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
   }
 
   .pill-badge {
