@@ -30,51 +30,85 @@
 .card-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-/* Floating Wishlist Button */
+.compact-item-card:hover .card-image {
+  transform: scale(1.03);
+}
+
+/* White Rounded-Square Floating Wishlist Button */
 .glass-wishlist-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: #FFFFFF;
-  border: 1px solid rgba(61, 110, 99, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: all 0.2s ease;
-  z-index: 5;
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 10px !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14) !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease !important;
+  z-index: 10 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+  color: #1F2937 !important;
 }
 
 .glass-wishlist-btn:hover {
-  background: #F0F7F4;
-  transform: scale(1.06);
+  background: #F9FAFB !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.08) !important;
 }
 
 .heart-icon {
-  color: #3D6E63;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2px;
-  transition: color 0.2s ease, fill 0.2s ease;
+  width: 18px !important;
+  height: 18px !important;
+  color: #1F2937 !important;
+  fill: none !important;
+  stroke: #1F2937 !important;
+  stroke-width: 2px !important;
+  transition: color 0.2s ease, fill 0.2s ease, transform 0.2s ease !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  flex-shrink: 0 !important;
 }
 
 .heart-icon.filled {
-  color: #DC2626;
-  fill: #DC2626;
-  stroke: #DC2626;
+  color: #EF4444 !important;
+  fill: #EF4444 !important;
+  stroke: #EF4444 !important;
+  animation: heartPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .glass-wishlist-btn.wishlisted {
-  background: #FFFFFF;
-  border-color: rgba(220, 38, 38, 0.25);
+  background: #FFFFFF !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.18) !important;
 }
 
 /* Content Body & High Density Hierarchy */
@@ -390,11 +424,13 @@
   }
 
   .glass-wishlist-btn {
-    top: 6px;
-    right: 6px;
-    width: 30px;
-    height: 30px;
-    border-radius: 10px;
+    top: 6px !important;
+    right: 6px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    border-radius: 9px !important;
   }
 
   .pill-badge {

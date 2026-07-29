@@ -58,7 +58,6 @@ button {
   padding: 20px 0 40px;
 }
 
-button,
 .primary-button,
 .primary-btn {
   display: inline-flex;
@@ -75,7 +74,6 @@ button,
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-button:hover,
 .primary-button:hover,
 .primary-btn:hover {
   transform: translateY(-1px);
