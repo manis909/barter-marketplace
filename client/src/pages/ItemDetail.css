@@ -3,6 +3,13 @@
   gap: 28px;
 }
 
+.detail-loading {
+  padding: 60px 0;
+  text-align: center;
+  color: #5F5B52;
+  font-size: 1rem;
+}
+
 .detail-back {
   color: #3D6E63;
   text-decoration: none;
@@ -24,9 +31,10 @@
 .detail-main-image {
   width: 100%;
   height: 540px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 20px;
   border: 1px solid #E4E2D9;
+  background-color: #F5F4F0;
 }
 
 .detail-thumbs {

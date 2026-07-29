@@ -13,27 +13,6 @@ export default function HeroBanner() {
           Trade high-quality items across categories with a trusted barter community that keeps exchanges simple and safe.
         </p>
       </div>
-
-      <aside className="hero-sidebar">
-        <div className="hero-stats-grid">
-          <div className="hero-stat-card">
-            <p className="hero-stat-label">Items Listed</p>
-            <strong>12,400+</strong>
-          </div>
-          <div className="hero-stat-card">
-            <p className="hero-stat-label">Trades Completed</p>
-            <strong>8,200+</strong>
-          </div>
-          <div className="hero-stat-card">
-            <p className="hero-stat-label">Active Traders</p>
-            <strong>4,600+</strong>
-          </div>
-          <div className="hero-stat-card">
-            <p className="hero-stat-label">Happy Exchanges</p>
-            <strong>98%</strong>
-          </div>
-        </div>
-      </aside>
     </section>
   )
 }

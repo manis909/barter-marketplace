@@ -506,7 +506,7 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
         >
           <div
             style={{
-              background: '#fff', borderRadius: 18, padding: 28,
+              background: '#ffffffff', borderRadius: 18, padding: 28,
               maxWidth: 460, width: '100%',
               boxShadow: '0 20px 50px rgba(0,0,0,0.18)',
             }}
@@ -537,8 +537,47 @@ function WishlistCard({ item, onRemove, removeEnabled }) {
                   You have no available items to trade. List one first!
                 </p>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                  <button type="button" style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #E4E2D9', background: 'none', cursor: 'pointer', fontSize: 13 }} onClick={() => setTradeModalOpen(false)}>Cancel</button>
-                  <Link to="/add-item" style={{ padding: '7px 16px', borderRadius: 7, background: BRAND_GREEN, color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600 }} onClick={() => setTradeModalOpen(false)}>+ Add Item</Link>
+                  <button
+  type="button"
+  onClick={() => setTradeModalOpen(false)}
+  disabled={submitting}
+  style={{
+    padding: '11px 22px',
+    borderRadius: '16px',
+
+    background: 'rgba(255,255,255,0.55)',
+    backdropFilter: 'blur(18px)',
+    WebkitBackdropFilter: 'blur(18px)',
+
+    border: '1px solid rgba(31,77,61,0.18)',
+
+    color: '#1F4D3D',
+    fontSize: '14px',
+    fontWeight: 600,
+
+    cursor: submitting ? 'not-allowed' : 'pointer',
+
+    boxShadow:
+      '0 8px 20px rgba(31,77,61,0.08), inset 0 1px 0 rgba(255,255,255,0.6)',
+
+    transition: 'all .25s ease',
+
+    opacity: submitting ? 0.6 : 1,
+  }}
+  onMouseEnter={(e) => {
+    if (!submitting) {
+      e.currentTarget.style.background = 'rgba(255,255,255,0.75)';
+      e.currentTarget.style.transform = 'translateY(-2px)';
+    }
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.background = 'rgba(255,255,255,0.55)';
+    e.currentTarget.style.transform = 'translateY(0)';
+  }}
+>
+  Cancel
+</button>
+                  <Link to="/add-item" style={{ padding: '7px 16px', borderRadius: 7, background: BRAND_GREEN, color: '#fff8f8ff', textDecoration: 'none', fontSize: 13, fontWeight: 600 }} onClick={() => setTradeModalOpen(false)}>+ Add Item</Link>
                 </div>
               </>
             ) : (

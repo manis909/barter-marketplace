@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import HeroBanner from '../components/HeroBanner'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
 import Footer from '../components/Footer'
@@ -109,8 +108,7 @@ useEffect(() => {
 
   return (
     <div className="explore-page">
-      <HeroBanner />
-
+    
       <CategoryFilter activeCategory={activeCategory} onSelect={setActiveCategory} />
 
       <div className="market-summary" ref={resultsRef}>
@@ -129,17 +127,20 @@ useEffect(() => {
           items={normalizedItems}
         />
       ) : (
-        sectionMapping.map((section, index) => {
-          const sectionItems = normalizedItems.slice(index * 4, index * 4 + 4)
-
-          return (
-            <CategorySection
-              key={section.title}
-              title={section.title}
-              items={sectionItems}
-            />
-          )
-        })
+        <>
+          <CategorySection
+            title="Recently Added"
+            items={normalizedItems.slice(0, 4)}
+          />
+          <CategorySection
+            title="Recommended Items"
+            items={normalizedItems.slice(4, 8)}
+          />
+          <CategorySection
+            title="Trending Items"
+            items={normalizedItems.slice(8, 12)}
+          />
+        </>
       )}
 
       <Footer />

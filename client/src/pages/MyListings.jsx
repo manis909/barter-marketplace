@@ -24,6 +24,7 @@ import ImageCropModal from '../components/ImageCropModal'
 import UndoToast from '../components/UndoToast'
 import './MyListings.css'
 
+const MAX_IMAGES = 3
 const conditions = ['Excellent', 'Very Good', 'Good', 'Fair']
 const filterOptions = ['All', 'Active', 'Pending', 'Completed']
 
@@ -89,12 +90,44 @@ export default function MyListingsPage() {
   }
 
   const handleFileChange = (event) => {
-    const files = Array.from(event.target.files)
-    console.log('Selected files:', files.map((f) => ({ name: f.name, size: f.size, type: f.type })))
-    // Revoke any previous object URLs to avoid memory leaks
-    imagePreviews.forEach((url) => URL.revokeObjectURL(url))
-    setForm((prev) => ({ ...prev, images: files }))
-    setImagePreviews(files.map((f) => URL.createObjectURL(f)))
+    const selected = Array.from(event.target.files)
+    // Count images already committed (existing URLs + new files already queued)
+    const currentCount = form.existingImageUrls.length + form.images.length
+
+    let incoming = selected
+    let limitMessage = ''
+
+    if (currentCount >= MAX_IMAGES) {
+      // Already at the limit — reject all new files
+      limitMessage = `You can upload a maximum of ${MAX_IMAGES} images per listing. Remove an image first.`
+      incoming = []
+    } else if (currentCount + selected.length > MAX_IMAGES) {
+      // Trim to however many slots remain
+      const slots = MAX_IMAGES - currentCount
+      incoming = selected.slice(0, slots)
+      limitMessage = `Only ${slots} more image${slots === 1 ? '' : 's'} allowed (max ${MAX_IMAGES}). ${selected.length - slots} file${selected.length - slots === 1 ? ' was' : 's were'} skipped.`
+    }
+
+    if (limitMessage) {
+      setMessage(limitMessage)
+    }
+
+    if (incoming.length === 0) {
+      // Reset the input so the same files can be re-selected after removing one
+      event.target.value = ''
+      return
+    }
+
+    console.log('Accepted files:', incoming.map((f) => ({ name: f.name, size: f.size })))
+
+    // Append to existing new-image previews — do NOT revoke existing blob URLs
+    const newPreviews = incoming.map((f) => URL.createObjectURL(f))
+
+    setForm((prev) => ({ ...prev, images: [...prev.images, ...incoming] }))
+    setImagePreviews((prev) => [...prev, ...newPreviews])
+
+    // Reset the input value so the same file can be re-selected after removal
+    event.target.value = ''
   }
 
   const removeNewImage = (index) => {
@@ -460,13 +493,25 @@ export default function MyListingsPage() {
             <div className="form-field form-field--full">
               <label>Upload Images</label>
               <div className="upload-area">
-                <input type="file" accept="image/*" multiple onChange={handleFileChange} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  disabled={form.existingImageUrls.length + imagePreviews.length >= MAX_IMAGES}
+                />
                 <div className="upload-content">
                   <div className="upload-icon">
                     <Upload size={18} />
                   </div>
-                  <span>Drop or browse images for this listing</span>
-                  <small>PNG, JPG, or WebP</small>
+                  <span>
+                    Drop or browse images
+                    {' '}
+                    <span style={{ color: '#8C887B', fontWeight: 400 }}>
+                      ({form.existingImageUrls.length + imagePreviews.length}/{MAX_IMAGES} added)
+                    </span>
+                  </span>
+                  <small>PNG, JPG, or WebP · max {MAX_IMAGES} images</small>
                 </div>
               </div>
 

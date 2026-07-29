@@ -27,6 +27,7 @@ export default function ItemDetailPage() {
 
   useEffect(() => {
     if (!id) {
+      setError('No item ID provided.')
       setLoading(false)
       return
     }
@@ -34,6 +35,7 @@ export default function ItemDetailPage() {
     const controller = new AbortController()
     setLoading(true)
     setError('')
+    setItem(null)
 
     fetch(`${apiBaseUrl}/items/${id}`, { signal: controller.signal })
       .then(async (response) => {
@@ -134,11 +136,27 @@ export default function ItemDetailPage() {
   }
 
   if (loading) {
-    return <div className="item-detail-page"><p>Loading item details...</p></div>
+    return (
+      <div className="item-detail-page">
+        <p className="detail-loading">Loading item details...</p>
+      </div>
+    )
   }
 
-  if (error || !normalizedItem) {
-    return <div className="item-detail-page"><p>{error || 'Item not found.'}</p></div>
+  if (error) {
+    return (
+      <div className="item-detail-page">
+        <p>{error}</p>
+      </div>
+    )
+  }
+
+  if (!normalizedItem) {
+    return (
+      <div className="item-detail-page">
+        <p>Item not found.</p>
+      </div>
+    )
   }
 
   const isOwner = currentUser && (currentUser.id === normalizedItem.ownerId)
@@ -166,7 +184,6 @@ export default function ItemDetailPage() {
         </div>
 
         <div className="detail-copy">
-          <p className="detail-category">{normalizedItem.category} • {normalizedItem.condition}</p>
           <h1>{normalizedItem.title}</h1>
           <p className="detail-description">{normalizedItem.description}</p>
           <div className="detail-info-grid">

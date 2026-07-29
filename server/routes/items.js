@@ -170,33 +170,6 @@ router.put('/:id', requireAuth, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Verify ownership before allowing delete
-    const existing = await db.query(
-      'SELECT owner_id FROM items WHERE id = $1',
-      [id]
-    );
-
-    if (existing.rows.length === 0) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
-
-    if (existing.rows[0].owner_id !== req.userId) {
-      return res.status(403).json({ error: 'You do not have permission to delete this listing' });
-    }
-
-    await db.query('DELETE FROM items WHERE id = $1', [id]);
-
-    res.json({ message: 'Listing deleted successfully' });
-  } catch (err) {
-    console.error('DELETE /items/:id error:', err?.message || err);
-    res.status(500).json({ error: err?.message || 'Server error' });
-  }
-});
-
 router.get('/:id', async (req, res) => {
   try {
     const result = await db.query(
@@ -218,4 +191,140 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.delete('/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verify ownership
+    const existing = await db.query(
+      'SELECT owner_id FROM items WHERE id = $1',
+      [id]
+    );
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (existing.rows[0].owner_id !== req.userId) {
+      return res.status(403).json({
+        error: 'You do not have permission to delete this listing'
+      });
+    }
+
+    await db.query('BEGIN');
+
+    // Delete notifications linked to this item's trade offers
+    await db.query(
+      `
+      DELETE FROM notifications
+      WHERE trade_offer_id IN (
+        SELECT id
+        FROM trade_offers
+        WHERE offered_item_id = $1
+           OR requested_item_id = $1
+      )
+      `,
+      [id]
+    );
+
+ // Delete trade events
+await db.query(
+  `
+  DELETE FROM trade_events
+  WHERE trade_id IN (
+    SELECT id
+    FROM trade_offers
+    WHERE offered_item_id = $1
+       OR requested_item_id = $1
+  )
+  `,
+  [id]
+);
+
+// Delete ratings
+await db.query(
+  `
+  DELETE FROM ratings
+  WHERE trade_offer_id IN (
+    SELECT id
+    FROM trade_offers
+    WHERE offered_item_id = $1
+       OR requested_item_id = $1
+  )
+  `,
+  [id]
+);
+
+// Delete chat deletions
+await db.query(
+  `
+  DELETE FROM chat_deletions
+  WHERE trade_offer_id IN (
+    SELECT id
+    FROM trade_offers
+    WHERE offered_item_id = $1
+       OR requested_item_id = $1
+  )
+  `,
+  [id]
+);
+
+// Delete messages
+await db.query(
+  `
+  DELETE FROM messages
+  WHERE trade_offer_id IN (
+    SELECT id
+    FROM trade_offers
+    WHERE offered_item_id = $1
+       OR requested_item_id = $1
+  )
+  `,
+  [id]
+);
+
+// Delete trade offer items
+await db.query(
+  `
+  DELETE FROM trade_offer_items
+  WHERE trade_id IN (
+    SELECT id
+    FROM trade_offers
+    WHERE offered_item_id = $1
+       OR requested_item_id = $1
+  )
+  `,
+  [id]
+);
+
+// Delete trade offers
+await db.query(
+  `
+  DELETE FROM trade_offers
+  WHERE offered_item_id = $1
+     OR requested_item_id = $1
+  `,
+  [id]
+);
+
+    // Delete the item
+    await db.query(
+      'DELETE FROM items WHERE id = $1',
+      [id]
+    );
+
+    await db.query('COMMIT');
+
+    res.json({ message: 'Listing deleted successfully' });
+
+  } catch (err) {
+    await db.query('ROLLBACK');
+
+    console.error('DELETE /items/:id error:', err);
+
+    res.status(500).json({
+      error: err.message || 'Server error'
+    });
+  }
+});
 module.exports = router;
