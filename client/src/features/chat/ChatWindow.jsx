@@ -9,14 +9,20 @@ const CHAT_CSS = `
 .chatwindow-wrapper {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 .chatwindow-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 .chatwindow-back-btn {
   width: 34px;
@@ -44,8 +50,9 @@ const CHAT_CSS = `
 .chatwindow-container {
   display: flex;
   flex-direction: column;
-  height: 60vh;
-  min-height: 320px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
   border: 1px solid #2f6b52;
   border-radius: 12px;
   overflow: hidden;
@@ -56,8 +63,9 @@ const CHAT_CSS = `
 }
 .chatwindow-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -152,10 +160,18 @@ const CHAT_CSS = `
   border-radius: 999px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   position: absolute;
-  top: -34px;
+  top: -40px;
+  width: max-content;
+  max-width: 85vw;
+  z-index: 20;
+}
+.chatwindow-bubble-row.mine .chatwindow-picker {
   right: 0;
-  max-width: 90vw;
-  z-index: 5;
+  left: auto;
+}
+.chatwindow-bubble-row.theirs .chatwindow-picker {
+  left: 0;
+  right: auto;
 }
 .chatwindow-picker button {
   background: none;
@@ -174,6 +190,7 @@ const CHAT_CSS = `
   font-size: 12.5px;
   margin: 0 12px;
   border-radius: 6px;
+  flex-shrink: 0;
 }
 .chatwindow-attach-preview {
   display: flex;
@@ -183,6 +200,7 @@ const CHAT_CSS = `
   background: #eaf4ee;
   margin: 0 12px;
   border-radius: 6px;
+  flex-shrink: 0;
 }
 .chatwindow-attach-preview img,
 .chatwindow-attach-preview video {
@@ -207,6 +225,7 @@ const CHAT_CSS = `
   align-items: center;
   position: relative;
   background: #fff;
+  flex-shrink: 0;
 }
 .chatwindow-attach-btn {
   width: 36px;
@@ -282,6 +301,7 @@ const CHAT_CSS = `
   text-align: center;
   color: #1b4d3e;
   font-size: 13px;
+  flex-shrink: 0;
 }
 .chatwindow-edit-row {
   display: flex;
@@ -334,21 +354,15 @@ const CHAT_CSS = `
 .chatwindow-delete-menu button.danger {
   color: #dc2626;
 }
-@media (max-width: 600px) {
-  .chatwindow-container { height: 70vh; border-radius: 0; }
-  .chatwindow-bubble-row { max-width: 88%; }
-}
 `;
 
 function formatTime(ts) {
   if (!ts) return '';
   const hasTimezone = /Z|[+-]\d{2}:?\d{2}$/.test(ts);
-  const isoString = hasTimezone ? ts : `${ts.replace(' ', 'T')}Z`;
-  const d = new Date(isoString);
+  const d = hasTimezone ? new Date(ts) : new Date(ts.replace(' ', 'T'));
   return d.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Kolkata'
   });
 }
 
@@ -367,8 +381,6 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const cameraPhotoInputRef = useRef(null);
-  const cameraVideoInputRef = useRef(null);
   const galleryInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -541,7 +553,7 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
 
   const findMessageById = (id) => messages.find(m => m.id === id);
 
-  const otherPersonMessage = messages.find(m => m.sender_id !== currentUserId);
+  const otherPersonMessage = messages.find(m => String(m.sender_id) !== String(currentUserId));
   const headerName = otherUserName || otherPersonMessage?.sender_name || 'Chat';
 
   return (
@@ -566,10 +578,11 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
         )}
         <div className="chatwindow-messages" ref={messagesContainerRef}>
           {messages.map(m => {
-            const isMine = m.sender_id === currentUserId;
+            const isMine = String(m.sender_id) === String(currentUserId);
             const quoted = m.reply_to_message_id ? findMessageById(m.reply_to_message_id) : null;
             const reactionEntries = Object.entries(m.reactions || {});
             const isEditingThis = editingId === m.id;
+            const isSelected = pickerForId === m.id;
 
             return (
               <div key={m.id} className={`chatwindow-bubble-row ${isMine ? 'mine' : 'theirs'}`}>
@@ -580,11 +593,11 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
                   className={`chatwindow-bubble ${isMine ? 'mine' : 'theirs'}`}
                   onClick={() => {
                     if (m.deleted || isEditingThis) return;
-                    setPickerForId(pickerForId === m.id ? null : m.id);
+                    setPickerForId(isSelected ? null : m.id);
                     setDeleteMenuForId(null);
                   }}
                 >
-                  {pickerForId === m.id && !m.deleted && (
+                  {isSelected && !m.deleted && (
                     <div className="chatwindow-picker" onClick={e => e.stopPropagation()}>
                       {EMOJI_OPTIONS.map(emoji => (
                         <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>
@@ -647,8 +660,8 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
                   </div>
                 )}
 
-                {!m.deleted && !isEditingThis && (
-                  <div className="chatwindow-actions">
+                {!m.deleted && !isEditingThis && isSelected && (
+                  <div className="chatwindow-actions" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setReplyingTo(m)}>↩ Reply</button>
                     {isMine && (
                       <button onClick={() => { setEditingId(m.id); setEditText(m.message); }}>✎ Edit</button>
@@ -706,28 +719,10 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
 
           {showAttachMenu && (
             <div className="chatwindow-attach-menu" onClick={e => e.stopPropagation()}>
-              <button onClick={() => cameraPhotoInputRef.current?.click()}>📷 Take Photo</button>
-              <button onClick={() => cameraVideoInputRef.current?.click()}>🎥 Record Video</button>
               <button onClick={() => galleryInputRef.current?.click()}>🖼️ Choose from Gallery</button>
             </div>
           )}
 
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            ref={cameraPhotoInputRef}
-            style={{ display: 'none' }}
-            onChange={e => handleFileChosen(e.target.files?.[0])}
-          />
-          <input
-            type="file"
-            accept="video/*"
-            capture="environment"
-            ref={cameraVideoInputRef}
-            style={{ display: 'none' }}
-            onChange={e => handleFileChosen(e.target.files?.[0])}
-          />
           <input
             type="file"
             accept="image/*,video/*"

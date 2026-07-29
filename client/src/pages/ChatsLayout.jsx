@@ -15,8 +15,44 @@ const COLORS = {
   limeHover: '#b3d426',
 };
 
+const LAYOUT_CSS = `
+.chatslayout-sidebar,
+.chatslayout-mainpane {
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 768px) {
+  .chatslayout-sidebar { display: none; }
+  .chatslayout-mainpane { display: none; }
+  .chatslayout-sidebar.mobile-show { display: flex; width: 100% !important; }
+  .chatslayout-mainpane.mobile-show { display: flex; width: 100% !important; }
+  .chatslayout-root { border-radius: 0 !important; border: none !important; height: 100vh !important; }
+}
+`;
+
 function initialOf(name) {
   return (name || '?').trim().charAt(0).toUpperCase();
+}
+
+function TrashIcon({ size = 16, color = '#fff' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
 }
 
 export default function ChatsLayout() {
@@ -132,70 +168,94 @@ export default function ChatsLayout() {
     );
   }
 
+  const showListOnMobile = !tradeId;
+  const showChatOnMobile = !!tradeId;
+
   return (
-    <div style={layoutStyle}>
-      <div style={sidebarStyle}>
+    <div className="chatslayout-root" style={layoutStyle}>
+      <style>{LAYOUT_CSS}</style>
+
+      {/* LEFT: chat list — this panel's inner list is the ONLY scrollable part on the left */}
+      <div
+        className={`chatslayout-sidebar ${showListOnMobile ? 'mobile-show' : ''}`}
+        style={sidebarStyle}
+      >
         <div style={sidebarHeaderStyle}>
+          <button
+            type="button"
+            onClick={() => navigate('/explore')}
+            style={sidebarBackBtnStyle}
+            aria-label="Back to explore"
+          >
+            ←
+          </button>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#fff' }}>Chats</h2>
         </div>
 
-        {loading || authLoading ? (
-          <div style={{ padding: 16, color: '#cfe8da' }}>Loading…</div>
-        ) : error ? (
-          <div style={{ padding: 16, color: '#ffb4b4' }}>{error}</div>
-        ) : visibleTrades.length === 0 ? (
-          <div style={{ padding: 16, color: '#cfe8da' }}>No chats yet</div>
-        ) : (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {visibleTrades.map(trade => {
-              const isSender = trade.sender_id === userId;
-              const name = isSender ? trade.receiver_username : trade.sender_username;
-              const isActive = String(trade.id) === String(tradeId);
-              const menuOpen = deleteMenuFor === trade.id;
+        <div style={sidebarScrollStyle}>
+          {loading || authLoading ? (
+            <div style={{ padding: 16, color: '#cfe8da' }}>Loading…</div>
+          ) : error ? (
+            <div style={{ padding: 16, color: '#ffb4b4' }}>{error}</div>
+          ) : visibleTrades.length === 0 ? (
+            <div style={{ padding: 16, color: '#cfe8da' }}>No chats yet</div>
+          ) : (
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {visibleTrades.map(trade => {
+                const isSender = trade.sender_id === userId;
+                const name = isSender ? trade.receiver_username : trade.sender_username;
+                const isActive = String(trade.id) === String(tradeId);
+                const menuOpen = deleteMenuFor === trade.id;
 
-              return (
-                <li key={trade.id} style={{ position: 'relative' }}>
-                  <div
-                    onClick={() => handleSelectChat(trade.id)}
-                    style={{ ...sidebarRowStyle, background: isActive ? COLORS.lightGreen : 'transparent' }}
-                  >
-                    <span style={avatarStyle}>{initialOf(name)}</span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: '#fff' }}>
-                        {name || 'Unknown user'}
-                      </span>
-                      <span style={{
-                        display: 'block', fontSize: 12, color: '#cfe8da',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {trade.requested_item_title}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      aria-label="Delete chat"
-                      onClick={(e) => { e.stopPropagation(); setDeleteMenuFor(menuOpen ? null : trade.id); }}
-                      style={sidebarDeleteBtnStyle}
+                return (
+                  <li key={trade.id} style={{ position: 'relative' }}>
+                    <div
+                      onClick={() => handleSelectChat(trade.id)}
+                      style={{ ...sidebarRowStyle, background: isActive ? COLORS.lightGreen : 'transparent' }}
                     >
-                      🗑
-                    </button>
-                  </div>
-
-                  {menuOpen && (
-                    <div style={deleteMenuStyle}>
-                      <button disabled={deleting} onClick={() => handleDeleteForMe(trade.id)} style={deleteMenuOptionStyle}>Delete for me</button>
-                      <button disabled={deleting} onClick={() => handleDeleteForEveryone(trade.id)} style={{ ...deleteMenuOptionStyle, color: '#dc2626' }}>Delete for everyone</button>
-                      <button onClick={() => setDeleteMenuFor(null)} style={deleteMenuOptionStyle}>Cancel</button>
+                      <span style={avatarStyle}>{initialOf(name)}</span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: '#fff' }}>
+                          {name || 'Unknown user'}
+                        </span>
+                        <span style={{
+                          display: 'block', fontSize: 12, color: '#cfe8da',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {trade.requested_item_title}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Delete chat"
+                        onClick={(e) => { e.stopPropagation(); setDeleteMenuFor(menuOpen ? null : trade.id); }}
+                        style={sidebarDeleteBtnStyle}
+                      >
+                        <TrashIcon size={16} color="#fff" />
+                      </button>
                     </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+
+                    {menuOpen && (
+                      <div style={deleteMenuStyle}>
+                        <button disabled={deleting} onClick={() => handleDeleteForMe(trade.id)} style={deleteMenuOptionStyle}>Delete for me</button>
+                        <button disabled={deleting} onClick={() => handleDeleteForEveryone(trade.id)} style={{ ...deleteMenuOptionStyle, color: '#dc2626' }}>Delete for everyone</button>
+                        <button onClick={() => setDeleteMenuFor(null)} style={deleteMenuOptionStyle}>Cancel</button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
 
-      <div style={mainPaneStyle}>
+      {/* RIGHT: chat window — ChatWindow's own internal message list is the ONLY
+          scrollable part on the right. Buttons/report/rating stay fixed below it. */}
+      <div
+        className={`chatslayout-mainpane ${showChatOnMobile ? 'mobile-show' : ''}`}
+        style={mainPaneStyle}
+      >
         {!tradeId || !selectedTrade ? (
           <div style={emptyMainStyle}>
             <span style={{ fontSize: 40 }}>💬</span>
@@ -205,38 +265,42 @@ export default function ChatsLayout() {
           </div>
         ) : (
           <>
-            <div style={{ padding: '16px 16px 0' }}>
-              <ChatWindow tradeOfferId={tradeId} currentUserId={userId} otherUserName={otherUserName} />
+            <div style={mainPaneScrollStyle}>
+              <div style={{ flex: 1, minHeight: 0, padding: '16px 16px 0', display: 'flex', flexDirection: 'column' }}>
+                <ChatWindow tradeOfferId={tradeId} currentUserId={userId} otherUserName={otherUserName} />
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, padding: '12px 16px' }}>
-              <button onClick={handleMarkComplete} style={ctaButtonStyle}>Mark Trade Complete</button>
-              <button onClick={() => setShowReport(!showReport)} style={secondaryButtonStyle}>Report User</button>
+            <div style={mainPaneFooterStyle}>
+              <div style={{ display: 'flex', gap: 8, padding: '12px 16px' }}>
+                <button onClick={handleMarkComplete} style={ctaButtonStyle}>Mark Trade Complete</button>
+                <button onClick={() => setShowReport(!showReport)} style={secondaryButtonStyle}>Report User</button>
+              </div>
+
+              {completeError && <p style={{ color: 'red', fontSize: 13, padding: '0 16px' }}>{completeError}</p>}
+
+              {showReport && (
+                <div style={{ margin: '0 16px 16px' }}>
+                  <textarea
+                    placeholder="Reason for report"
+                    value={reportReason}
+                    onChange={e => setReportReason(e.target.value)}
+                    style={{ width: '100%', borderRadius: 8, border: '1px solid #ccc', padding: 8, boxSizing: 'border-box' }}
+                  />
+                  <button onClick={handleSubmitReport} style={{ ...ctaButtonStyle, marginTop: 8 }}>Submit Report</button>
+                </div>
+              )}
+
+              {showRating && (
+                <div style={{ margin: '0 16px 16px' }}>
+                  <RatingForm
+                    tradeOfferId={tradeId}
+                    revieweeId={otherUserId}
+                    onSubmitted={() => setShowRating(false)}
+                  />
+                </div>
+              )}
             </div>
-
-            {completeError && <p style={{ color: 'red', fontSize: 13, padding: '0 16px' }}>{completeError}</p>}
-
-            {showReport && (
-              <div style={{ margin: '0 16px 16px' }}>
-                <textarea
-                  placeholder="Reason for report"
-                  value={reportReason}
-                  onChange={e => setReportReason(e.target.value)}
-                  style={{ width: '100%', borderRadius: 8, border: '1px solid #ccc', padding: 8, boxSizing: 'border-box' }}
-                />
-                <button onClick={handleSubmitReport} style={{ ...ctaButtonStyle, marginTop: 8 }}>Submit Report</button>
-              </div>
-            )}
-
-            {showRating && (
-              <div style={{ margin: '0 16px 16px' }}>
-                <RatingForm
-                  tradeOfferId={tradeId}
-                  revieweeId={otherUserId}
-                  onSubmitted={() => setShowRating(false)}
-                />
-              </div>
-            )}
           </>
         )}
       </div>
@@ -244,9 +308,10 @@ export default function ChatsLayout() {
   );
 }
 
+// Fixed height, no overflow — the outer page/root can NEVER scroll
 const layoutStyle = {
   display: 'flex',
-  height: 'calc(100vh - 64px)',
+  height: 'calc(100vh - 80px)', // <-- only this line changed
   maxWidth: 1100,
   margin: '0 auto',
   border: '1px solid #ddd',
@@ -254,17 +319,49 @@ const layoutStyle = {
   overflow: 'hidden',
 };
 
+// Sidebar itself doesn't scroll — its inner list does instead
 const sidebarStyle = {
   width: 300,
   minWidth: 260,
   background: `linear-gradient(180deg, ${COLORS.darkGreen}, ${COLORS.green})`,
-  overflowY: 'auto',
   borderRight: `1px solid ${COLORS.green}`,
+  overflow: 'hidden',
+
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
 };
 
 const sidebarHeaderStyle = {
   padding: '18px 16px',
   borderBottom: '1px solid rgba(255,255,255,0.15)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flexShrink: 0,
+};
+
+// This is the ONE scrollbar on the left side
+const sidebarScrollStyle = {
+  flex: 1,
+  overflowY: 'auto',
+  minHeight: 0,
+};
+
+const sidebarBackBtnStyle = {
+  width: 30,
+  height: 30,
+  minWidth: 30,
+  borderRadius: '50%',
+  border: 'none',
+  background: COLORS.lime,
+  color: COLORS.darkGreen,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 16,
+  fontWeight: 700,
 };
 
 const sidebarRowStyle = {
@@ -285,7 +382,8 @@ const avatarStyle = {
 
 const sidebarDeleteBtnStyle = {
   border: 'none', background: 'transparent', color: '#fff',
-  cursor: 'pointer', fontSize: 13, flexShrink: 0, opacity: 0.75,
+  cursor: 'pointer', flexShrink: 0, opacity: 0.75,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
 const deleteMenuStyle = {
@@ -300,11 +398,32 @@ const deleteMenuOptionStyle = {
   cursor: 'pointer', fontSize: 13.5, fontWeight: 500, color: '#111',
 };
 
+// Main pane itself doesn't scroll — split into a chat area and a fixed footer below
 const mainPaneStyle = {
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   background: '#fff',
+  overflow: 'hidden',
+};
+
+// This wraps ChatWindow and stretches to fill space. It does NOT scroll itself —
+// ChatWindow's own internal message list is what scrolls (that's the ONE
+// scrollbar on the right side).
+const mainPaneScrollStyle = {
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+};
+
+// Buttons/report/rating: fixed below the chat, always visible, never part
+// of the chat's own scroll. Only scrolls itself in the rare case the report
+// box + rating form together get taller than 40% of the viewport.
+const mainPaneFooterStyle = {
+  flexShrink: 0,
+  maxHeight: '40vh',
   overflowY: 'auto',
 };
 
