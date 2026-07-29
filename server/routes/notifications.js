@@ -12,6 +12,17 @@ router.get("/", requireAuth, async (req, res) => {
   res.json({ notifications: result.rows });
 });
 
+// PATCH mark ALL notifications as read for the logged-in user
+// Must be defined BEFORE /:id/read so Express doesn't treat
+// "read-all" as an :id value.
+router.patch("/read-all", requireAuth, async (req, res) => {
+  await db.query(
+    "UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE",
+    [req.userId]
+  );
+  res.json({ success: true });
+});
+
 // PATCH mark one notification as read
 router.patch("/:id/read", requireAuth, async (req, res) => {
   await db.query(
