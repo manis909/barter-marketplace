@@ -63,6 +63,8 @@ CREATE TABLE items (
     status           VARCHAR(20) NOT NULL DEFAULT 'available'
                      CHECK (status IN ('available', 'pending', 'traded')),
 
+    view_count       INTEGER NOT NULL DEFAULT 0,
+
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
