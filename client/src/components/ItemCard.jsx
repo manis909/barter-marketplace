@@ -120,6 +120,7 @@ export default function ItemCard({ item }) {
       >
         {/* Image Media Container */}
         <div className="card-media-wrapper">
+          <div className="card-media-backdrop" style={{ backgroundImage: `url(${image})` }} />
           <img src={image} alt={item.title} className="card-image" />
           <button
             type="button"
