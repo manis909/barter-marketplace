@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, User, Star } from 'lucide-react'
+import { Heart, User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import { addWishlist, removeWishlist } from '../services/tradeService'
@@ -15,10 +15,7 @@ export default function ItemCard({ item }) {
   const condition = item.condition || item.item_condition || 'Good'
   const category = item.category || 'General'
 
-  const ownerRating = typeof item.ownerRating === 'number'
-    ? item.ownerRating
-    : (typeof item.owner_rating === 'number' ? item.owner_rating : 4.5)
-
+  
   const ownerName = item.ownerName || item.owner_name || 'Owner'
 
   // Trade modal state
@@ -161,10 +158,7 @@ export default function ItemCard({ item }) {
                 {ownerName}
               </Link>
             </div>
-            <div className="rating-box">
-              <Star size={12} className="star-icon filled" />
-              <span>{ownerRating.toFixed(1)}</span>
-            </div>
+          
           </div>
 
           {/* Row 4: Clean Icon-Free Equal-Width Buttons */}

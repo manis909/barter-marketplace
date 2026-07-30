@@ -158,7 +158,26 @@
 
 @media (max-width: 620px) {
   .detail-thumbs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+  }
+
+  .thumb-button {
+    flex: 0 0 54px;
+    width: 54px;
+    height: 54px;
+    padding: 3px;
+    border-radius: 12px;
+  }
+
+  .thumb-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
   }
 
   .detail-nav-button {
