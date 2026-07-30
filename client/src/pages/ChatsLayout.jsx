@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMyTrades, completeTrade } from '../services/tradeService';
 import { getHiddenChatIds, deleteChatForMe, deleteChatForEveryone } from '../services/chatService';
-import { getErrorMessage } from '../utils/helpers';
+import { getErrorMessage, fmtDate } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 import ChatWindow from '../features/chat/ChatWindow';
 import RatingForm from '../features/ratings/RatingForm';
@@ -194,10 +194,7 @@ function TradeInfoBanner() {
 
 /* System message shown inline in the chat pane when trade is fully complete */
 function TradeCompletedBanner({ completedAt }) {
-  const label = completedAt
-    ? new Date((/Z|[+-]\d{2}:?\d{2}$/.test(completedAt) ? completedAt : completedAt.replace(' ', 'T') + 'Z'))
-        .toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' })
-    : null;
+  const label = completedAt ? fmtDate(completedAt) : null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', flexShrink: 0 }}>
       <div style={{ flex: 1, height: 1, background: T.border }} />

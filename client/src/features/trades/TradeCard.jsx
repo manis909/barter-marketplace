@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { TRADE_STATUS } from '../../utils/constants';
 import { requestMoreItems, getTradeItems, addItemsToTrade, cancelTrade } from '../../services/tradeService';
 import api from '../../services/api';
+import { fmtDate } from '../../utils/helpers';
 
 const TRADE_ITEMS_ROW_CSS = `
 :root {
@@ -613,9 +614,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
     trade.requested_item_value ? `Est. $${trade.requested_item_value}` : null,
   ]);
 
-  const displayDate = trade.created_at
-    ? new Date(trade.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-    : '—';
+  const displayDate = trade.created_at ? fmtDate(trade.created_at) : '—';
 
   const handleAction = useCallback(async (newStatus) => {
     setActing(true);

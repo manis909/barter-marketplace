@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { fmtDateTime } from '../../utils/helpers';
+
 // Status pill colours — same map as TradeCard for visual consistency
 const STATUS_STYLE = {
   pending:   { bg: 'rgba(170,59,255,0.12)',  color: 'var(--accent)' },
@@ -51,12 +53,7 @@ export default function TradeModal({ trade, onClose }) {
     if (e.target === e.currentTarget) onClose();
   }
 
-  const safeDate = trade.created_at
-    ? new Date(trade.created_at).toLocaleString(undefined, {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-      })
-    : '—';
+  const safeDate = trade.created_at ? fmtDateTime(trade.created_at) : '—';
 
   const statusStyle = STATUS_STYLE[trade.status] ?? { bg: 'var(--border)', color: 'var(--text)' };
 

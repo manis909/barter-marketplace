@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import { fmtDate } from '../utils/helpers';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
 import './Profile.css';
 
@@ -223,8 +224,8 @@ export default function Profile() {
 
   function formatJoinedDate(dateString) {
     if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    // Use browser locale + timezone; show month + year only (e.g. "July 2026")
+    return new Date(dateString).toLocaleDateString([], { month: 'long', year: 'numeric' });
   }
 
   if (loading || viewedUserLoading) return <p>Loading...</p>;

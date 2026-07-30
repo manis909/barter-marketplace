@@ -19,6 +19,7 @@ import { categoryNames } from '../data/categories'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
 import UndoToast from '../components/UndoToast'
+import { fmtDate } from '../utils/helpers'
 import './MyListings.css'
 
 const MAX_IMAGES = 3
@@ -750,7 +751,7 @@ export default function MyListingsPage() {
                 <div className="listing-card__footer">
                   <div className="listing-card__meta">
                     <span className="meta-pill">
-                      Listed {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
+                      Listed {item.created_at ? fmtDate(item.created_at) : ''}
                     </span>
                   </div>
                   <div className="listing-card__actions">
