@@ -19,6 +19,8 @@ import Notifications from './pages/Notifications';
 import LandingPage from './landing/LandingPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsAndConditionsPage from './pages/TermsAndConditions';
+import SkilterPage from './pages/Skilter';
+import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import './App.css';
@@ -49,10 +51,12 @@ function App() {
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/terms" element={<TermsAndConditionsPage />} />
             <Route path="/logout" element={<LogoutPage />} />
-            <Route path="/skills" element={<div style={{ padding: 40 }}>Skillter — coming soon</div>} />
+            <Route path="/skilter" element={<SkilterPage />} />
+            <Route path="/skills" element={<SkilterPage />} />
+            <Route path="/renter" element={<RenterPage />} />
+            <Route path="/rent" element={<RenterPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
-            <Route path="/rent" element={<div style={{ padding: 40 }}>Renter — coming soon</div>} />
           </Routes>
         </AppLayout>
       </BrowserRouter>

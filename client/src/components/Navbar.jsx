@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
-import { User, Home } from 'lucide-react'
+import { User, Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import './Navbar.css'
 
@@ -24,6 +24,9 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false)
+  const desktopBrandRef = useRef(null)
+  const mobileBrandRef = useRef(null)
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [activeCategory, setActiveCategory] = useState(() => {
     const cat = new URLSearchParams(location.search).get('category')
@@ -40,6 +43,25 @@ export default function Navbar() {
     const cat = params.get('category')
     setActiveCategory(cat ? cat.toLowerCase() : 'all')
   }, [location.search])
+
+  // Close brand dropdown on route change
+  useEffect(() => {
+    setBrandDropdownOpen(false)
+  }, [location.pathname])
+
+  // Close brand dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        desktopBrandRef.current && !desktopBrandRef.current.contains(event.target) &&
+        mobileBrandRef.current && !mobileBrandRef.current.contains(event.target)
+      ) {
+        setBrandDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Direction-aware throttled scroll listener with hysteresis
   useEffect(() => {
@@ -76,6 +98,12 @@ export default function Navbar() {
   }, [])
 
   const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
+
+  const currentPlatform = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
+    ? 'Skilter'
+    : location.pathname.startsWith('/renter') || location.pathname.startsWith('/rent')
+    ? 'Renter'
+    : 'Barter'
 
   const handleSearchChange = useCallback((event) => {
     setSearch(event.target.value)
@@ -132,9 +160,15 @@ export default function Navbar() {
         <div className="navbar-container">
           {/* DESKTOP LAYOUT (768px and above) */}
           <div className="navbar-desktop-row">
-            {/* Desktop Left: Logo */}
-            <div className="navbar-left">
-              <Link to="/explore" className="navbar-brand" aria-label="Barter Home">
+            {/* Desktop Left: Logo Dropdown */}
+            <div className="navbar-left" ref={desktopBrandRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="navbar-brand navbar-brand-dropdown-trigger"
+                onClick={() => setBrandDropdownOpen((prev) => !prev)}
+                aria-expanded={brandDropdownOpen}
+                aria-label="Select Platform"
+              >
                 <motion.div
                   className="navbar-mark"
                   whileHover={{ rotate: 180, scale: 1.08 }}
@@ -142,8 +176,55 @@ export default function Navbar() {
                 >
                   ⇄
                 </motion.div>
-                <span className="navbar-logo">Barter</span>
-              </Link>
+                <span className="navbar-logo">{currentPlatform}</span>
+                <ChevronDown
+                  size={16}
+                  className={`brand-dropdown-chevron ${brandDropdownOpen ? 'open' : ''}`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {brandDropdownOpen && (
+                  <motion.div
+                    className="brand-dropdown-menu"
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                  >
+                    <button
+                      type="button"
+                      className={`brand-dropdown-item ${currentPlatform === 'Barter' ? 'active' : ''}`}
+                      onClick={() => {
+                        setBrandDropdownOpen(false)
+                        navigate('/explore')
+                      }}
+                    >
+                      Barter
+                    </button>
+                    <button
+                      type="button"
+                      className={`brand-dropdown-item ${currentPlatform === 'Skilter' ? 'active' : ''}`}
+                      onClick={() => {
+                        setBrandDropdownOpen(false)
+                        navigate('/skilter')
+                      }}
+                    >
+                      Skilter
+                    </button>
+                    <button
+                      type="button"
+                      className={`brand-dropdown-item ${currentPlatform === 'Renter' ? 'active' : ''}`}
+                      onClick={() => {
+                        setBrandDropdownOpen(false)
+                        navigate('/renter')
+                      }}
+                    >
+                      Renter
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Desktop Center: Search Bar */}
@@ -194,19 +275,74 @@ export default function Navbar() {
 
           {/* MOBILE LAYOUT (Below 768px) */}
           <div className={`navbar-mobile-wrapper ${scrolled ? 'mobile-scrolled' : ''}`}>
-            {/* ROW 1: Logo (Left) & Home + Notifications + Profile (Right) */}
-            <div className="mobile-row-1">
-              <Link to="/explore" className="navbar-brand" aria-label="Barter Home">
-                <motion.div
-                  className="navbar-mark mobile-mark"
-                  whileHover={{ rotate: 180, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+            {/* ROW 1: Logo Dropdown (Left) & Home + Notifications + Profile (Right) */}
+            <div className={`mobile-row-1 ${brandDropdownOpen ? 'dropdown-open' : ''}`}>
+              <div ref={mobileBrandRef} style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="navbar-brand navbar-brand-dropdown-trigger"
+                  onClick={() => setBrandDropdownOpen((prev) => !prev)}
+                  aria-expanded={brandDropdownOpen}
+                  aria-label="Select Platform"
                 >
-                  ⇄
-                </motion.div>
-                <span className="navbar-logo mobile-logo">Barter</span>
-              </Link>
+                  <motion.div
+                    className="navbar-mark mobile-mark"
+                    whileHover={{ rotate: 180, scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  >
+                    ⇄
+                  </motion.div>
+                  <span className="navbar-logo mobile-logo">{currentPlatform}</span>
+                  <ChevronDown
+                    size={16}
+                    className={`brand-dropdown-chevron ${brandDropdownOpen ? 'open' : ''}`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {brandDropdownOpen && (
+                    <motion.div
+                      className="brand-dropdown-menu mobile-brand-dropdown-menu"
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                    >
+                      <button
+                        type="button"
+                        className={`brand-dropdown-item ${currentPlatform === 'Barter' ? 'active' : ''}`}
+                        onClick={() => {
+                          setBrandDropdownOpen(false)
+                          navigate('/explore')
+                        }}
+                      >
+                        Barter
+                      </button>
+                      <button
+                        type="button"
+                        className={`brand-dropdown-item ${currentPlatform === 'Skilter' ? 'active' : ''}`}
+                        onClick={() => {
+                          setBrandDropdownOpen(false)
+                          navigate('/skilter')
+                        }}
+                      >
+                        Skilter
+                      </button>
+                      <button
+                        type="button"
+                        className={`brand-dropdown-item ${currentPlatform === 'Renter' ? 'active' : ''}`}
+                        onClick={() => {
+                          setBrandDropdownOpen(false)
+                          navigate('/renter')
+                        }}
+                      >
+                        Renter
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               <div className="mobile-actions-right">
                 {/* Mobile Home Button (🏠) */}
@@ -236,7 +372,7 @@ export default function Navbar() {
             </div>
 
             {/* ROW 2: Search Bar */}
-            <div className="mobile-row-2">
+            <div className={`mobile-row-2 ${brandDropdownOpen ? 'dropdown-open' : ''}`}>
               <SearchBar
                 placeholder="Search items to trade..."
                 value={search}
