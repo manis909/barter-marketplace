@@ -27,7 +27,10 @@ export default function NotificationBell() {
 
   return (
     <button
-      onClick={() => navigate('/notifications')}
+      onClick={() => {
+        setUnreadCount(0); // CHANGED: clear the badge immediately on click
+        navigate('/notifications');
+      }}
       style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer' }}
     >
       🔔

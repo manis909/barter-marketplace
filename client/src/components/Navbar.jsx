@@ -1,123 +1,299 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
-import { User } from 'lucide-react'
+import { User, Home } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import './Navbar.css'
 
-const TRANSPARENT_ROUTES = ['/login', '/signup']
+const CATEGORIES = [
+  { id: 'all', name: 'All', color: '#3D6E63', lightBg: '#E4F0ED' },
+  { id: 'books', name: 'Books', color: '#EA580C', lightBg: 'rgba(234, 88, 12, 0.12)' },
+  { id: 'electronics', name: 'Electronics', color: '#2563EB', lightBg: 'rgba(37, 99, 235, 0.12)' },
+  { id: 'gaming', name: 'Gaming', color: '#9333EA', lightBg: 'rgba(147, 51, 234, 0.12)' },
+  { id: 'fashion', name: 'Fashion', color: '#DB2777', lightBg: 'rgba(219, 39, 119, 0.12)' },
+  { id: 'home', name: 'Home', color: '#16A34A', lightBg: 'rgba(22, 163, 74, 0.12)' },
+  { id: 'sports', name: 'Sports', color: '#059669', lightBg: 'rgba(5, 150, 105, 0.12)' },
+  { id: 'music', name: 'Music', color: '#4F46E5', lightBg: 'rgba(79, 70, 229, 0.12)' },
+  { id: 'others', name: 'Others', color: '#475569', lightBg: 'rgba(71, 85, 105, 0.12)' },
+]
 
 export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
-
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [search, setSearch] = useState(
-    () => new URLSearchParams(location.search).get('search') || ''
-  )
-
+  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const cat = new URLSearchParams(location.search).get('category')
+    return cat ? cat.toLowerCase() : 'all'
+  })
+  const [scrolled, setScrolled] = useState(false)
+  const lastScrollY = useRef(0)
   const { currentUser } = useAuth()
 
-  const isTransparent = TRANSPARENT_ROUTES.includes(location.pathname)
-
+  // Sync state with URL params
   useEffect(() => {
-    setSearch(new URLSearchParams(location.search).get('search') || '')
+    const params = new URLSearchParams(location.search)
+    setSearch(params.get('search') || '')
+    const cat = params.get('category')
+    setActiveCategory(cat ? cat.toLowerCase() : 'all')
   }, [location.search])
 
-  const handleSearchChange = (event) => {
-    setSearch(event.target.value)
-  }
+  // Direction-aware throttled scroll listener with hysteresis
+  useEffect(() => {
+    let ticking = false
 
-  const handleSearch = (query) => {
-    const params = new URLSearchParams(location.search)
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = window.scrollY
+          const prevY = lastScrollY.current
+          const diff = currentY - prevY
 
-    if (query) {
-      params.set('search', query)
-    } else {
-      params.delete('search')
+          // Ignore tiny scroll jitter (< 8px)
+          if (Math.abs(diff) >= 8) {
+            setScrolled((prevScrolled) => {
+              if (!prevScrolled && currentY > 110 && diff > 0) {
+                return true
+              }
+              if (prevScrolled && (currentY < 30 || diff < -15)) {
+                return false
+              }
+              return prevScrolled
+            })
+            lastScrollY.current = currentY
+          }
+          ticking = false
+        })
+        ticking = true
+      }
     }
 
-    navigate({
-      pathname: '/explore',
-      search: params.toString() ? `?${params.toString()}` : '',
-    })
-  }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
-  const handleSelect = (item) => {
-    navigate(`/item/${item.id}`)
-  }
+  const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
+
+  const handleSearchChange = useCallback((event) => {
+    setSearch(event.target.value)
+  }, [])
+
+  const handleSearch = useCallback(
+    (query) => {
+      const params = new URLSearchParams(location.search)
+      if (query) {
+        params.set('search', query)
+      } else {
+        params.delete('search')
+      }
+      navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+    },
+    [location.search, navigate]
+  )
+
+  const handleSelect = useCallback(
+    (item) => {
+      navigate(`/item/${item.id}`)
+    },
+    [navigate]
+  )
+
+  const handleCategoryClick = useCallback(
+    (catId) => {
+      setActiveCategory(catId)
+      const params = new URLSearchParams(location.search)
+      if (catId === 'all') {
+        params.delete('category')
+      } else {
+        params.set('category', catId)
+      }
+      navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+    },
+    [location.search, navigate]
+  )
+
+  const activeCategoryObj = useMemo(
+    () => CATEGORIES.find((c) => c.id === activeCategory) || CATEGORIES[0],
+    [activeCategory]
+  )
 
   return (
     <>
-      <header className={isTransparent ? 'navbar navbar-transparent' : 'navbar'}>
-        <div className="navbar-left">
-          <Link to="/explore" className="navbar-brand">
-            <div className="navbar-mark">⇄</div>
-            <p className="navbar-logo">Barter</p>
-          </Link>
-        </div>
+      <header
+        className={`navbar-wrapper ${scrolled ? 'is-scrolled' : ''}`}
+        style={{
+          '--active-accent-color': activeCategoryObj.color,
+          '--active-accent-bg': activeCategoryObj.lightBg,
+        }}
+      >
+        <div className="navbar-container">
+          {/* DESKTOP LAYOUT (768px and above) */}
+          <div className="navbar-desktop-row">
+            {/* Desktop Left: Logo */}
+            <div className="navbar-left">
+              <Link to="/explore" className="navbar-brand" aria-label="Barter Home">
+                <motion.div
+                  className="navbar-mark"
+                  whileHover={{ rotate: 180, scale: 1.08 }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                >
+                  ⇄
+                </motion.div>
+                <span className="navbar-logo">Barter</span>
+              </Link>
+            </div>
 
-        <div className="navbar-center">
-          <SearchBar
-            placeholder="Search items to trade..."
-            value={search}
-            onChange={handleSearchChange}
-            onSearch={handleSearch}
-            onSelect={handleSelect}
-          />
-        </div>
+            {/* Desktop Center: Search Bar */}
+            <div className="navbar-center">
+              <SearchBar
+                placeholder="Search items to trade..."
+                value={search}
+                onChange={handleSearchChange}
+                onSearch={handleSearch}
+                onSelect={handleSelect}
+              />
+            </div>
 
-        <div
-          className="navbar-right"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-          }}
-        >
-          {currentUser ? (
-            <>
-              <button
-                type="button"
-                className="profile-button"
-                onClick={() => setDrawerOpen(true)}
-                aria-label="Open profile drawer"
-              >
-                <User className="profile-icon" size={20} />
-              </button>
-
-              <Link to="/explore" className="navbar-link">
+            {/* Desktop Right: Actions */}
+            <div className="navbar-right">
+              <Link to="/explore" className="navbar-link" style={{ position: 'relative' }}>
                 Explore
+                {isExploreActive && (
+                  <motion.div
+                    layoutId="navbar-underline"
+                    className="active-underline"
+                    style={{ backgroundColor: activeCategoryObj.color }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
               </Link>
 
-              <NotificationBell />
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="navbar-link">
-                Login
+              {currentUser && <NotificationBell />}
+
+              {currentUser ? (
+                <motion.button
+                  type="button"
+                  className="profile-button"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label="Open profile drawer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  <User className="profile-icon" size={20} />
+                </motion.button>
+              ) : (
+                <Link to="/login" className="navbar-link navbar-login-btn">
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* MOBILE LAYOUT (Below 768px) */}
+          <div className={`navbar-mobile-wrapper ${scrolled ? 'mobile-scrolled' : ''}`}>
+            {/* ROW 1: Logo (Left) & Home + Notifications + Profile (Right) */}
+            <div className="mobile-row-1">
+              <Link to="/explore" className="navbar-brand" aria-label="Barter Home">
+                <motion.div
+                  className="navbar-mark mobile-mark"
+                  whileHover={{ rotate: 180, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                >
+                  ⇄
+                </motion.div>
+                <span className="navbar-logo mobile-logo">Barter</span>
               </Link>
 
-              <Link to="/signup" className="navbar-link">
-                Sign Up
-              </Link>
+              <div className="mobile-actions-right">
+                {/* Mobile Home Button (🏠) */}
+                <Link to="/explore" className="mobile-home-btn" aria-label="Explore Home">
+                  <Home size={18} className="mobile-home-icon" />
+                </Link>
 
-              <Link to="/explore" className="navbar-link">
-                Explore
-              </Link>
-            </>
-          )}
+                {currentUser && <NotificationBell />}
+
+                {currentUser ? (
+                  <motion.button
+                    type="button"
+                    className="profile-button mobile-profile-btn"
+                    onClick={() => setDrawerOpen(true)}
+                    aria-label="Open profile drawer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.96 }}
+                  >
+                    <User className="profile-icon" size={18} />
+                  </motion.button>
+                ) : (
+                  <Link to="/login" className="navbar-link navbar-login-btn mobile-login-btn">
+                    Login
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* ROW 2: Search Bar */}
+            <div className="mobile-row-2">
+              <SearchBar
+                placeholder="Search items to trade..."
+                value={search}
+                onChange={handleSearchChange}
+                onSearch={handleSearch}
+                onSelect={handleSelect}
+              />
+            </div>
+
+            {/* ROW 3: Categories (Render ONLY on Explore page when Profile Drawer is closed and not scrolled down) */}
+            <AnimatePresence initial={false}>
+              {isExploreActive && !drawerOpen && !scrolled && (
+                <motion.div
+                  key="mobile-category-row-wrapper"
+                  className="mobile-row-3-collapse-wrapper"
+                  initial={{ opacity: 0, y: -10, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto', marginTop: 4 }}
+                  exit={{ opacity: 0, y: -10, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden', willChange: 'transform, opacity' }}
+                >
+                  <div className="mobile-row-3-categories-scroll">
+                    <div className="categories-track">
+                      {CATEGORIES.map((cat) => {
+                        const isActive = activeCategory === cat.id
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            className={`category-chip ${isActive ? 'active' : ''}`}
+                            onClick={() => handleCategoryClick(cat.id)}
+                            aria-label={`Category ${cat.name}`}
+                            style={{
+                              '--chip-color': cat.color,
+                              '--chip-bg': cat.lightBg,
+                            }}
+                          >
+                            {isActive && (
+                              <span
+                                className="active-chip-bg"
+                                style={{ backgroundColor: cat.color }}
+                              />
+                            )}
+                            <span className="chip-label">{cat.name}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
-      {currentUser && (
-        <ProfileDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-        />
-      )}
+      {currentUser && <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
     </>
   )
 }

@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
     ArrowLeft,
-  CheckCircle2,
-  Clock3,
   Crop,
   ImagePlus,
   Package,
@@ -12,7 +10,6 @@ import {
   Plus,
   Search,
   Trash2,
-  Trophy,
   Upload,
   X
 } from 'lucide-react'
@@ -51,6 +48,8 @@ export default function MyListingsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editingItemId, setEditingItemId] = useState(null)
   const [activeFilter, setActiveFilter] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const createListingRef = useRef(null)
 
   // ── delete / undo state ────────────────────────────────────────
@@ -351,20 +350,46 @@ export default function MyListingsPage() {
     }
   }, []) // no deps — intentionally reads via ref, not state
 
-  // ── stats ──────────────────────────────────────────────────────
- // ── stats ──────────────────────────────────────────────────────
-  const activeListings = listings.filter((item) => item.status === 'available').length
-  const completedTrades = listings.filter((item) => item.status === 'traded').length
-  const pendingTrades = listings.filter((item) => item.status === 'pending').length
 
-  // ── filtered listings based on active tab ────────────────────────
+
+  // ── suggestions calculations ────────────────────────────────────
+  const suggestionCandidates = Array.from(
+    new Set(listings.flatMap((l) => [l.title, l.category]).filter(Boolean))
+  )
+  const matchingSuggestions = searchQuery.trim()
+    ? suggestionCandidates.filter((c) =>
+        c.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : []
+
+  // ── filtered listings based on active tab and search query ───────
   const filteredListings = listings.filter((item) => {
-    if (activeFilter === 'All')       return true
-    if (activeFilter === 'Active')    return item.status === 'available'
-    if (activeFilter === 'Pending')   return item.status === 'pending'
-    if (activeFilter === 'Completed') return item.status === 'traded'
+    // 1. Status Filter
+    if (activeFilter === 'Active' && item.status !== 'available') return false
+    if (activeFilter === 'Pending' && item.status !== 'pending') return false
+    if (activeFilter === 'Completed' && item.status !== 'traded') return false
+
+    // 2. Search Query Filter
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase()
+      const matchesTitle = (item.title || item.name || '').toLowerCase().includes(q)
+      const matchesCategory = (item.category || '').toLowerCase().includes(q)
+      if (!matchesTitle && !matchesCategory) return false
+    }
+
     return true
   })
+
+  const handleSelectSuggestion = (val) => {
+    setSearchQuery(val)
+    setShowSuggestions(false)
+  }
+
+  const handleSearchBlur = () => {
+    setTimeout(() => {
+      setShowSuggestions(false)
+    }, 200)
+  }
 
   return (
     <>
@@ -408,57 +433,51 @@ export default function MyListingsPage() {
         </button>
       </header>
 
-      <div className="stats-grid">
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <Package size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Total Listings</p>
-            <p className="stat-card__value">{listings.length}</p>
-            <p className="stat-card__meta">Items currently live</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <CheckCircle2 size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Active Listings</p>
-            <p className="stat-card__value">{activeListings}</p>
-            <p className="stat-card__meta">Ready for trade</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <Clock3 size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Pending Trades</p>
-            <p className="stat-card__value">{pendingTrades}</p>
-            <p className="stat-card__meta">Awaiting review</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-card__icon">
-            <Trophy size={18} />
-          </div>
-          <div>
-            <p className="stat-card__label">Completed Trades</p>
-            <p className="stat-card__value">{completedTrades}</p>
-            <p className="stat-card__meta">Successful swaps</p>
-          </div>
-        </article>
-      </div>
 
       <div className="toolbar">
-        <label className="search-field">
-          <Search size={18} />
-          <input type="text" placeholder="Search your listings..." />
-        </label>
+        <div className="search-field-container">
+          <label className="search-field">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search your listings..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setShowSuggestions(true)
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={handleSearchBlur}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="clear-search-btn"
+                onClick={() => {
+                  setSearchQuery('')
+                  setShowSuggestions(false)
+                }}
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </label>
+          
+          {showSuggestions && matchingSuggestions.length > 0 && (
+            <ul className="suggestions-dropdown">
+              {matchingSuggestions.map((suggestion, idx) => (
+                <li
+                  key={idx}
+                  className="suggestion-item"
+                  onMouseDown={() => handleSelectSuggestion(suggestion)}
+                >
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       <div className="filter-chips">
           {filterOptions.map((option) => (
             <button
@@ -662,14 +681,24 @@ export default function MyListingsPage() {
 
       {/* ── Listings Grid ────────────────────────────────────────── */}
       {filteredListings.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state__icon">
-            <Package size={34} />
+        listings.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">
+              <Package size={34} />
+            </div>
+            <h3>No Listings Yet</h3>
+            <p>Start your barter journey by uploading your first item.</p>
+            <p>Your listings will appear here once added.</p>
           </div>
-          <h3>No Listings Yet</h3>
-          <p>Start your barter journey by uploading your first item.</p>
-          <p>Your listings will appear here once added.</p>
-        </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state__icon">
+              <Search size={34} />
+            </div>
+            <h3>No matching listings found.</h3>
+            <p>Try another title or category.</p>
+          </div>
+        )
       ) : (
         <div className="listings-grid">
           {filteredListings.map((item) => (

@@ -58,7 +58,6 @@ button {
   padding: 20px 0 40px;
 }
 
-button,
 .primary-button,
 .primary-btn {
   display: inline-flex;
@@ -75,7 +74,6 @@ button,
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-button:hover,
 .primary-button:hover,
 .primary-btn:hover {
   transform: translateY(-1px);
@@ -126,9 +124,9 @@ select:focus {
   white-space: nowrap;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 767px) {
   .app-main {
-    width: min(100%, calc(100% - 32px));
-    padding: 16px 0 32px;
+    width: min(100%, calc(100% - 24px));
+    padding: 20px 0 40px;
   }
 }

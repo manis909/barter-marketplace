@@ -20,23 +20,22 @@ export default function Notifications() {
       });
   };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const markAsRead = async (id) => {
+  const markAllAsRead = async () => {
     const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/notifications/${id}/read`, {
+    await fetch(`${API_URL}/api/notifications/read-all`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` }
     });
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, is_read: true } : n))
-    );
+    // Reflect the change locally too, so the list shows them as read immediately
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
+  useEffect(() => {
+    fetchNotifications();
+    markAllAsRead();
+  }, []);
+
   const handleClick = (n) => {
-    markAsRead(n.id);
     if (n.trade_offer_id) {
       navigate(`/chat/${n.trade_offer_id}`);
     }

@@ -18,8 +18,7 @@ import LogoutPage from './pages/Logout';
 import Notifications from './pages/Notifications';
 import LandingPage from './landing/LandingPage';
 import AppLayout from './components/AppLayout';
-import ChatsPage from './pages/Chats';
-import ChatPage from './pages/Chat';
+import ChatsLayout from './pages/ChatsLayout';
 import './App.css';
 
 function App() {
@@ -39,7 +38,6 @@ function App() {
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
-            <Route path="/chats" element={<ChatsPage />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
             <Route path="/my-trades" element={<MyTradesPage />} />
             <Route path="/trade-requests" element={<TradeRequestsPage />} />
@@ -47,8 +45,9 @@ function App() {
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/help" element={<HelpSupportPage />} />
             <Route path="/logout" element={<LogoutPage />} />
-            <Route path="/chat/:tradeId" element={<ChatPage />} />
             <Route path="/skills" element={<div style={{ padding: 40 }}>Skillter — coming soon</div>} />
+            <Route path="/chats" element={<ChatsLayout />} />
+            <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/rent" element={<div style={{ padding: 40 }}>Renter — coming soon</div>} />
           </Routes>
         </AppLayout>
