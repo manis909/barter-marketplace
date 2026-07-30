@@ -25,7 +25,7 @@ export default function LandingPage() {
       <div className="landing-overlay" aria-hidden="true" />
 
       <div className="landing-content">
-        <h1 className="landing-heading landing-fade-in landing-fade-1">Welcome to <span className="landing-highlight">Barter</span> !</h1>
+        <h1 className="landing-heading landing-fade-in landing-fade-1">Welcome to <span className="landing-highlight">Barter</span> </h1>
         <p className="landing-subtitle landing-fade-in landing-fade-2">Trade what you have for what you need — no cash required.</p>
 
         <div className="landing-actions landing-fade-in landing-fade-3">
