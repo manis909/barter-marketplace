@@ -252,6 +252,10 @@ export default function Navbar() {
                 )}
               </Link>
 
+              {currentUser?.is_admin && (
+                <Link to="/admin/verification" className="navbar-link">Admin</Link>
+              )}
+
               {currentUser && <NotificationBell />}
 
               {currentUser ? (

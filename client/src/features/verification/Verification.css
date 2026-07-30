@@ -230,3 +230,15 @@
   border-radius: 6px;
   font-size: 13px;
 }
+/* ---------- Add this to Verification.css ---------- */
+
+.admin-hallticket-number {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  background: #f3f4f6;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: inline-block;
+  margin: 0;
+}

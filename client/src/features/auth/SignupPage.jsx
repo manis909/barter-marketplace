@@ -22,6 +22,8 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [idPhoto, setIdPhoto] = useState(null);
+  const [hallTicketNumber, setHallTicketNumber] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
@@ -44,14 +46,29 @@ export default function SignupPage() {
       return;
     }
 
+    if (!idPhoto) {
+      setError('Please upload your ID card to sign up.');
+      return;
+    }
+
+    if (!hallTicketNumber.trim()) {
+      setError('Please enter your hall ticket number to sign up.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const res = await api.post('/auth/signup', {
-        username,
-        full_name: fullName,
-        email,
-        password,
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('full_name', fullName);
+      formData.append('email', email);
+      formData.append('password', password);
+      formData.append('id_photo', idPhoto);
+      formData.append('hallticket_number', hallTicketNumber.trim());
+
+      const res = await api.post('/auth/signup', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       login(res.data.user, res.data.token);
       navigate(ROUTES.PROFILE);
@@ -146,6 +163,27 @@ export default function SignupPage() {
               minLength={8}
             />
           </div>
+
+          <div className="auth-field">
+            <label className="auth-file-label">ID Card</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setIdPhoto(e.target.files[0] || null)}
+              required
+              className="auth-file-input"
+            />
+          </div>
+
+          <div className="auth-field">
+            <input
+              placeholder="Hall Ticket Number"
+              value={hallTicketNumber}
+              onChange={e => setHallTicketNumber(e.target.value)}
+              required
+            />
+          </div>
+
           <button type="submit" className="auth-submit" disabled={submitting}>
             {submitting ? 'Creating account...' : 'Sign Up'}
           </button>

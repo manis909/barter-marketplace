@@ -8,7 +8,7 @@ import axios from 'axios';
 import { getToken } from '../utils/storage';
 
 // Automatically normalize URL to ensure it always ends with /api
-const rawUrl = import.meta.env.VITE_API_URL || 'https://localhost:5000/api';
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
 const baseURL = cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
 

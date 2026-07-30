@@ -243,3 +243,38 @@
 .auth-switch a:hover {
   text-decoration: underline;
 }
+/* ---------- Add this block to AuthPages.css ---------- */
+
+.auth-file-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.auth-file-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.auth-file-input::file-selector-button {
+  background: var(--color-accent);
+  color: var(--color-primary-dark);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.auth-file-input::file-selector-button:hover {
+  background: var(--color-accent-hover);
+}

@@ -24,6 +24,7 @@ import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import './App.css';
+import AdminVerificationPage from './features/verification/AdminVerification';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
             <Route path="/rent" element={<RenterPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
+            <Route path="/admin/verification" element={<AdminVerificationPage />}
           </Routes>
         </AppLayout>
       </BrowserRouter>
