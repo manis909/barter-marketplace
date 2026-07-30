@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { fmtTime, fmtDate } from '../../utils/helpers';
 
 const API_URL = 'http://localhost:5000';
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -19,22 +20,6 @@ const T = {
   radiusCard:    '14px',
   radiusControl: '9px',
 };
-
-/* ─── Timestamp: normalize to UTC then format as IST ───────────────────── */
-function formatTime(ts) {
-  if (!ts) return '';
-  // pg sends TIMESTAMP columns without tz info, e.g. "2026-07-30T07:05:29.295195"
-  // Socket.io sends JS Date serialized with Z.  Handle both.
-  const normalized = /Z|[+-]\d{2}:?\d{2}$/.test(String(ts))
-    ? ts
-    : String(ts).replace(' ', 'T') + 'Z';
-  return new Date(normalized).toLocaleTimeString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
 
 /* ─── Avatar ────────────────────────────────────────────────────────────── */
 function Avatar({ name, imageUrl, size = 34 }) {
@@ -342,16 +327,7 @@ const CHAT_CSS = `
 
 /* ─── Trade completed system message (renders inside .cw-messages scroll area) ── */
 function TradeCompletedSystemMsg({ completedAt }) {
-  const normalized = completedAt
-    ? (/Z|[+-]\d{2}:?\d{2}$/.test(String(completedAt))
-        ? String(completedAt)
-        : String(completedAt).replace(' ', 'T') + 'Z')
-    : null;
-  const label = normalized
-    ? new Date(normalized).toLocaleDateString('en-IN', {
-        timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric',
-      })
-    : null;
+  const label = completedAt ? fmtDate(completedAt) : null;
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
@@ -711,7 +687,7 @@ export default function ChatWindow({
                   {/* Timestamp + sent status */}
                   {!m.deleted && (
                     <div className="cw-bubble-footer">
-                      <span className="cw-ts">{formatTime(m.created_at)}</span>
+                      <span className="cw-ts">{fmtTime(m.created_at)}</span>
                       {/* ✓ for own messages; turns blue when recipient has read the chat */}
                       {isMine && (
                         <span className="cw-status" style={{ color: chatIsRead ? '#53bdeb' : 'rgba(255,255,255,0.7)' }}>

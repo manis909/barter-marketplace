@@ -3,6 +3,12 @@ const router = express.Router();
 const requireAuth = require("../middleware/auth");
 const db = require("../models/db");
 
+// Holds a reference to the shared Socket.io instance, set once from server.js
+let ioInstance = null;
+function setIO(io) {
+  ioInstance = io;
+}
+
 // GET all notifications for the logged-in user
 router.get("/", requireAuth, async (req, res) => {
   const result = await db.query(
@@ -13,8 +19,6 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // PATCH mark ALL notifications as read for the logged-in user
-// Must be defined BEFORE /:id/read so Express doesn't treat
-// "read-all" as an :id value.
 router.patch("/read-all", requireAuth, async (req, res) => {
   await db.query(
     "UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE",
@@ -32,13 +36,23 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Helper used by other routes (e.g. Member 3's trades.js) to create a notification
+// Helper used by other routes (chat.js, trades.js, verification, etc.) to create a notification
 async function createNotification(userId, type, title, body, tradeOfferId = null) {
-  await db.query(
-    "INSERT INTO notifications (user_id, type, title, body, trade_offer_id) VALUES ($1, $2, $3, $4, $5)",
+  const result = await db.query(
+    "INSERT INTO notifications (user_id, type, title, body, trade_offer_id) VALUES ($1, $2, $3, $4, $5) RETURNING *",
     [userId, type, title, body, tradeOfferId]
   );
+
+  const notification = result.rows[0];
+
+  // Push a realtime event to this specific user, if they're connected
+  if (ioInstance) {
+    ioInstance.to(`user:${userId}`).emit("newNotification", notification);
+  }
+
+  return notification;
 }
 
 module.exports = router;
 module.exports.createNotification = createNotification;
+module.exports.setIO = setIO;

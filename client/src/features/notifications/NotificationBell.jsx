@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 const API_URL = 'http://localhost:5000';
 
 export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+  const socketRef = useRef(null);
 
   const fetchUnreadCount = () => {
     const token = localStorage.getItem('token');
@@ -21,14 +23,33 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchUnreadCount();
+
+    // Poll as a reliability fallback, same pattern already used for chat
     const interval = setInterval(fetchUnreadCount, 10000);
-    return () => clearInterval(interval);
+
+    // Realtime push: instantly bump the count when a new notification arrives
+    const token = localStorage.getItem('token');
+    const socket = io(API_URL, { auth: { token } });
+    socketRef.current = socket;
+
+    socket.on('newNotification', () => {
+      setUnreadCount(prev => prev + 1);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.log('Notification socket connection failed:', err.message);
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
   }, []);
 
   return (
     <button
       onClick={() => {
-        setUnreadCount(0); // CHANGED: clear the badge immediately on click
+        setUnreadCount(0);
         navigate('/notifications');
       }}
       style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer' }}
