@@ -82,32 +82,47 @@ const LAYOUT_CSS = `
   .chatslayout-root {
     border-radius: 0 !important;
     border: none !important;
-    /* app-main padding is zeroed by :has() above; use full remaining viewport */
     height: calc(100dvh - 80px) !important;
     height: calc(100vh - 80px) !important;
-    max-width: 100% !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
     margin: 0 !important;
     overflow: hidden !important;
   }
+
+  /* Both panels hidden by default on mobile */
   .chatslayout-sidebar  { display: none !important; }
   .chatslayout-mainpane { display: none !important; }
+
+  /* Only the active panel is shown, always full-width */
   .chatslayout-sidebar.mobile-show {
     display: flex !important;
-    width: 100% !important;
+    width: 100vw !important;
     min-width: 0 !important;
+    max-width: 100vw !important;
     height: 100% !important;
     overflow: hidden !important;
+    flex-shrink: 0 !important;
+    border-right: none !important;
   }
   .chatslayout-mainpane.mobile-show {
     display: flex !important;
-    width: 100% !important;
+    width: 100vw !important;
     min-width: 0 !important;
+    max-width: 100vw !important;
     height: 100% !important;
     overflow: hidden !important;
     flex-direction: column !important;
+    flex: none !important;
   }
-  .chatslayout-sidebar *,
-  .chatslayout-mainpane * { max-width: 100%; box-sizing: border-box; }
+
+  /* Prevent any child from causing horizontal overflow */
+  .chatslayout-sidebar.mobile-show *,
+  .chatslayout-mainpane.mobile-show * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
   .chatslayout-mobile-back { display: flex !important; }
 }
 
@@ -127,6 +142,10 @@ function initialOf(name) {
 /** Shows profile_image if available, else a lettered circle. */
 function Avatar({ name, imageUrl, size = 38 }) {
   const [imgError, setImgError] = useState(false);
+
+  // Reset error state if the URL changes (e.g. after a profile photo update)
+  useEffect(() => { setImgError(false); }, [imageUrl]);
+
   const src = imageUrl && !imgError
     ? (imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`)
     : null;
@@ -514,19 +533,16 @@ function BackArrow() {
 const s = {
   layout: {
     display: 'flex',
-    /*
-      Navbar is sticky and ~80px tall (56px min-height + 2×12px padding).
-      app-main padding is zeroed via the :has() CSS rule above.
-      Use 100dvh for mobile browsers that adjust for the address bar.
-    */
     height: 'calc(100dvh - 80px)',
     maxWidth: 1100,
+    width: '100%',          /* always fill available width */
     margin: '0 auto',
     border: `1px solid ${T.border}`,
     borderRadius: T.radiusCard,
     overflow: 'hidden',
     background: T.surface,
     fontFamily: 'Manrope, sans-serif',
+    boxSizing: 'border-box',
   },
 
   /* ── Sidebar ── */

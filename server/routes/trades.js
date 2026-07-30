@@ -78,11 +78,14 @@ router.get("/mine", requireAuth, async (req, res) => {
               o.item_condition AS offered_item_condition,
               o.estimated_value AS offered_item_value,
               r.title AS requested_item_title,
+              r.id AS requested_item_id,
               r.image_urls AS requested_item_images,
               r.item_condition AS requested_item_condition,
               r.estimated_value AS requested_item_value,
-              u_sender.username AS sender_username,
-              u_receiver.username AS receiver_username
+              u_sender.username   AS sender_username,
+              u_sender.profile_image AS sender_profile_image,
+              u_receiver.username AS receiver_username,
+              u_receiver.profile_image AS receiver_profile_image
        FROM trade_offers t
        JOIN items o ON o.id = t.offered_item_id
        JOIN items r ON r.id = t.requested_item_id
