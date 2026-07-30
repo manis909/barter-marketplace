@@ -87,18 +87,50 @@ io.use((socket, next) => {
 // Connection handling — one trade = one room, so messages only
 // broadcast to the 2 users actually in that trade.
 // ------------------------------------------------------------
+
+// In-memory presence tracking: userId → Set of socket IDs
+const onlineUsers = new Map();
+
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id, "user:", socket.user?.userId);
 
-  const userRoom = `user:${socket.user.userId}`;
+  const userId = socket.user.userId;
+  const userRoom = `user:${userId}`;
   socket.join(userRoom);
+
+  // Track presence
+  if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
+  onlineUsers.get(userId).add(socket.id);
+
+  // Notify everyone in the same trade rooms that this user is now online.
+  // We broadcast after joining so recipients receive it correctly.
+  socket.broadcast.emit("userOnline", { userId });
 
   socket.on("joinTrade", (tradeOfferId) => {
     socket.join(String(tradeOfferId));
   });
 
+  // When the user opens a chat, notify the other party their messages are read
+  socket.on("markRead", ({ tradeOfferId }) => {
+    if (!tradeOfferId) return;
+    // Emit only to others in the trade room (not back to the reader)
+    socket.to(String(tradeOfferId)).emit("messagesRead", {
+      tradeOfferId,
+      readBy: userId,
+    });
+  });
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
+    const sockets = onlineUsers.get(userId);
+    if (sockets) {
+      sockets.delete(socket.id);
+      if (sockets.size === 0) {
+        onlineUsers.delete(userId);
+        // All connections for this user gone — they are now offline
+        socket.broadcast.emit("userOffline", { userId });
+      }
+    }
   });
 });
 
