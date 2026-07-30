@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
-import { addWishlist, removeWishlist } from '../services/tradeService'
+import WishlistButton from './WishlistButton'
 import './ItemCard.css'
 
 export default function ItemCard({ item }) {
@@ -26,10 +26,6 @@ export default function ItemCard({ item }) {
   const [loadingItems, setLoadingItems] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [tradeError, setTradeError] = useState('')
-
-  // Wishlist state
-  const [wishlisted, setWishlisted] = useState(false)
-  const [wishlistLoading, setWishlistLoading] = useState(false)
 
   async function handleOfferTradeClick() {
     if (!currentUser) {
@@ -82,29 +78,6 @@ export default function ItemCard({ item }) {
     setTradeMessage('')
   }
 
-  async function handleWishlistToggle(e) {
-    e.stopPropagation()
-    if (!currentUser) {
-      navigate('/login')
-      return
-    }
-    if (wishlistLoading) return
-    setWishlistLoading(true)
-    try {
-      if (wishlisted) {
-        await removeWishlist(item.id)
-        setWishlisted(false)
-      } else {
-        await addWishlist(item.id)
-        setWishlisted(true)
-      }
-    } catch (err) {
-      console.error('Wishlist toggle failed:', err)
-    } finally {
-      setWishlistLoading(false)
-    }
-  }
-
   const isOwner = currentUser && currentUser.id === item.owner_id
 
   return (
@@ -119,18 +92,7 @@ export default function ItemCard({ item }) {
         <div className="card-media-wrapper">
           <div className="card-media-backdrop" style={{ backgroundImage: `url(${image})` }} />
           <img src={image} alt={item.title} className="card-image" />
-          <button
-            type="button"
-            className={`glass-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
-            aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-            onClick={handleWishlistToggle}
-            disabled={wishlistLoading}
-          >
-            <Heart
-              size={18}
-              className={`heart-icon ${wishlisted ? 'filled' : ''}`}
-            />
-          </button>
+          <WishlistButton itemId={item.id} />
         </div>
 
         {/* Compact Content Density */}

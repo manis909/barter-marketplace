@@ -1,0 +1,85 @@
+.glass-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  padding: 0;
+  margin: 0;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease;
+  z-index: 10;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  overflow: visible;
+  color: #1F2937;
+}
+
+.glass-wishlist-btn:hover {
+  background: #F9FAFB;
+  border-color: rgba(0, 0, 0, 0.2);
+  transform: scale(1.08);
+}
+
+.heart-icon {
+  width: 18px;
+  height: 18px;
+  color: #1F2937;
+  fill: none;
+  stroke: #1F2937;
+  stroke-width: 2px;
+  transition: color 0.2s ease, fill 0.2s ease, transform 0.2s ease;
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  flex-shrink: 0;
+}
+
+.heart-icon.filled {
+  color: #EF4444;
+  fill: #EF4444;
+  stroke: #EF4444;
+  animation: heartPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.glass-wishlist-btn.wishlisted {
+  background: #FFFFFF;
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.18);
+}
+
+@media (max-width: 620px) {
+  .glass-wishlist-btn {
+    width: 34px;
+    height: 34px;
+    top: 8px;
+    right: 8px;
+  }
+
+  .heart-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
