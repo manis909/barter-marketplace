@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
-import { User } from 'lucide-react'
+import { User, Home } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import './Navbar.css'
 
@@ -30,6 +30,7 @@ export default function Navbar() {
     return cat ? cat.toLowerCase() : 'all'
   })
   const [scrolled, setScrolled] = useState(false)
+  const lastScrollY = useRef(0)
   const { currentUser } = useAuth()
 
   // Sync state with URL params
@@ -40,19 +41,30 @@ export default function Navbar() {
     setActiveCategory(cat ? cat.toLowerCase() : 'all')
   }, [location.search])
 
-  // requestAnimationFrame throttled scroll listener with 80px / 20px hysteresis
+  // Direction-aware throttled scroll listener with hysteresis
   useEffect(() => {
     let ticking = false
 
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          const y = window.scrollY
-          setScrolled((prev) => {
-            if (!prev && y > 80) return true
-            if (prev && y < 20) return false
-            return prev
-          })
+          const currentY = window.scrollY
+          const prevY = lastScrollY.current
+          const diff = currentY - prevY
+
+          // Ignore tiny scroll jitter (< 8px)
+          if (Math.abs(diff) >= 8) {
+            setScrolled((prevScrolled) => {
+              if (!prevScrolled && currentY > 110 && diff > 0) {
+                return true
+              }
+              if (prevScrolled && (currentY < 30 || diff < -15)) {
+                return false
+              }
+              return prevScrolled
+            })
+            lastScrollY.current = currentY
+          }
           ticking = false
         })
         ticking = true
@@ -62,6 +74,8 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
 
   const handleSearchChange = useCallback((event) => {
     setSearch(event.target.value)
@@ -101,7 +115,6 @@ export default function Navbar() {
     [location.search, navigate]
   )
 
-  const isExploreActive = location.pathname === '/explore'
   const activeCategoryObj = useMemo(
     () => CATEGORIES.find((c) => c.id === activeCategory) || CATEGORIES[0],
     [activeCategory]
@@ -181,7 +194,7 @@ export default function Navbar() {
 
           {/* MOBILE LAYOUT (Below 768px) */}
           <div className={`navbar-mobile-wrapper ${scrolled ? 'mobile-scrolled' : ''}`}>
-            {/* ROW 1: Logo (Left) & Notifications + Profile (Right) */}
+            {/* ROW 1: Logo (Left) & Home + Notifications + Profile (Right) */}
             <div className="mobile-row-1">
               <Link to="/explore" className="navbar-brand" aria-label="Barter Home">
                 <motion.div
@@ -196,6 +209,11 @@ export default function Navbar() {
               </Link>
 
               <div className="mobile-actions-right">
+                {/* Mobile Home Button (🏠) */}
+                <Link to="/explore" className="mobile-home-btn" aria-label="Explore Home">
+                  <Home size={18} className="mobile-home-icon" />
+                </Link>
+
                 {currentUser && <NotificationBell />}
 
                 {currentUser ? (
@@ -228,16 +246,16 @@ export default function Navbar() {
               />
             </div>
 
-            {/* ROW 3: Collapsible Horizontally Scrollable Categories */}
+            {/* ROW 3: Categories (Render ONLY on Explore page when Profile Drawer is closed and not scrolled down) */}
             <AnimatePresence initial={false}>
-              {!scrolled && (
+              {isExploreActive && !drawerOpen && !scrolled && (
                 <motion.div
                   key="mobile-category-row-wrapper"
                   className="mobile-row-3-collapse-wrapper"
-                  initial={{ opacity: 0, y: -12, height: 0, marginTop: 0 }}
+                  initial={{ opacity: 0, y: -10, height: 0, marginTop: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto', marginTop: 4 }}
-                  exit={{ opacity: 0, y: -12, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.28, ease: 'easeInOut' }}
+                  exit={{ opacity: 0, y: -10, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
                   style={{ overflow: 'hidden', willChange: 'transform, opacity' }}
                 >
                   <div className="mobile-row-3-categories-scroll">
@@ -245,7 +263,7 @@ export default function Navbar() {
                       {CATEGORIES.map((cat) => {
                         const isActive = activeCategory === cat.id
                         return (
-                          <motion.button
+                          <button
                             key={cat.id}
                             type="button"
                             className={`category-chip ${isActive ? 'active' : ''}`}
@@ -255,20 +273,15 @@ export default function Navbar() {
                               '--chip-color': cat.color,
                               '--chip-bg': cat.lightBg,
                             }}
-                            whileHover={{ scale: 1.04 }}
-                            whileTap={{ scale: 0.96 }}
-                            transition={{ type: 'spring', stiffness: 450, damping: 28 }}
                           >
                             {isActive && (
-                              <motion.span
-                                layoutId="active-cat-bg-mobile"
+                              <span
                                 className="active-chip-bg"
                                 style={{ backgroundColor: cat.color }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 32 }}
                               />
                             )}
                             <span className="chip-label">{cat.name}</span>
-                          </motion.button>
+                          </button>
                         )
                       })}
                     </div>

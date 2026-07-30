@@ -7,8 +7,13 @@
 import axios from 'axios';
 import { getToken } from '../utils/storage';
 
+// Automatically normalize URL to ensure it always ends with /api
+const rawUrl = import.meta.env.VITE_API_URL || 'https://localhost:5000/api';
+const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
+const baseURL = cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://10.65.98.146:5000/api',
+  baseURL,
   timeout: 10000, // 10s — fails loudly instead of hanging forever on a dead backend
   headers: {
     'Content-Type': 'application/json',
@@ -18,11 +23,6 @@ const api = axios.create({
 // ------------------------------------------------------------
 // REQUEST INTERCEPTOR — attaches the JWT to every outgoing request
 // ------------------------------------------------------------
-// ASSUMPTION (confirm with Member 1): token is stored in localStorage
-// under the key 'token', and the backend expects it as a standard
-// "Authorization: Bearer <token>" header. If her auth middleware
-// expects something different (different header name, cookie-based
-// auth, etc.), only this one block needs to change.
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
@@ -48,14 +48,12 @@ api.interceptors.response.use(
         // Token expired or invalid — clear it so the app doesn't
         // keep sending a dead token on every request
         localStorage.removeItem('token');
-        // Optional: redirect to login here once routing is set up
-        // window.location.href = '/login';
       }
 
-      console.error(`API Error [${status}]:`, data?.message || data);
+      console.error(`API Error [${status}]:`, data?.error || data?.message || data);
     } else if (error.request) {
       // Request went out, no response came back (backend down, network issue)
-      console.error('No response from server — is the backend running?');
+      console.error('No response from server — is the backend or Cloudflare Tunnel running?');
     } else {
       console.error('Request setup error:', error.message);
     }

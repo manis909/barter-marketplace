@@ -36,7 +36,12 @@ CREATE TABLE users (
     coins_balance   INTEGER NOT NULL DEFAULT 0,   -- unused for now — Coins system is deferred
     is_verified     BOOLEAN NOT NULL DEFAULT FALSE,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE, -- soft-delete flag — never hard-delete a user row
-
+    verification_status              VARCHAR(20) DEFAULT 'unverified'
+                                      CHECK (verification_status IN ('unverified', 'pending', 'approved', 'rejected')),
+    verification_rejection_reason    TEXT,
+    id_verification_path             TEXT,
+    hallticket_verification_path     TEXT,
+    is_admin                         BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -62,7 +67,7 @@ CREATE TABLE items (
 
     status           VARCHAR(20) NOT NULL DEFAULT 'available'
                      CHECK (status IN ('available', 'pending', 'traded')),
-
+    view_count      INTEGER NOT NULL DEFAULT 0,
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

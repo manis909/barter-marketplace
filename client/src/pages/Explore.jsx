@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
@@ -6,12 +6,6 @@ import Footer from '../components/Footer'
 import './Explore.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-
-const sectionMapping = [
-  { title: 'Recommended Items' },
-  { title: 'Recently Added' },
-  { title: 'Trending Items' }
-]
 
 export default function ExplorePage() {
   const location = useLocation()
@@ -21,36 +15,15 @@ export default function ExplorePage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const resultsRef = useRef(null)
 
+  // Sync state with URL params without calling scrollIntoView or double navigate loops
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     setSearch(params.get('search') || '')
     setActiveCategory(params.get('category') || '')
   }, [location.search])
 
-  useEffect(() => {
-    const params = new URLSearchParams()
-
-    if (activeCategory && activeCategory !== 'All') {
-      params.set('category', activeCategory)
-    }
-
-    if (search.trim()) {
-      params.set('search', search.trim())
-    }
-
-    const nextSearch = params.toString()
-    const currentSearch = location.search.replace(/^\?/, '')
-
-    if (nextSearch !== currentSearch) {
-      navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
-    }
-  }, [activeCategory, location.pathname, location.search, navigate, search])
-useEffect(() => {
-    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [activeCategory])
-
+  // Fetch items when activeCategory or search changes
   useEffect(() => {
     const controller = new AbortController()
     const params = new URLSearchParams()
@@ -100,23 +73,37 @@ useEffect(() => {
       condition: item.condition || item.item_condition || 'good',
       ownerName: item.ownerName || item.owner_name || 'Owner',
       ownerRating: item.ownerRating ?? item.owner_rating ?? 4.5,
-      tradeRating: item.tradeRating ?? item.trade_rating ?? 4.5
+      tradeRating: item.tradeRating ?? item.trade_rating ?? 4.5,
     }))
   }, [items])
+
+  const handleCategorySelect = (cat) => {
+    setActiveCategory(cat)
+    const params = new URLSearchParams(location.search)
+    if (!cat || cat === 'All') {
+      params.delete('category')
+    } else {
+      params.set('category', cat)
+    }
+    navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' })
+  }
 
   const isFiltered = Boolean((activeCategory && activeCategory !== 'All') || search.trim())
 
   return (
     <div className="explore-page">
-    
-      <CategoryFilter activeCategory={activeCategory} onSelect={setActiveCategory} />
+      <CategoryFilter activeCategory={activeCategory} onSelect={handleCategorySelect} />
 
-      <div className="market-summary" ref={resultsRef}>
+      <div className="market-summary">
         <div>
           <p className="section-label">Marketplace</p>
           <h2>Trade items with trusted local members</h2>
         </div>
-        <p>{loading ? 'Loading items...' : `${normalizedItems.length} items available in ${activeCategory || 'All categories'}`}</p>
+        <p>
+          {loading
+            ? 'Loading items...'
+            : `${normalizedItems.length} items available in ${activeCategory || 'All categories'}`}
+        </p>
       </div>
 
       {error ? <p className="section-label">{error}</p> : null}
