@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+ import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import './ItemDetail.css'
@@ -217,9 +218,21 @@ export default function ItemDetailPage() {
 
   return (
     <div className="item-detail-page">
-      <Link to="/explore" className="detail-back">
-        ← Back to Explore
-      </Link>
+     <Link
+  to="/explore"
+  aria-label="Back to Explore"
+  className="detail-back"
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px',
+    borderRadius: '12px'
+  }}
+>
+  <ArrowLeft size={20} />
+</Link>
       <div className="detail-grid">
         <div className="detail-gallery">
           <div
