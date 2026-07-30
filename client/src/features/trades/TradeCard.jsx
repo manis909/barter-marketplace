@@ -918,6 +918,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             </div>
           </div>
         </div>
+      )}
 
       {/* ── Withdraw Trade Offer dialog ── */}
       {showCancelDialog && (
@@ -938,7 +939,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
                   setActionError('');
                   setShowCancelDialog(false);
                   try {
-                    const data = await cancelTrade(trade.id);
+                    await cancelTrade(trade.id);
                     await onStatusChange(trade.id, 'refresh');
                   } catch (err) {
                     setActionError(err?.response?.data?.error || err?.message || 'Failed to cancel trade');
@@ -954,7 +955,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             </div>
           </div>
         </div>
-      )}      )}
+      )}
 
       {/* ── Edit Trade Offer modal (sender adds items) ── */}
       {showEditModal && (
