@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, Tag, ImageOff } from 'lucide-react'
-import { useSearchSuggestions } from '../hooks/useSearchSuggestions'
+import api from '../services/api'
 import './SearchBar.css'
+
+const MAX_SUGGESTIONS = 6
+const DEBOUNCE_MS = 250
 
 /**
  * SearchBar with autocomplete dropdown.
@@ -24,10 +27,68 @@ export default function SearchBar({
 }) {
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [suggestions, setSuggestions] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [totalMatches, setTotalMatches] = useState(0)
   const containerRef = useRef(null)
   const inputRef = useRef(null)
+  const abortRef = useRef(null)
+  const timerRef = useRef(null)
 
-  const { suggestions, isLoading, totalMatches } = useSearchSuggestions(value)
+  useEffect(() => {
+    clearTimeout(timerRef.current)
+    abortRef.current?.abort()
+
+    const trimmed = value.trim()
+
+    if (!trimmed) {
+      setSuggestions([])
+      setTotalMatches(0)
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+
+    timerRef.current = setTimeout(async () => {
+      abortRef.current = new AbortController()
+
+      try {
+        const response = await api.get('/items', {
+          params: { search: trimmed },
+          signal: abortRef.current.signal,
+        })
+
+        const allItems = Array.isArray(response.data?.items) ? response.data.items : []
+
+        const normalised = allItems.map((item) => ({
+          id: item.id,
+          title: item.title || item.name || '',
+          category: item.category || '',
+          image:
+            (Array.isArray(item.image_urls) && item.image_urls[0]) ||
+            item.image ||
+            null,
+        }))
+
+        setTotalMatches(normalised.length)
+        setSuggestions(normalised.slice(0, MAX_SUGGESTIONS))
+      } catch (err) {
+        if (err.name === 'AbortError') return
+
+        setTotalMatches(0)
+        setSuggestions([])
+      } finally {
+        setIsLoading(false)
+      }
+    }, DEBOUNCE_MS)
+
+    return () => {
+      clearTimeout(timerRef.current)
+      abortRef.current?.abort()
+    }
+  }, [value])
+
   const hasMore = totalMatches > suggestions.length
   const showDropdown = open && value.trim().length > 0
 
