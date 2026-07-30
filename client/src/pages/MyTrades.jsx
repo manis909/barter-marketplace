@@ -74,6 +74,28 @@ const BARTER_CSS = `
   overflow: hidden;
 }
 
+.hero-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.18s;
+  text-decoration: none;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hero-back:hover {
+  background: rgba(255,255,255,0.26);
+}
+
 @media (min-width: 768px) {
   .hero { padding: 52px 40px 90px; }
 }
@@ -380,7 +402,7 @@ export default function MyTrades() {
       <div style={{ background: 'var(--cream)', minHeight: '100vh', width: '100%' }}>
         <div className="mytrades-container">
           <style>{BARTER_CSS}</style>
-          <div className="hero" />
+          <div className="hero"><button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">?</button></div>
           <div className="title-card">
             <h1>My Trades</h1>
             <p style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16, margin: '8px 0 4px' }}>You're not logged in</p>
@@ -397,7 +419,7 @@ export default function MyTrades() {
       <div style={{ background: 'var(--cream)', minHeight: '100vh', width: '100%' }}>
         <div className="mytrades-container" aria-busy="true" aria-label="Loading trades">
           <style>{BARTER_CSS}</style>
-          <div className="hero" />
+          <div className="hero"><button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">?</button></div>
           <div className="title-card">
             <h1>My Trades</h1>
             <p>Loading your trade offers...</p>
@@ -419,7 +441,7 @@ export default function MyTrades() {
       <div style={{ background: 'var(--cream)', minHeight: '100vh', width: '100%' }}>
         <div className="mytrades-container">
           <style>{BARTER_CSS}</style>
-          <div className="hero" />
+          <div className="hero"><button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">?</button></div>
           <div className="title-card">
             <h1>My Trades</h1>
             <p style={{ fontWeight: 600, color: '#dc2626', margin: '8px 0 4px' }}>Could not load your trades</p>
@@ -444,7 +466,7 @@ export default function MyTrades() {
         <style>{BARTER_CSS}</style>
 
         {/* Header/Hero */}
-        <div className="hero" />
+        <div className="hero"><button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">?</button></div>
 
         {/* Title Card */}
         <div className="title-card">

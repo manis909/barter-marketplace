@@ -124,7 +124,7 @@ export default function Wishlist() {
   if (!authLoading && !currentUser) {
     return (
       <div style={pageStyle}>
-        <PageHeader count={0} />
+        <PageHeader count={0} onBack={() => navigate(-1)} />
         <div style={infoBoxStyle}>
           <span style={{ fontSize: 28 }} aria-hidden="true">🔐</span>
           <p style={{ margin: '8px 0 0', fontWeight: 500, color: 'var(--text-h)' }}>
@@ -143,7 +143,7 @@ export default function Wishlist() {
     return (
       <div style={pageStyle} aria-busy="true" aria-label="Loading wishlist">
         <style>{SHIMMER_CSS}</style>
-        <PageHeader count={0} />
+        <PageHeader count={0} onBack={() => navigate(-1)} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <SkeletonCard />
           <SkeletonCard />
@@ -158,7 +158,7 @@ export default function Wishlist() {
   if (error) {
     return (
       <div style={pageStyle}>
-        <PageHeader count={0} />
+        <PageHeader count={0} onBack={() => navigate(-1)} />
         <div
           role="alert"
           style={{
@@ -193,7 +193,7 @@ export default function Wishlist() {
   // ── Normal ────────────────────────────────────────────────────────────────
   return (
     <div style={pageStyle}>
-      <PageHeader count={wishlist.length} />
+      <PageHeader count={wishlist.length} onBack={() => navigate(-1)} />
 
       {wishlist.length === 0 ? (
         <div style={infoBoxStyle}>
@@ -287,9 +287,25 @@ export default function Wishlist() {
 }
 
 // ── Page header ───────────────────────────────────────────────────────────────
-function PageHeader({ count }) {
+function PageHeader({ count, onBack }) {
   return (
     <div style={{ marginBottom: 28, padding: '26px 24px', borderRadius: 24, background: '#ffffff', border: `1px solid rgba(31,77,61,0.16)`, boxShadow: `0 22px 50px rgba(31,77,61,0.10)` }}>
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label="Go back"
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 38, height: 38, borderRadius: 12,
+          border: `1.5px solid rgba(31,77,61,0.20)`, background: 'transparent',
+          color: BRAND_GREEN, cursor: 'pointer', fontSize: 18,
+          marginBottom: 16, transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(31,77,61,0.07)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      >
+        ←
+      </button>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text-h)' }}>My Wishlist</h1>
         {count > 0 && (

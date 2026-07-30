@@ -169,6 +169,22 @@ export default function TradeRequestsPage() {
     <div style={pageStyle}>
       <style>{SHIMMER_CSS}</style>
       <div style={headerStyle}>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 38, height: 38, borderRadius: 12,
+            border: '1.5px solid var(--line)', background: 'transparent',
+            color: 'var(--ink)', cursor: 'pointer', fontSize: 18,
+            marginBottom: 16, transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(15,61,46,0.06)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          ←
+        </button>
         <div>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Trade Requests</p>
           <h1 style={{ margin: '10px 0 0', fontSize: 34, fontWeight: 800, color: 'var(--text-h)' }}>

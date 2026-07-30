@@ -28,11 +28,12 @@ const TRADE_ITEMS_ROW_CSS = `
   background: var(--paper);
   border-radius: var(--radius);
   box-shadow: 0 4px 14px rgba(15,61,46,0.07);
-  overflow: hidden;
+  /* Do NOT use overflow:hidden — it creates a stacking context that traps
+     position:fixed children (modals). Use border-radius on a pseudo-element
+     or accept that child overflow clips at the rounded corner naturally. */
   border: 1px solid var(--line);
   transition: transform 0.2s, box-shadow 0.2s;
   margin: 0;
-  /* stretch to match tallest card in the grid row */
   display: flex;
   flex-direction: column;
   height: 100%;
