@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 
 const db = require('../models/db');
 const requireAuth = require('../middleware/auth');
@@ -113,6 +114,91 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/trending', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT i.*, u.username AS owner_name, u.id AS owner_id,
+              COALESCE(w.wishlist_count, 0) AS wishlist_count,
+              (i.view_count + COALESCE(w.wishlist_count, 0)) AS trending_score
+       FROM items i
+       JOIN users u ON u.id = i.owner_id
+       LEFT JOIN (
+           SELECT item_id, COUNT(*) AS wishlist_count
+           FROM wishlists
+           GROUP BY item_id
+       ) w ON w.item_id = i.id
+       WHERE i.status = $1
+       ORDER BY trending_score DESC, i.created_at DESC
+       LIMIT 8`,
+      ['available']
+    );
+
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('GET /items/trending error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/recommended', requireAuth, async (req, res) => {
+  try {
+    // 1. Check if user has any wishlisted items
+    const wishlistCheck = await db.query(
+      'SELECT 1 FROM wishlists WHERE user_id = $1 LIMIT 1',
+      [req.userId]
+    );
+
+    if (wishlistCheck.rows.length === 0) {
+      // Return the same results as the Trending endpoint
+      const result = await db.query(
+        `SELECT i.*, u.username AS owner_name, u.id AS owner_id,
+                COALESCE(w.wishlist_count, 0) AS wishlist_count,
+                (i.view_count + COALESCE(w.wishlist_count, 0)) AS trending_score
+         FROM items i
+         JOIN users u ON u.id = i.owner_id
+         LEFT JOIN (
+             SELECT item_id, COUNT(*) AS wishlist_count
+             FROM wishlists
+             GROUP BY item_id
+         ) w ON w.item_id = i.id
+         WHERE i.status = $1
+         ORDER BY trending_score DESC, i.created_at DESC
+         LIMIT 8`,
+        ['available']
+      );
+      return res.json({ items: result.rows });
+    }
+
+    // 2. Extract categories of items wishlisted by user, and find other available items from those same categories
+    // Excluding items already wishlisted by the user
+    const result = await db.query(
+      `SELECT i.*, u.username AS owner_name, u.id AS owner_id
+       FROM items i
+       JOIN users u ON u.id = i.owner_id
+       WHERE i.status = $1
+         AND i.category IN (
+             SELECT DISTINCT category
+             FROM items
+             WHERE id IN (SELECT item_id FROM wishlists WHERE user_id = $2)
+               AND category IS NOT NULL
+         )
+         AND i.id NOT IN (
+             SELECT item_id
+             FROM wishlists
+             WHERE user_id = $2
+         )
+       ORDER BY i.created_at DESC
+       LIMIT 8`,
+      ['available', req.userId]
+    );
+
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('GET /items/recommended error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -184,7 +270,30 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    res.json({ item: result.rows[0] });
+    const item = result.rows[0];
+
+    // Decode token if present
+    let reqUserId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        reqUserId = decoded.userId;
+      } catch (err) {
+        // Ignore invalid token and treat as unauthenticated
+      }
+    }
+
+    if (reqUserId !== item.owner_id) {
+      await db.query(
+        'UPDATE items SET view_count = view_count + 1 WHERE id = $1',
+        [item.id]
+      );
+      item.view_count += 1;
+    }
+
+    res.json({ item });
   } catch (err) {
     console.error('GET /items/:id error:', err);
     res.status(500).json({ error: 'Server error' });

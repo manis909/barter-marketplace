@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
 import { getMyTrades } from '../services/tradeService';
 import { getHiddenChatIds, deleteChatForMe, deleteChatForEveryone } from '../services/chatService';
 import { getErrorMessage } from '../utils/helpers';
@@ -60,6 +59,30 @@ function SkeletonRow() {
 
 function initialOf(name) {
   return (name || '?').trim().charAt(0).toUpperCase();
+}
+
+// Inline SVG trash icon — replaces the lucide-react Trash2 import.
+// This removes the dependency on that package resolving correctly,
+// which was the likely reason the icon wasn't rendering.
+function TrashIcon({ size = 20, color = '#dc2626' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
 }
 
 export default function Chats() {
@@ -231,7 +254,7 @@ export default function Chats() {
                   onClick={() => setDeleteMenuFor(menuOpen ? null : trade.id)}
                   style={deleteIconBtnStyle}
                 >
-                  <Trash2 size={20} color="#dc2626" strokeWidth={2.5} />
+                  <TrashIcon size={20} color="#dc2626" />
                 </button>
               </div>
 
