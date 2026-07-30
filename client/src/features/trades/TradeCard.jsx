@@ -443,6 +443,60 @@ const TRADE_ITEMS_ROW_CSS = `
     width: 0;
   }
 }
+
+/* ── Modal / Popup overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 18px;
+  /* prevent interaction with the page underneath */
+  pointer-events: all;
+}
+
+.modal-card {
+  background: var(--paper);
+  border-radius: 22px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  /* safeguard so a tall card still fits on small screens */
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-card h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.modal-card p {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.modal-foot {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Make buttons in modal footer not stretch full-width (override .btn flex:1) */
+.modal-foot .btn {
+  flex: 0 0 auto;
+  padding: 11px 22px;
+}
 `;
 
 const FALLBACK_IMAGE = 'https://placehold.co/120x100?text=No+Image';
