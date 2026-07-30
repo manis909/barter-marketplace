@@ -466,7 +466,7 @@ export default function MyTrades() {
         <style>{BARTER_CSS}</style>
 
         {/* Header/Hero */}
-        <div className="hero"><button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">?</button></div>
+        <div className="hero"><button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">←</button></div>
 
         {/* Title Card */}
         <div className="title-card">
