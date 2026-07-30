@@ -124,9 +124,9 @@ select:focus {
   white-space: nowrap;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 767px) {
   .app-main {
-    width: min(100%, calc(100% - 32px));
-    padding: 16px 0 32px;
+    width: min(100%, calc(100% - 24px));
+    padding: 20px 0 40px;
   }
 }

@@ -1,4 +1,4 @@
-/* Navbar.css - Responsive Mobile Optimization & Stability Fixes */
+/* Navbar.css - Responsive Navbar with Scroll-Collapsing Categories */
 
 .navbar-wrapper {
   position: sticky;
@@ -9,7 +9,7 @@
   border-bottom: 1px solid #E4E2D9;
   padding: 12px 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: padding 250ms ease, background-color 300ms ease, border-color 300ms ease, box-shadow 250ms ease;
+  transition: padding 250ms ease, box-shadow 250ms ease;
   will-change: padding, box-shadow;
 }
 
@@ -26,7 +26,7 @@
 }
 
 /* ============================================================
-   DESKTOP NAVBAR (768px and above) - UNCHANGED
+   DESKTOP NAVBAR (768px and above)
    ============================================================ */
 .navbar-desktop-row {
   display: grid;
@@ -71,7 +71,7 @@
   font-weight: 800;
   color: #24231F;
   letter-spacing: -0.01em;
-  transition: font-size 250ms ease;
+  transition: font-size 250ms ease, color 300ms ease;
 }
 
 .navbar-center {
@@ -139,7 +139,7 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .profile-button:hover {
@@ -159,11 +159,19 @@
   display: none;
   flex-direction: column;
   gap: 8px;
+  position: relative;
   transition: gap 250ms ease;
 }
 
 .navbar-wrapper.is-scrolled .navbar-mobile-wrapper {
   gap: 4px;
+}
+
+.mobile-row-1,
+.mobile-row-2,
+.mobile-row-3-collapse-wrapper {
+  position: relative;
+  z-index: 1;
 }
 
 .mobile-row-1 {
@@ -197,7 +205,36 @@
 .mobile-actions-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+/* Mobile Home Button Styling */
+.mobile-home-btn {
+  min-width: 38px;
+  min-height: 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #E4E2D9;
+  background: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--active-accent-color, #3D6E63);
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+}
+
+.mobile-home-btn:hover,
+.mobile-home-btn:active {
+  border-color: var(--active-accent-color, #3D6E63);
+  transform: scale(1.05);
+}
+
+.mobile-home-icon {
+  color: var(--active-accent-color, #3D6E63);
+  transition: color 300ms ease;
 }
 
 .mobile-row-2 {
@@ -210,7 +247,7 @@
   will-change: height, opacity;
 }
 
-/* Horizontally Scrollable Category Container - iOS & Android Touch Swipe Smooth */
+/* Horizontally Scrollable Category Container - Touch Swipe Smooth */
 .mobile-row-3-categories-scroll {
   width: 100%;
   overflow-x: auto !important;
@@ -239,7 +276,7 @@
   flex-wrap: nowrap;
 }
 
-/* Category Chip Styling - Non-Compressible Pills */
+/* Category Chip Styling */
 .category-chip {
   position: relative;
   display: inline-flex;
@@ -257,7 +294,7 @@
   user-select: none;
   outline: none;
   box-shadow: 0 1.5px 4px rgba(0, 0, 0, 0.03);
-  transition: border-color 300ms ease, color 300ms ease, box-shadow 300ms ease;
+  transition: border-color 300ms ease, color 300ms ease, background-color 300ms ease, box-shadow 300ms ease;
   overflow: hidden;
   will-change: transform, color, background-color;
   flex-shrink: 0 !important;
@@ -283,6 +320,7 @@
   bottom: 0;
   border-radius: 100px;
   z-index: 0;
+  transition: background-color 300ms ease, opacity 300ms ease;
 }
 
 .chip-label {

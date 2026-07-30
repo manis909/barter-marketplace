@@ -25,12 +25,15 @@ export default function LoginPage() {
       login(res.data.user, res.data.token);
       navigate(ROUTES.EXPLORE);
     } catch (err) {
-      const backendMessage = err.response?.data?.error;
+      console.error('Login request failed:', err);
+      const backendMessage = err.response?.data?.error || err.response?.data?.message;
 
       if (err.response) {
-        setError(backendMessage || 'Login failed. Please try again.');
+        setError(backendMessage || `Login failed (${err.response.status} ${err.response.statusText || ''}). Please try again.`);
+      } else if (err.request) {
+        setError('Unable to connect to the server. Please try again.');
       } else {
-        setError('Could not reach the server. Please check your connection and try again.');
+        setError(err.message || 'An unexpected error occurred during login.');
       }
     } finally {
       setSubmitting(false);

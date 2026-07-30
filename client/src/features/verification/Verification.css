@@ -1,0 +1,232 @@
+.verification-card {
+  max-width: 420px;
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.verification-card h3 {
+  margin-top: 0;
+}
+
+.verification-intro {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.verification-status {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.verification-status-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.verification-status-rejected {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.verification-status-rejected p {
+  margin: 6px 0 0;
+}
+
+.verification-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.verification-upload-slot {
+  margin-bottom: 16px;
+}
+
+.verification-upload-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.verification-file-chosen {
+  color: #059669;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.verification-upload-btn {
+  background: none;
+  border: 1px solid #2f6f5e;
+  color: #2f6f5e;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  font-size: 13px;
+}
+
+.verification-upload-btn:hover {
+  background: #2f6f5e;
+  color: white;
+}
+
+.verification-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.verification-submit-btn {
+  background: #2f6f5e;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.verification-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.verification-tips {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.verification-approved {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.verification-shield {
+  font-size: 28px;
+}
+
+/* ---------- Verified badge, used on Profile ---------- */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ---------- Admin review page ---------- */
+.admin-verification-page {
+  max-width: 700px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.admin-verification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-export-btn {
+  background: #2f6f5e;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.admin-verification-item {
+  display: flex;
+  gap: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-verification-images {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.admin-image-label {
+  font-size: 11px;
+  color: #6b7280;
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.admin-verification-image {
+  width: 130px;
+  height: 85px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-verification-info {
+  flex: 1;
+}
+
+.admin-verification-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.admin-approve-btn {
+  background: #059669;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-reject-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-reject-reason-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+}
