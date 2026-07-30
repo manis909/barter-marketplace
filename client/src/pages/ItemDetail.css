@@ -28,6 +28,10 @@
   gap: 18px;
 }
 
+.detail-image-shell {
+  position: relative;
+}
+
 .detail-main-image {
   width: 100%;
   height: 540px;
@@ -35,6 +39,39 @@
   border-radius: 20px;
   border: 1px solid #E4E2D9;
   background-color: #F5F4F0;
+}
+
+.detail-nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #3D6E63;
+  box-shadow: 0 8px 20px rgba(24, 24, 24, 0.12);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.detail-nav-button:hover {
+  transform: translateY(-50%) scale(1.04);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.detail-nav-button-left {
+  left: 12px;
+}
+
+.detail-nav-button-right {
+  right: 12px;
 }
 
 .detail-thumbs {
@@ -121,6 +158,39 @@
 
 @media (max-width: 620px) {
   .detail-thumbs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+  }
+
+  .thumb-button {
+    flex: 0 0 54px;
+    width: 54px;
+    height: 54px;
+    padding: 3px;
+    border-radius: 12px;
+  }
+
+  .thumb-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+
+  .detail-nav-button {
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+  }
+
+  .detail-nav-button-left {
+    left: 8px;
+  }
+
+  .detail-nav-button-right {
+    right: 8px;
   }
 }

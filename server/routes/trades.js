@@ -78,11 +78,14 @@ router.get("/mine", requireAuth, async (req, res) => {
               o.item_condition AS offered_item_condition,
               o.estimated_value AS offered_item_value,
               r.title AS requested_item_title,
+              r.id AS requested_item_id,
               r.image_urls AS requested_item_images,
               r.item_condition AS requested_item_condition,
               r.estimated_value AS requested_item_value,
-              u_sender.username AS sender_username,
-              u_receiver.username AS receiver_username
+              u_sender.username   AS sender_username,
+              u_sender.profile_image AS sender_profile_image,
+              u_receiver.username AS receiver_username,
+              u_receiver.profile_image AS receiver_profile_image
        FROM trade_offers t
        JOIN items o ON o.id = t.offered_item_id
        JOIN items r ON r.id = t.requested_item_id
@@ -365,6 +368,48 @@ router.get("/:id", requireAuth, async (req, res) => {
     res.json({ success: true, tradeOffer: t });
   } catch (err) {
     console.error("GET /trades/:id error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── PATCH /api/trades/:id/cancel — Sender cancels a pending offer ─────────
+// Only the sender can cancel, and only while the trade is still pending.
+// Sets status to 'cancelled' and restores both items to 'available'.
+router.patch("/:id/cancel", requireAuth, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: "Invalid trade id" });
+
+    const trade = await db.query("SELECT * FROM trade_offers WHERE id = $1", [req.params.id]);
+    if (trade.rows.length === 0) return res.status(404).json({ error: "Trade not found" });
+
+    const t = trade.rows[0];
+    if (t.sender_id !== req.userId) {
+      return res.status(403).json({ error: "Only the sender can cancel a trade offer" });
+    }
+    if (t.status !== "pending") {
+      return res.status(400).json({
+        error: "Only pending trades can be cancelled",
+        current_status: t.status,
+      });
+    }
+
+    const updated = await db.query(
+      "UPDATE trade_offers SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *",
+      [req.params.id]
+    );
+    const updatedTrade = updated.rows[0];
+
+    createNotification(t.receiver_id, "trade_cancelled", "Trade Offer Withdrawn", "A trade offer sent to you has been cancelled by the sender.")
+      .catch(err => console.error("Notification error (cancel):", err));
+
+    try {
+      req.app.get("io")?.to(`user:${t.sender_id}`).emit("tradeUpdated", updatedTrade);
+      req.app.get("io")?.to(`user:${t.receiver_id}`).emit("tradeUpdated", updatedTrade);
+    } catch {}
+
+    res.json({ success: true, tradeOffer: updatedTrade });
+  } catch (err) {
+    console.error("PATCH /trades/:id/cancel error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

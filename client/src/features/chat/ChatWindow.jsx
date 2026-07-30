@@ -1,474 +1,468 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { useNavigate } from 'react-router-dom';
 
 const API_URL = 'http://localhost:5000';
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-const CHAT_CSS = `
-.chatwindow-wrapper {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-.chatwindow-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-.chatwindow-back-btn {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  border-radius: 999px;
-  border: none;
-  background: #c6e930;
-  color: #0f3d2e;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-}
-.chatwindow-back-btn:hover {
-  background: #b3d426;
-}
-.chatwindow-header-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0f3d2e;
-}
-.chatwindow-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  border: 1px solid #2f6b52;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-.chatwindow-messages {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: visible;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  background: linear-gradient(180deg, #f4f9f6, #ffffff);
-}
-.chatwindow-bubble-row {
-  display: flex;
-  flex-direction: column;
-  max-width: 78%;
-  position: relative;
-}
-.chatwindow-bubble-row.mine { align-self: flex-end; align-items: flex-end; }
-.chatwindow-bubble-row.theirs { align-self: flex-start; align-items: flex-start; }
-.chatwindow-sender-name {
-  font-size: 11px;
-  font-weight: 600;
-  opacity: 0.75;
-  margin-bottom: 2px;
-  margin-left: 10px;
-  color: #1b4d3e;
-}
-.chatwindow-bubble {
-  padding: 8px 12px;
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.4;
-  word-break: break-word;
-  cursor: pointer;
-  position: relative;
-}
-.chatwindow-bubble.mine {
-  background: #0f3d2e;
-  color: #fff;
-  border-bottom-right-radius: 4px;
-}
-.chatwindow-bubble.theirs {
-  background: #eaf4ee;
-  color: #10241c;
-  border-bottom-left-radius: 4px;
-}
-.chatwindow-quote {
-  border-left: 3px solid rgba(15,61,46,0.35);
-  padding: 4px 8px;
-  margin-bottom: 4px;
-  font-size: 12px;
-  opacity: 0.85;
-  border-radius: 4px;
-  background: rgba(15,61,46,0.06);
-}
-.chatwindow-attachment {
-  max-width: 220px;
-  border-radius: 10px;
-  margin-bottom: 4px;
-  display: block;
-}
-.chatwindow-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 2px;
-  position: relative;
-}
-.chatwindow-actions button {
-  font-size: 11px;
-  padding: 2px 6px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: #1b4d3e;
-}
-.chatwindow-reactions {
-  display: flex;
-  gap: 4px;
-  margin-top: 2px;
-  flex-wrap: wrap;
-}
-.chatwindow-reaction-badge {
-  font-size: 12px;
-  background: #eaf4ee;
-  border-radius: 999px;
-  padding: 1px 6px;
-}
-.chatwindow-picker {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
-  background: #fff;
-  border: 1px solid #2f6b52;
-  border-radius: 999px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  position: absolute;
-  top: -40px;
-  width: max-content;
-  max-width: 85vw;
-  z-index: 20;
-}
-.chatwindow-bubble-row.mine .chatwindow-picker {
-  right: 0;
-  left: auto;
-}
-.chatwindow-bubble-row.theirs .chatwindow-picker {
-  left: 0;
-  right: auto;
-}
-.chatwindow-picker button {
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.chatwindow-reply-preview {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 10px;
-  background: #eaf4ee;
-  border-left: 3px solid #0f3d2e;
-  font-size: 12.5px;
-  margin: 0 12px;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.chatwindow-attach-preview {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: #eaf4ee;
-  margin: 0 12px;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.chatwindow-attach-preview img,
-.chatwindow-attach-preview video {
-  width: 46px;
-  height: 46px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-.chatwindow-attach-preview button {
-  margin-left: auto;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-}
-.chatwindow-input-row {
-  display: flex;
-  gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid #2f6b52;
-  box-sizing: border-box;
-  align-items: center;
-  position: relative;
-  background: #fff;
-  flex-shrink: 0;
-}
-.chatwindow-attach-btn {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 999px;
-  border: none;
-  background: #c6e930;
-  color: #0f3d2e;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-  flex-shrink: 0;
-}
-.chatwindow-attach-btn:hover {
-  background: #b3d426;
-}
-.chatwindow-attach-menu {
-  position: absolute;
-  bottom: 52px;
-  left: 12px;
-  background: #fff;
-  border: 1px solid #2f6b52;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-  z-index: 8;
-  display: flex;
-  flex-direction: column;
-  min-width: 170px;
-  overflow: hidden;
-}
-.chatwindow-attach-menu button {
-  padding: 10px 14px;
-  text-align: left;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 13.5px;
-  color: #0f3d2e;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.chatwindow-attach-menu button:hover {
-  background: #eaf4ee;
-}
-.chatwindow-input-row input[type="text"] {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid #2f6b52;
-  outline: none;
-  font-size: 14px;
-}
-.chatwindow-input-row button.send-btn {
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: none;
-  background: #c6e930;
-  color: #0f3d2e;
-  cursor: pointer;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.chatwindow-input-row button.send-btn:hover {
-  background: #b3d426;
-}
-.chatwindow-deleted-banner {
-  padding: 14px;
-  text-align: center;
-  color: #1b4d3e;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-.chatwindow-edit-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.chatwindow-edit-row input {
-  flex: 1;
-  min-width: 0;
-  border-radius: 8px;
-  border: none;
-  padding: 4px 8px;
-  font-size: 14px;
-}
-.chatwindow-edit-row button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: inherit;
-  flex-shrink: 0;
-}
-.chatwindow-delete-menu {
-  position: absolute;
-  bottom: 22px;
-  right: 0;
-  background: #fff;
-  border: 1px solid #2f6b52;
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-  z-index: 8;
-  display: flex;
-  flex-direction: column;
-  min-width: 150px;
-  max-width: 90vw;
-  overflow: hidden;
-}
-.chatwindow-delete-menu button {
-  padding: 8px 12px;
-  text-align: left;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 12.5px;
-  color: #0f3d2e;
-}
-.chatwindow-delete-menu button:hover {
-  background: #eaf4ee;
-}
-.chatwindow-delete-menu button.danger {
-  color: #dc2626;
-}
-`;
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
+const T = {
+  bg:            '#F6F5F0',
+  surface:       '#FFFFFF',
+  text:          '#24231F',
+  muted:         '#5F5B52',
+  border:        '#E4E2D9',
+  accent:        '#3D6E63',
+  accentStrong:  '#2F5B4D',
+  danger:        '#dc2626',
+  mine:          '#3D6E63',
+  theirs:        '#EDF2F0',
+  radiusCard:    '14px',
+  radiusControl: '9px',
+};
 
+/* ─── Timestamp: normalize to UTC then format as IST ───────────────────── */
 function formatTime(ts) {
   if (!ts) return '';
-  const hasTimezone = /Z|[+-]\d{2}:?\d{2}$/.test(ts);
-  const d = hasTimezone ? new Date(ts) : new Date(ts.replace(' ', 'T'));
-  return d.toLocaleTimeString([], {
+  // pg sends TIMESTAMP columns without tz info, e.g. "2026-07-30T07:05:29.295195"
+  // Socket.io sends JS Date serialized with Z.  Handle both.
+  const normalized = /Z|[+-]\d{2}:?\d{2}$/.test(String(ts))
+    ? ts
+    : String(ts).replace(' ', 'T') + 'Z';
+  return new Date(normalized).toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: true,
   });
 }
 
-export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [pickerForId, setPickerForId] = useState(null);
-  const [deletedForEveryone, setDeletedForEveryone] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editText, setEditText] = useState('');
-  const [deleteMenuForId, setDeleteMenuForId] = useState(null);
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [pendingFile, setPendingFile] = useState(null);
-  const [pendingPreviewUrl, setPendingPreviewUrl] = useState(null);
-  const socketRef = useRef(null);
-  const bottomRef = useRef(null);
-  const messagesContainerRef = useRef(null);
-  const galleryInputRef = useRef(null);
-  const navigate = useNavigate();
+/* ─── Avatar ────────────────────────────────────────────────────────────── */
+function Avatar({ name, imageUrl, size = 34 }) {
+  const [err, setErr] = useState(false);
+  const src = imageUrl && !err
+    ? (imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`)
+    : null;
+  return (
+    <span style={{
+      width: size, height: size, minWidth: size, borderRadius: '50%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden', flexShrink: 0,
+      background: src ? 'transparent' : T.accent,
+      color: '#fff', fontWeight: 700, fontSize: size * 0.38,
+      border: `1px solid ${T.border}`,
+    }}>
+      {src
+        ? <img src={src} alt={name} onError={() => setErr(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        : (name || '?').trim().charAt(0).toUpperCase()
+      }
+    </span>
+  );
+}
 
+/* ─── CSS ───────────────────────────────────────────────────────────────── */
+const CHAT_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
+
+/* ── Outer wrapper — fills whatever space ChatsLayout gives it ── */
+.cw-wrap {
+  width: 100%; max-width: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;
+  font-family: Manrope, sans-serif; overflow: hidden;
+}
+
+/* ── Desktop header (hidden on mobile; mobile header lives in ChatsLayout) ── */
+.cw-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid ${T.border};
+  background: ${T.surface}; flex-shrink: 0; z-index: 2;
+}
+.cw-header-info { flex: 1; min-width: 0; }
+.cw-header-name {
+  font-size: 15px; font-weight: 600; color: ${T.text};
+  font-family: Fraunces, serif;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cw-header-status { font-size: 11px; color: ${T.muted}; margin-top: 1px; }
+@media (max-width: 767px) { .cw-header { display: none !important; } }
+
+/* ── Item context strip ── */
+.cw-item-strip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; background: ${T.bg};
+  border-bottom: 1px solid ${T.border}; flex-shrink: 0;
+  font-size: 12.5px; color: ${T.muted};
+}
+.cw-item-strip-title {
+  flex: 1; min-width: 0; font-weight: 500; color: ${T.text};
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cw-item-strip-btn {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid ${T.accent};
+  background: transparent; color: ${T.accent}; font-size: 11.5px;
+  font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  font-family: Manrope, sans-serif; transition: background 0.15s;
+}
+.cw-item-strip-btn:hover { background: rgba(61,110,99,0.08); }
+
+/* ── Bordered container wrapping messages + input ── */
+.cw-container {
+  display: flex; flex-direction: column;
+  flex: 1; min-height: 0;
+  border: 1px solid ${T.border}; border-radius: ${T.radiusCard};
+  overflow: hidden; background: ${T.surface};
+  box-sizing: border-box;
+  margin: 10px 12px 0; width: calc(100% - 24px);
+}
+@media (max-width: 767px) {
+  .cw-container {
+    border-radius: 0; border-left: none; border-right: none; border-top: none;
+    margin: 0; width: 100%;
+  }
+}
+
+/* ── Message scroll area ── */
+.cw-messages {
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  padding: 14px 12px 8px; display: flex; flex-direction: column; gap: 8px;
+  width: 100%; box-sizing: border-box; background: ${T.bg};
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.cw-messages::-webkit-scrollbar { width: 3px; }
+.cw-messages::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
+
+/* ── Message row ── */
+.cw-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
+.cw-row.mine   { align-self: flex-end;  align-items: flex-end;  }
+.cw-row.theirs { align-self: flex-start; align-items: flex-start; }
+@media (max-width: 767px) { .cw-row { max-width: 75%; } }
+
+.cw-sender { font-size: 11px; font-weight: 500; color: ${T.muted}; margin-bottom: 2px; margin-left: 4px; }
+
+/* ── Bubble ── */
+.cw-bubble {
+  padding: 8px 12px; border-radius: 14px;
+  font-size: 14px; line-height: 1.5;
+  word-break: break-word; overflow-wrap: break-word;
+  cursor: pointer; position: relative; border: 1px solid transparent;
+  transition: filter 0.12s;
+}
+.cw-bubble.mine   { background: ${T.mine}; color: #fff; border-bottom-right-radius: 3px; }
+.cw-bubble.theirs { background: ${T.theirs}; color: ${T.text}; border-bottom-left-radius: 3px; border-color: ${T.border}; }
+.cw-bubble.mine:hover   { filter: brightness(0.92); }
+.cw-bubble.theirs:hover { border-color: ${T.accent}; }
+@media (max-width: 767px) { .cw-bubble { font-size: 14.5px; } }
+
+/* ── Bubble footer: timestamp + status ── */
+.cw-bubble-footer {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 4px; margin-top: 3px;
+}
+.cw-ts { font-size: 10px; opacity: 0.65; }
+/* Sent status placeholder — ✓ shown for own messages */
+.cw-status { font-size: 11px; opacity: 0.7; letter-spacing: -1px; }
+
+.cw-quote {
+  border-left: 3px solid rgba(61,110,99,0.4); padding: 4px 8px;
+  margin-bottom: 5px; font-size: 12px; opacity: 0.8;
+  border-radius: 4px; background: rgba(61,110,99,0.07);
+}
+
+/* ── Attachments inside bubble ── */
+.cw-attachment {
+  max-width: 220px; width: 100%; border-radius: 10px; margin-bottom: 5px;
+  display: block; cursor: pointer;
+}
+@media (max-width: 767px) { .cw-attachment { max-width: 200px; } }
+
+/* ── Reactions ── */
+.cw-reactions { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
+.cw-reaction-badge {
+  font-size: 12px; background: ${T.surface}; border-radius: 999px;
+  padding: 1px 7px; border: 1px solid ${T.border};
+}
+
+/* ── Emoji picker ── */
+.cw-picker {
+  display: flex; align-items: center; gap: 3px; padding: 5px 8px;
+  background: ${T.surface}; border: 1px solid ${T.border};
+  border-radius: 999px; position: absolute; top: -44px;
+  width: max-content; max-width: 88vw; z-index: 20;
+}
+.cw-row.mine   .cw-picker { right: 0; left: auto; }
+.cw-row.theirs .cw-picker { left: 0;  right: auto; }
+.cw-picker button { background: none; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; padding: 2px; }
+
+/* ── Action buttons (reply / edit / delete) ── */
+.cw-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.cw-actions button {
+  font-size: 11px; padding: 3px 8px; border: 1px solid ${T.border};
+  background: ${T.surface}; cursor: pointer; color: ${T.muted};
+  border-radius: 6px; transition: border-color 0.12s; font-family: Manrope, sans-serif;
+}
+.cw-actions button:hover { border-color: ${T.accent}; color: ${T.accent}; }
+
+/* ── Delete sub-menu ── */
+.cw-del-menu {
+  position: absolute; bottom: 26px; right: 0;
+  background: ${T.surface}; border: 1px solid ${T.border};
+  border-radius: ${T.radiusCard}; z-index: 8;
+  display: flex; flex-direction: column; min-width: 155px; max-width: 90vw; overflow: hidden;
+}
+.cw-del-menu button {
+  padding: 9px 13px; text-align: left; border: none; background: none;
+  cursor: pointer; font-size: 12.5px; color: ${T.text};
+  font-family: Manrope, sans-serif; transition: background 0.12s;
+}
+.cw-del-menu button:hover { background: ${T.bg}; }
+.cw-del-menu button.danger { color: ${T.danger}; }
+
+/* ── Edit row ── */
+.cw-edit-row { display: flex; gap: 6px; align-items: center; }
+.cw-edit-row input {
+  flex: 1; min-width: 0; border-radius: 6px;
+  border: 1px solid ${T.border}; padding: 4px 8px; font-size: 13.5px;
+  background: #fff; color: ${T.text};
+}
+.cw-edit-row button { border: none; background: none; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+
+/* ── Reply / attach previews ── */
+.cw-reply-preview {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 12px; background: #EDF2F0;
+  border-left: 3px solid ${T.accent}; font-size: 12.5px;
+  margin: 0; border-top: 1px solid ${T.border};
+  flex-shrink: 0; color: ${T.muted};
+}
+.cw-reply-preview button { background: none; border: none; cursor: pointer; font-size: 14px; color: ${T.muted}; }
+.cw-attach-preview {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: #EDF2F0; border-top: 1px solid ${T.border}; flex-shrink: 0;
+}
+.cw-attach-preview img, .cw-attach-preview video {
+  width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
+}
+.cw-attach-preview span { font-size: 12px; color: ${T.muted}; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-attach-preview button { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 16px; color: ${T.muted}; }
+
+/* ── Input row ── */
+.cw-input-row {
+  display: flex; gap: 8px; padding: 10px 12px;
+  border-top: 1px solid ${T.border}; box-sizing: border-box;
+  align-items: center; background: ${T.surface};
+  flex-shrink: 0; width: 100%; position: relative;
+}
+@media (max-width: 767px) { .cw-input-row { padding: 8px 10px 10px; } }
+
+/* ── "+" attach button ── */
+.cw-plus-btn {
+  width: 38px; height: 38px; min-width: 38px; border-radius: 50%;
+  border: 1px solid ${T.border}; background: ${T.surface}; color: ${T.accent};
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 300; flex-shrink: 0; line-height: 1;
+  transition: border-color 0.12s, background 0.12s;
+}
+.cw-plus-btn:hover { border-color: ${T.accent}; background: rgba(61,110,99,0.06); }
+
+/* ── Desktop attach dropdown ── */
+.cw-attach-menu-desktop {
+  position: absolute; bottom: 56px; left: 12px;
+  background: ${T.surface}; border: 1px solid ${T.border};
+  border-radius: ${T.radiusCard}; z-index: 30;
+  display: flex; flex-direction: column; min-width: 170px; overflow: hidden;
+}
+.cw-attach-menu-desktop button {
+  padding: 11px 14px; text-align: left; border: none; background: none;
+  cursor: pointer; font-size: 13.5px; color: ${T.text};
+  display: flex; align-items: center; gap: 9px;
+  font-family: Manrope, sans-serif; transition: background 0.12s;
+}
+.cw-attach-menu-desktop button:hover { background: ${T.bg}; }
+
+/* ── Mobile bottom sheet ── */
+.cw-bottom-sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+}
+.cw-bottom-sheet {
+  width: 100%; max-width: 480px;
+  background: ${T.surface}; border-radius: 20px 20px 0 0;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.cw-bottom-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px; background: ${T.border};
+  margin: 0 auto 16px;
+}
+.cw-bottom-sheet button {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 20px; border: none; background: none;
+  cursor: pointer; font-size: 15px; color: ${T.text};
+  font-family: Manrope, sans-serif; text-align: left;
+  transition: background 0.12s;
+}
+.cw-bottom-sheet button:hover, .cw-bottom-sheet button:active { background: ${T.bg}; }
+.cw-bottom-sheet-icon { font-size: 22px; width: 28px; text-align: center; }
+
+/* ── Text input ── */
+.cw-text-input {
+  flex: 1; min-width: 0; padding: 9px 14px;
+  border-radius: 22px; border: 1px solid ${T.border};
+  outline: none; font-size: 14px; font-family: Manrope, sans-serif;
+  background: ${T.bg}; color: ${T.text}; transition: border-color 0.18s;
+  line-height: 1.4;
+}
+.cw-text-input:focus { border-color: ${T.accent}; background: ${T.surface}; }
+@media (max-width: 767px) { .cw-text-input { font-size: 16px; } }
+
+/* ── Send button ── */
+.cw-send-btn {
+  width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none;
+  background: ${T.accent}; color: #fff; cursor: pointer; font-weight: 700;
+  font-size: 16px; flex-shrink: 0; display: flex; align-items: center;
+  justify-content: center; transition: background 0.12s, transform 0.12s;
+}
+.cw-send-btn:hover { background: ${T.accentStrong}; transform: scale(1.06); }
+.cw-send-btn:disabled { background: ${T.border}; cursor: default; transform: none; }
+
+/* ── Deleted banner ── */
+.cw-deleted-banner {
+  padding: 10px 14px; text-align: center; color: ${T.muted}; font-size: 13px;
+  flex-shrink: 0; background: ${T.bg}; border-bottom: 1px solid ${T.border};
+}
+`;
+
+/* ─── Component ─────────────────────────────────────────────────────────── */
+export default function ChatWindow({
+  tradeOfferId,
+  currentUserId,
+  otherUserName,
+  otherUserImage,
+  tradeItemTitle,      // item title for context strip
+  tradeItemId,         // item ID for "View Item" navigation
+  onViewItem,          // callback → navigate to item page
+}) {
+  const [messages,       setMessages]       = useState([]);
+  const [input,          setInput]          = useState('');
+  const [replyingTo,     setReplyingTo]     = useState(null);
+  const [pickerForId,    setPickerForId]    = useState(null);
+  const [deletedForAll,  setDeletedForAll]  = useState(false);
+  const [editingId,      setEditingId]      = useState(null);
+  const [editText,       setEditText]       = useState('');
+  const [deleteMenuId,   setDeleteMenuId]   = useState(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isMobile,       setIsMobile]       = useState(() => window.innerWidth < 768);
+  const [pendingFile,    setPendingFile]    = useState(null);
+  const [pendingUrl,     setPendingUrl]     = useState(null);
+
+  const socketRef          = useRef(null);
+  const bottomRef          = useRef(null);
+  const msgContRef         = useRef(null);
+  const galleryRef         = useRef(null);
+  const cameraRef          = useRef(null);
+  const fileRef            = useRef(null);
+  const initialScrollDone  = useRef(false);
+  const prevMsgCount       = useRef(0);
+
+  /* detect mobile/desktop on resize */
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  /* reset scroll guards on trade switch */
+  useEffect(() => {
+    initialScrollDone.current = false;
+    prevMsgCount.current = 0;
+    setMessages([]);
+    setDeletedForAll(false);
+  }, [tradeOfferId]);
+
+  /* ── socket + polling (logic unchanged) ── */
   useEffect(() => {
     const token = localStorage.getItem('token');
-
     fetch(`${API_URL}/api/chat/${tradeOfferId}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then(res => res.json())
-      .then(data => setMessages(Array.isArray(data) ? data : []));
+      .then(r => r.json())
+      .then(d => setMessages(Array.isArray(d) ? d : []));
 
     const socket = io(API_URL, { auth: { token } });
     socketRef.current = socket;
-
     socket.emit('joinTrade', String(tradeOfferId));
-
-    socket.on('newMessage', (message) => {
-      setMessages(prev => [...prev, message]);
-    });
-
-    socket.on('messageReactionUpdated', (updatedMessage) => {
-      setMessages(prev => prev.map(m => (m.id === updatedMessage.id ? updatedMessage : m)));
-    });
-
-    socket.on('messageEdited', (updatedMessage) => {
-      setMessages(prev => prev.map(m => (m.id === updatedMessage.id ? updatedMessage : m)));
-    });
-
-    socket.on('messageDeleted', (updatedMessage) => {
-      setMessages(prev => prev.map(m => (m.id === updatedMessage.id ? updatedMessage : m)));
-    });
-
-    socket.on('chatDeletedForEveryone', (payload) => {
-      if (String(payload.tradeOfferId) === String(tradeOfferId)) {
-        setMessages([]);
-        setDeletedForEveryone(true);
+    socket.on('newMessage',             m => setMessages(p => [...p, m]));
+    socket.on('messageReactionUpdated', m => setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    socket.on('messageEdited',          m => setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    socket.on('messageDeleted',         m => setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    socket.on('chatDeletedForEveryone', pl => {
+      if (String(pl.tradeOfferId) === String(tradeOfferId)) {
+        setMessages([]); setDeletedForAll(true);
       }
     });
+    socket.on('connect_error', e => console.log('Socket:', e.message));
 
-    socket.on('connect_error', (err) => {
-      console.log('Socket connection failed:', err.message);
-    });
-
-    const pollInterval = setInterval(() => {
+    const poll = setInterval(() => {
       fetch(`${API_URL}/api/chat/${tradeOfferId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       })
-        .then(res => res.json())
-        .then(data => setMessages(Array.isArray(data) ? data : []));
+        .then(r => r.json())
+        .then(d => setMessages(Array.isArray(d) ? d : []));
     }, 5000);
 
-    return () => {
-      socket.disconnect();
-      clearInterval(pollInterval);
-    };
+    return () => { socket.disconnect(); clearInterval(poll); };
   }, [tradeOfferId]);
 
+  /* ── scroll to bottom on first load (instant) ── */
   useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    if (distanceFromBottom < 150) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0 && !initialScrollDone.current) {
+      initialScrollDone.current = true;
+      bottomRef.current?.scrollIntoView({ behavior: 'instant' });
     }
   }, [messages]);
 
+  /* ── scroll to bottom on new messages (smooth, only when near bottom) ── */
   useEffect(() => {
-    return () => {
-      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
-    };
-  }, [pendingPreviewUrl]);
+    const c = msgContRef.current;
+    if (!c) return;
+    const isNew = messages.length > prevMsgCount.current;
+    prevMsgCount.current = messages.length;
+    if (!isNew) return;
+    const dist = c.scrollHeight - c.scrollTop - c.clientHeight;
+    if (dist < 220) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  const sendMessage = async () => {
+  /* ── keyboard: scroll to bottom when virtual keyboard opens ── */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      const c = msgContRef.current;
+      if (!c) return;
+      const dist = c.scrollHeight - c.scrollTop - c.clientHeight;
+      if (dist < 300) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    vv.addEventListener('resize', handler);
+    return () => vv.removeEventListener('resize', handler);
+  }, []);
+
+  /* ── cleanup object URLs ── */
+  useEffect(() => () => { if (pendingUrl) URL.revokeObjectURL(pendingUrl); }, [pendingUrl]);
+
+  /* ── send (logic unchanged) ── */
+  const sendMessage = useCallback(async () => {
     if (!input.trim() && !pendingFile) return;
     const token = localStorage.getItem('token');
-
     if (pendingFile) {
-      const formData = new FormData();
-      formData.append('trade_offer_id', tradeOfferId);
-      formData.append('message', input);
-      if (replyingTo?.id) formData.append('reply_to_message_id', replyingTo.id);
-      formData.append('attachment', pendingFile);
-
+      const fd = new FormData();
+      fd.append('trade_offer_id', tradeOfferId);
+      fd.append('message', input);
+      if (replyingTo?.id) fd.append('reply_to_message_id', replyingTo.id);
+      fd.append('attachment', pendingFile);
       await fetch(`${API_URL}/api/chat`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
       });
     } else {
       await fetch(`${API_URL}/api/chat`, {
@@ -478,36 +472,31 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
           trade_offer_id: tradeOfferId,
           message: input,
           reply_to_message_id: replyingTo?.id || null,
-        })
+        }),
       });
     }
+    setInput(''); setReplyingTo(null); setDeletedForAll(false); clearPending();
+    // force scroll to bottom after sending
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+  }, [input, pendingFile, tradeOfferId, replyingTo]);
 
-    setInput('');
-    setReplyingTo(null);
-    setDeletedForEveryone(false);
-    clearPendingFile();
+  const clearPending = () => {
+    if (pendingUrl) URL.revokeObjectURL(pendingUrl);
+    setPendingFile(null); setPendingUrl(null);
   };
 
-  const clearPendingFile = () => {
-    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
-    setPendingFile(null);
-    setPendingPreviewUrl(null);
-  };
-
-  const handleFileChosen = (file) => {
+  const handleFileChosen = file => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File must be under 5MB');
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { alert('File must be under 5 MB'); return; }
     setPendingFile(file);
-    setPendingPreviewUrl(URL.createObjectURL(file));
+    setPendingUrl(URL.createObjectURL(file));
     setShowAttachMenu(false);
   };
 
-  const toggleReaction = async (messageId, emoji) => {
+  /* ── reactions / edit / delete (logic unchanged) ── */
+  const toggleReaction = async (msgId, emoji) => {
     const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/chat/${messageId}/react`, {
+    await fetch(`${API_URL}/api/chat/${msgId}/react`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ emoji }),
@@ -515,163 +504,176 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
     setPickerForId(null);
   };
 
-  const saveEdit = async (messageId) => {
+  const saveEdit = async msgId => {
     if (!editText.trim()) return;
     const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/chat/${messageId}`, {
+    await fetch(`${API_URL}/api/chat/${msgId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ message: editText }),
     });
-    setEditingId(null);
-    setEditText('');
+    setEditingId(null); setEditText('');
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditText('');
-  };
-
-  const deleteForEveryone = async (messageId) => {
+  const deleteForEveryone = async msgId => {
     const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/chat/message/${messageId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+    await fetch(`${API_URL}/api/chat/message/${msgId}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
     });
-    setDeleteMenuForId(null);
+    setDeleteMenuId(null);
   };
 
-  const deleteForMe = async (messageId) => {
+  const deleteForMe = async msgId => {
     const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/chat/message/${messageId}/hide`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+    await fetch(`${API_URL}/api/chat/message/${msgId}/hide`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
     });
-    setMessages(prev => prev.filter(m => m.id !== messageId));
-    setDeleteMenuForId(null);
+    setMessages(p => p.filter(m => m.id !== msgId));
+    setDeleteMenuId(null);
   };
 
-  const findMessageById = (id) => messages.find(m => m.id === id);
-
-  const otherPersonMessage = messages.find(m => String(m.sender_id) !== String(currentUserId));
-  const headerName = otherUserName || otherPersonMessage?.sender_name || 'Chat';
+  const findMsg = id => messages.find(m => m.id === id);
+  const headerName = otherUserName
+    || messages.find(m => String(m.sender_id) !== String(currentUserId))?.sender_name
+    || 'Chat';
 
   return (
-    <div className="chatwindow-wrapper">
+    <div className="cw-wrap">
       <style>{CHAT_CSS}</style>
 
-      <div className="chatwindow-header">
-        <button
-          type="button"
-          onClick={() => navigate('/chats')}
-          className="chatwindow-back-btn"
-          aria-label="Back to chats"
-        >
-          ←
-        </button>
-        <span className="chatwindow-header-title">{headerName}</span>
+      {/* ── Desktop header: avatar + name + online status (hidden on mobile) ── */}
+      <div className="cw-header">
+        <Avatar name={headerName} imageUrl={otherUserImage} size={36} />
+        <div className="cw-header-info">
+          <div className="cw-header-name">{headerName}</div>
+          <div className="cw-header-status">Online</div>
+        </div>
       </div>
 
-      <div className="chatwindow-container">
-        {deletedForEveryone && (
-          <div className="chatwindow-deleted-banner">This chat was deleted for everyone.</div>
+      {/* ── Item context strip ── */}
+      {tradeItemTitle && (
+        <div className="cw-item-strip">
+          <span>🛍</span>
+          <span className="cw-item-strip-title">{tradeItemTitle}</span>
+          {tradeItemId && onViewItem && (
+            <button className="cw-item-strip-btn" onClick={() => onViewItem(tradeItemId)}>
+              View Item
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="cw-container">
+        {deletedForAll && (
+          <div className="cw-deleted-banner">This chat was deleted for everyone.</div>
         )}
-        <div className="chatwindow-messages" ref={messagesContainerRef}>
+
+        {/* ── Messages ── */}
+        <div className="cw-messages" ref={msgContRef}>
           {messages.map(m => {
-            const isMine = String(m.sender_id) === String(currentUserId);
-            const quoted = m.reply_to_message_id ? findMessageById(m.reply_to_message_id) : null;
-            const reactionEntries = Object.entries(m.reactions || {});
-            const isEditingThis = editingId === m.id;
+            const isMine     = String(m.sender_id) === String(currentUserId);
+            const quoted     = m.reply_to_message_id ? findMsg(m.reply_to_message_id) : null;
+            const reactions  = Object.entries(m.reactions || {});
+            const isEditing  = editingId === m.id;
             const isSelected = pickerForId === m.id;
+            const attachSrc  = m.attachment_url
+              ? (m.attachment_url.startsWith('http') ? m.attachment_url : `${API_URL}${m.attachment_url}`)
+              : null;
+            const isImg = attachSrc && (m.attachment_type === 'image' || String(m.attachment_type).startsWith('image/'));
+            const isVid = attachSrc && (m.attachment_type === 'video' || String(m.attachment_type).startsWith('video/'));
 
             return (
-              <div key={m.id} className={`chatwindow-bubble-row ${isMine ? 'mine' : 'theirs'}`}>
+              <div key={m.id} className={`cw-row ${isMine ? 'mine' : 'theirs'}`}>
                 {!isMine && m.sender_name && (
-                  <span className="chatwindow-sender-name">{m.sender_name}</span>
+                  <span className="cw-sender">{m.sender_name}</span>
                 )}
+
                 <div
-                  className={`chatwindow-bubble ${isMine ? 'mine' : 'theirs'}`}
+                  className={`cw-bubble ${isMine ? 'mine' : 'theirs'}`}
                   onClick={() => {
-                    if (m.deleted || isEditingThis) return;
+                    if (m.deleted || isEditing) return;
                     setPickerForId(isSelected ? null : m.id);
-                    setDeleteMenuForId(null);
+                    setDeleteMenuId(null);
                   }}
                 >
                   {isSelected && !m.deleted && (
-                    <div className="chatwindow-picker" onClick={e => e.stopPropagation()}>
-                      {EMOJI_OPTIONS.map(emoji => (
-                        <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>
-                          {emoji}
-                        </button>
+                    <div className="cw-picker" onClick={e => e.stopPropagation()}>
+                      {EMOJI_OPTIONS.map(e => (
+                        <button key={e} onClick={() => toggleReaction(m.id, e)}>{e}</button>
                       ))}
                     </div>
                   )}
 
                   {quoted && !m.deleted && (
-                    <div className="chatwindow-quote">
+                    <div className="cw-quote">
                       {quoted.message?.slice(0, 60)}{quoted.message?.length > 60 ? '…' : ''}
                     </div>
                   )}
 
                   {m.deleted ? (
-                    <p style={{ margin: 0, fontStyle: 'italic', opacity: 0.6 }}>This message was deleted</p>
-                  ) : isEditingThis ? (
-                    <div className="chatwindow-edit-row" onClick={e => e.stopPropagation()}>
+                    <p style={{ margin: 0, fontStyle: 'italic', opacity: 0.55 }}>
+                      This message was deleted
+                    </p>
+                  ) : isEditing ? (
+                    <div className="cw-edit-row" onClick={e => e.stopPropagation()}>
                       <input
                         value={editText}
                         onChange={e => setEditText(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(m.id); if (e.key === 'Escape') cancelEdit(); }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') saveEdit(m.id);
+                          if (e.key === 'Escape') { setEditingId(null); setEditText(''); }
+                        }}
                         autoFocus
                       />
                       <button onClick={() => saveEdit(m.id)}>✓</button>
-                      <button onClick={cancelEdit}>✕</button>
+                      <button onClick={() => { setEditingId(null); setEditText(''); }}>✕</button>
                     </div>
                   ) : (
                     <>
-                      {m.attachment_url && m.attachment_type === 'image' && (
-                        <img src={`${API_URL}${m.attachment_url}`} alt="attachment" className="chatwindow-attachment" />
-                      )}
-                      {m.attachment_url && m.attachment_type === 'video' && (
-                        <video src={`${API_URL}${m.attachment_url}`} controls className="chatwindow-attachment" />
-                      )}
+                      {isImg && <img src={attachSrc} alt="" className="cw-attachment" />}
+                      {isVid && <video src={attachSrc} controls className="cw-attachment" />}
                       {m.message && (
                         <p style={{ margin: 0 }}>
                           {m.message}
-                          {m.edited && <span style={{ fontSize: 10, opacity: 0.7 }}> (edited)</span>}
+                          {m.edited && <span style={{ fontSize: 10, opacity: 0.6 }}> (edited)</span>}
                         </p>
                       )}
                     </>
                   )}
 
+                  {/* Timestamp + sent status */}
                   {!m.deleted && (
-                    <span style={{ fontSize: 10, opacity: 0.7, display: 'block', marginTop: 2 }}>
-                      {formatTime(m.created_at)}
-                    </span>
+                    <div className="cw-bubble-footer">
+                      <span className="cw-ts">{formatTime(m.created_at)}</span>
+                      {/* Status placeholder — ✓ = sent. Replace with ✓✓ for delivered, blue ✓✓ for read when backend supports it */}
+                      {isMine && <span className="cw-status">✓</span>}
+                    </div>
                   )}
                 </div>
 
-                {reactionEntries.length > 0 && !m.deleted && (
-                  <div className="chatwindow-reactions">
-                    {reactionEntries.map(([emoji, userIds]) => (
-                      <span key={emoji} className="chatwindow-reaction-badge">
-                        {emoji} {userIds.length > 1 ? userIds.length : ''}
+                {reactions.length > 0 && !m.deleted && (
+                  <div className="cw-reactions">
+                    {reactions.map(([emoji, userIds]) => (
+                      <span key={emoji} className="cw-reaction-badge">
+                        {emoji}{userIds.length > 1 ? ` ${userIds.length}` : ''}
                       </span>
                     ))}
                   </div>
                 )}
 
-                {!m.deleted && !isEditingThis && isSelected && (
-                  <div className="chatwindow-actions" onClick={e => e.stopPropagation()}>
+                {!m.deleted && !isEditing && isSelected && (
+                  <div className="cw-actions" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setReplyingTo(m)}>↩ Reply</button>
                     {isMine && (
-                      <button onClick={() => { setEditingId(m.id); setEditText(m.message); }}>✎ Edit</button>
+                      <button onClick={() => { setEditingId(m.id); setEditText(m.message); }}>
+                        ✎ Edit
+                      </button>
                     )}
-                    <button onClick={() => setDeleteMenuForId(deleteMenuForId === m.id ? null : m.id)}>
+                    <button onClick={() => setDeleteMenuId(deleteMenuId === m.id ? null : m.id)}>
                       🗑 Delete
                     </button>
-
-                    {deleteMenuForId === m.id && (
-                      <div className="chatwindow-delete-menu" onClick={e => e.stopPropagation()}>
+                    {deleteMenuId === m.id && (
+                      <div className="cw-del-menu" onClick={e => e.stopPropagation()}>
                         {isMine && (
                           <button className="danger" onClick={() => deleteForEveryone(m.id)}>
                             Delete for everyone
@@ -688,59 +690,99 @@ export default function ChatWindow({ tradeOfferId, currentUserId, otherUserName 
           <div ref={bottomRef} />
         </div>
 
+        {/* Reply preview */}
         {replyingTo && (
-          <div className="chatwindow-reply-preview">
+          <div className="cw-reply-preview">
             <span>Replying to: {replyingTo.message?.slice(0, 50)}{replyingTo.message?.length > 50 ? '…' : ''}</span>
-            <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            <button onClick={() => setReplyingTo(null)}>✕</button>
           </div>
         )}
 
+        {/* Attachment preview */}
         {pendingFile && (
-          <div className="chatwindow-attach-preview">
-            {pendingFile.type.startsWith('video') ? (
-              <video src={pendingPreviewUrl} muted />
-            ) : (
-              <img src={pendingPreviewUrl} alt="preview" />
-            )}
-            <span style={{ fontSize: 12.5 }}>{pendingFile.name}</span>
-            <button onClick={clearPendingFile}>✕</button>
+          <div className="cw-attach-preview">
+            {pendingFile.type.startsWith('video')
+              ? <video src={pendingUrl} muted />
+              : <img src={pendingUrl} alt="preview" />
+            }
+            <span>{pendingFile.name}</span>
+            <button onClick={clearPending}>✕</button>
           </div>
         )}
 
-        <div className="chatwindow-input-row">
-          <button
-            type="button"
-            className="chatwindow-attach-btn"
-            onClick={() => setShowAttachMenu(prev => !prev)}
-            aria-label="Attach media"
-          >
-            📷
+        {/* ── Input row ── */}
+        <div className="cw-input-row">
+
+          {/* Hidden file inputs */}
+          <input type="file" accept="image/*,video/*" capture="environment"
+            ref={cameraRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+          <input type="file" accept="image/*,video/*"
+            ref={galleryRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+          <input type="file" accept="*/*"
+            ref={fileRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+
+          {/* "+" button */}
+          <button type="button" className="cw-plus-btn"
+            onClick={() => setShowAttachMenu(p => !p)}
+            aria-label="Attach media">
+            +
           </button>
 
-          {showAttachMenu && (
-            <div className="chatwindow-attach-menu" onClick={e => e.stopPropagation()}>
-              <button onClick={() => galleryInputRef.current?.click()}>🖼️ Choose from Gallery</button>
+          {/* Desktop: dropdown. Mobile: bottom sheet rendered via portal below */}
+          {showAttachMenu && !isMobile && (
+            <div className="cw-attach-menu-desktop" onClick={e => e.stopPropagation()}>
+              <button onClick={() => { cameraRef.current?.click(); setShowAttachMenu(false); }}>
+                <span>📷</span> Take Photo
+              </button>
+              <button onClick={() => { galleryRef.current?.click(); setShowAttachMenu(false); }}>
+                <span>🖼️</span> Choose from Gallery
+              </button>
+              <button onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }}>
+                <span>📄</span> Attach File
+              </button>
             </div>
           )}
 
           <input
-            type="file"
-            accept="image/*,video/*"
-            ref={galleryInputRef}
-            style={{ display: 'none' }}
-            onChange={e => handleFileChosen(e.target.files?.[0])}
-          />
-
-          <input
             type="text"
+            className="cw-text-input"
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
-            placeholder="Type a message..."
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            placeholder="Message…"
           />
-          <button className="send-btn" onClick={sendMessage}>Send</button>
+
+          <button
+            className="cw-send-btn"
+            onClick={sendMessage}
+            disabled={!input.trim() && !pendingFile}
+            aria-label="Send message"
+          >
+            ➤
+          </button>
         </div>
       </div>
+
+      {/* Mobile bottom sheet for attachments */}
+      {showAttachMenu && isMobile && (
+        <div className="cw-bottom-sheet-overlay" onClick={() => setShowAttachMenu(false)}>
+          <div className="cw-bottom-sheet" onClick={e => e.stopPropagation()}>
+            <div className="cw-bottom-sheet-handle" />
+            <button onClick={() => { cameraRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="cw-bottom-sheet-icon">📷</span> Take Photo
+            </button>
+            <button onClick={() => { galleryRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="cw-bottom-sheet-icon">🖼️</span> Choose from Gallery
+            </button>
+            <button onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="cw-bottom-sheet-icon">📄</span> Attach File
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -704,6 +704,12 @@ export default function MyListingsPage() {
           {filteredListings.map((item) => (
             <article key={item.id} className="listing-card">
               <div className="listing-card__media">
+                <div
+                  className="listing-card__media-backdrop"
+                  style={{
+                    backgroundImage: `url(${Array.isArray(item.image_urls) && item.image_urls.length > 0 ? item.image_urls[0] : item.image || '/placeholder.png'})`
+                  }}
+                />
                 <img
                   src={
                     Array.isArray(item.image_urls) && item.image_urls.length > 0

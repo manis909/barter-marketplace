@@ -27,13 +27,14 @@ export default function ExplorePage() {
   useEffect(() => {
     const controller = new AbortController()
     const params = new URLSearchParams()
+    const normalizedSearch = search.trim()
 
     if (activeCategory && activeCategory !== 'All') {
       params.set('category', activeCategory)
     }
 
-    if (search.trim()) {
-      params.set('search', search.trim())
+    if (normalizedSearch) {
+      params.set('search', normalizedSearch)
     }
 
     const query = params.toString()

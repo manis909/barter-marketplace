@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+ import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import './ItemDetail.css'
@@ -15,6 +16,7 @@ export default function ItemDetailPage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [touchStartX, setTouchStartX] = useState(null)
 
   // Trade Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -83,6 +85,59 @@ export default function ItemDetailPage() {
 
   const images = normalizedItem?.images || []
   const displayImage = selectedImage || images[0]
+
+  useEffect(() => {
+    if (images.length > 0) {
+      setSelectedImage((current) => (current && images.includes(current) ? current : images[0]))
+    }
+  }, [images])
+
+  const activeImageIndex = useMemo(() => {
+    if (!images.length) {
+      return 0
+    }
+
+    const currentIndex = images.findIndex((photo) => photo === displayImage)
+    return currentIndex >= 0 ? currentIndex : 0
+  }, [displayImage, images])
+
+  const showLeftArrow = images.length > 1 && activeImageIndex > 0
+  const showRightArrow = images.length > 1 && activeImageIndex < images.length - 1
+
+  function goToPreviousImage() {
+    if (!showLeftArrow) {
+      return
+    }
+
+    setSelectedImage(images[activeImageIndex - 1])
+  }
+
+  function goToNextImage() {
+    if (!showRightArrow) {
+      return
+    }
+
+    setSelectedImage(images[activeImageIndex + 1])
+  }
+
+  function handleTouchStart(event) {
+    setTouchStartX(event.touches[0].clientX)
+  }
+
+  function handleTouchEnd(event) {
+    if (touchStartX === null) {
+      return
+    }
+
+    const deltaX = event.changedTouches[0].clientX - touchStartX
+    if (deltaX < -50) {
+      goToNextImage()
+    } else if (deltaX > 50) {
+      goToPreviousImage()
+    }
+
+    setTouchStartX(null)
+  }
 
   async function openTradeModal() {
     if (!currentUser) {
@@ -163,12 +218,56 @@ export default function ItemDetailPage() {
 
   return (
     <div className="item-detail-page">
-      <Link to="/explore" className="detail-back">
-        ← Back to Explore
-      </Link>
+     <Link
+  to="/explore"
+  aria-label="Back to Explore"
+  className="detail-back"
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px',
+    borderRadius: '12px'
+  }}
+>
+  <ArrowLeft size={20} />
+</Link>
       <div className="detail-grid">
         <div className="detail-gallery">
-          <img src={displayImage} alt={normalizedItem.title} className="detail-main-image" />
+          <div
+            className="detail-image-shell"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <img src={displayImage} alt={normalizedItem.title} className="detail-main-image" />
+
+            {images.length > 1 && (
+              <>
+                {showLeftArrow && (
+                  <button
+                    type="button"
+                    className="detail-nav-button detail-nav-button-left"
+                    onClick={goToPreviousImage}
+                    aria-label="View previous image"
+                  >
+                    &lt;
+                  </button>
+                )}
+
+                {showRightArrow && (
+                  <button
+                    type="button"
+                    className="detail-nav-button detail-nav-button-right"
+                    onClick={goToNextImage}
+                    aria-label="View next image"
+                  >
+                    &gt;
+                  </button>
+                )}
+              </>
+            )}
+          </div>
           <div className="detail-thumbs">
             {images.map((photo) => (
               <button

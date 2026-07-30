@@ -74,6 +74,81 @@
   transition: font-size 250ms ease, color 300ms ease;
 }
 
+.navbar-brand-dropdown-trigger {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.brand-dropdown-chevron {
+  color: #64748B;
+  transition: transform 0.2s ease, color 0.2s ease;
+  margin-left: 2px;
+}
+
+.brand-dropdown-chevron.open {
+  transform: rotate(180deg);
+  color: var(--active-accent-color, #3D6E63);
+}
+
+.brand-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 120;
+  min-width: 170px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-brand-dropdown-menu {
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 99999 !important;
+  min-width: 180px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.brand-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.brand-dropdown-item:hover {
+  background: var(--active-accent-bg, rgba(61, 110, 99, 0.08));
+  color: var(--active-accent-color, #3D6E63);
+}
+
+.brand-dropdown-item.active {
+  background: var(--active-accent-bg, rgba(61, 110, 99, 0.14));
+  color: var(--active-accent-color, #3D6E63);
+  font-weight: 700;
+}
+
 .navbar-center {
   width: 100%;
   max-width: 640px;
@@ -167,18 +242,27 @@
   gap: 4px;
 }
 
-.mobile-row-1,
+.mobile-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  position: relative;
+  z-index: 100;
+}
+
+.mobile-row-1.dropdown-open {
+  z-index: 9999;
+}
+
 .mobile-row-2,
 .mobile-row-3-collapse-wrapper {
   position: relative;
   z-index: 1;
 }
 
-.mobile-row-1 {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+.mobile-row-2.dropdown-open {
+  pointer-events: none;
 }
 
 /* CSS-based smooth shrink for Mobile Mark & Logo */
