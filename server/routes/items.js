@@ -86,6 +86,7 @@ router.get('/mine', requireAuth, async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { category, search } = req.query;
+    const normalizedSearch = String(search || '').trim();
     let query = `
       SELECT i.*, u.username AS owner_name, u.id AS owner_id
       FROM items i
@@ -99,9 +100,28 @@ router.get('/', async (req, res) => {
       values.push(category);
     }
 
-    if (search) {
-      query += ` AND (i.title ILIKE $${values.length + 1} OR i.description ILIKE $${values.length + 1})`;
-      values.push(`%${search}%`);
+    if (normalizedSearch) {
+      const searchTerms = normalizedSearch
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((term) => term.replace(/[%_]/g, '\\$&'));
+
+      if (searchTerms.length > 0) {
+        const searchClauses = [];
+
+        for (const term of searchTerms) {
+          const baseIndex = values.length + 1;
+          const pattern = `%${term}%`;
+          searchClauses.push(`(
+            LOWER(i.title) LIKE LOWER($${baseIndex}) OR
+            LOWER(i.description) LIKE LOWER($${baseIndex + 1}) OR
+            LOWER(i.category) LIKE LOWER($${baseIndex + 2})
+          )`);
+          values.push(pattern, pattern, pattern);
+        }
+
+        query += ` AND (${searchClauses.join(' OR ')})`;
+      }
     }
 
     query += ' ORDER BY i.created_at DESC';
