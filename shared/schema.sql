@@ -40,8 +40,9 @@ CREATE TABLE users (
                                       CHECK (verification_status IN ('unverified', 'pending', 'approved', 'rejected')),
     verification_rejection_reason    TEXT,
     id_verification_path             TEXT,
-    hallticket_verification_path     TEXT,
-    is_admin                         BOOLEAN NOT NULL DEFAULT FALSE,
+    hallticket_
+    verification_path     TEXT,
+    is_admin           BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -229,6 +230,21 @@ CREATE TABLE reports (
         FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE verification_logs (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL REFERENCES users(id),
+
+    reviewed_by UUID NOT NULL REFERENCES users(id),
+
+    decision VARCHAR(20) NOT NULL,
+
+    reason TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+); 
 -- ============================================================
 -- INDEXES
 -- ============================================================
@@ -239,6 +255,11 @@ CREATE INDEX idx_trade_receiver     ON trade_offers(receiver_id);
 CREATE INDEX idx_wishlist_user      ON wishlists(user_id);
 CREATE INDEX idx_notification_user  ON notifications(user_id);
 CREATE INDEX idx_messages_trade     ON messages(trade_offer_id);
+
+
+
+
+
 
 -- ============================================================
 -- FUTURE MIGRATION — run only after the group meeting confirms
