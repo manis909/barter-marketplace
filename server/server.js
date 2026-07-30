@@ -16,6 +16,7 @@ const chatRoutes = require("./routes/chat");
 const ratingsRoutes = require("./routes/ratings");
 const notificationsRoutes = require("./routes/notifications");
 const reportsRoutes = require("./routes/reports");
+const verificationRoutes = require("./routes/verification");
 
 const app = express();
 app.use(cors());
@@ -29,7 +30,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/ratings", ratingsRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/reports", reportsRoutes);
-
+app.use("/api/verification", verificationRoutes);
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");

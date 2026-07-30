@@ -5,11 +5,11 @@
   position: relative;
 }
 
-.back-arrow-btn {
+/* ---------- Back button (shared by view + edit mode) ---------- */
+.profile-back-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-start;
   width: 36px;
   height: 36px;
   background: #f0fbe9;
@@ -18,36 +18,38 @@
   color: #6cc247;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   transition: background 0.15s ease;
 }
 
-.back-arrow-btn:hover {
+.profile-back-btn:hover {
   background: #e2f5d4;
   color: #5aab38;
 }
 
-.back-arrow-btn svg {
+.profile-back-btn svg {
   width: 18px;
   height: 18px;
 }
 
-/* ---------- View mode (Instagram-style horizontal) ---------- */
+/* ---------- View mode ---------- */
 .profile-view {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
 }
 
-.profile-header {
+.profile-header-row {
   display: flex;
   align-items: center;
-  gap: 24px;
-  margin-bottom: 16px;
+  gap: 28px;
+  margin-bottom: 14px;
 }
 
 .profile-photo {
-  width: 90px;
-  height: 90px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e5e7eb;
@@ -63,41 +65,71 @@
 }
 
 .profile-header-info {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.profile-stats-row {
+  display: flex;
+  gap: 18px;
+  margin: 6px 0 8px;
+}
+
+.profile-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.profile-stat-number {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.profile-stat-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.profile-stat-label.profile-no-rating {
+  color: #4f5fc9;
 }
 
 .profile-username {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 700;
   font-size: 18px;
-  margin: 0 0 8px;
-}
-
-.profile-stats {
-  display: flex;
-  gap: 20px;
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 6px;
+  margin: 0;
 }
 
 .profile-joined {
   color: #9ca3af;
   font-size: 12px;
-  margin: 2px 0 8px;
+  margin: 0 0 8px;
 }
 
-.profile-bio-block {
-  margin-bottom: 12px;
+.edit-profile-btn {
+  border: 1px solid #2f6f5e;
+  background: none;
+  color: #2f6f5e;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.edit-profile-btn:hover {
+  background: #2f6f5e;
+  color: white;
 }
 
 .profile-fullname {
   font-weight: 600;
-  font-size: 14px;
-  margin: 2px 0;
-}
-
-.profile-bio {
-  color: #374151;
   font-size: 14px;
   margin: 2px 0;
 }
@@ -108,30 +140,40 @@
   margin: 2px 0;
 }
 
-.profile-copy-link-btn {
+.profile-bio {
+  color: #374151;
+  font-size: 14px;
+  margin: 2px 0 16px;
+}
+
+.profile-copy-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: none;
   border: 1px solid #2f6f5e;
   color: #2f6f5e;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 20px;
-  margin: 4px 0 16px;
-  align-self: flex-start;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 4px 0 8px;
 }
 
-.profile-copy-link-btn:hover {
+.profile-copy-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.profile-copy-link:hover {
   background: #2f6f5e;
   color: white;
 }
 
 .profile-reviews {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 16px;
   text-align: left;
   border-top: 1px solid #f0f0f0;
   padding-top: 16px;
@@ -168,23 +210,6 @@
   font-size: 13px;
   color: #374151;
   margin: 0;
-}
-
-.edit-profile-btn {
-  border: 1px solid #2f6f5e;
-  background: none;
-  color: #2f6f5e;
-  padding: 6px 20px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 4px;
-}
-
-.edit-profile-btn:hover {
-  background: #2f6f5e;
-  color: white;
 }
 
 /* ---------- Edit mode ---------- */
@@ -271,19 +296,19 @@
   box-sizing: border-box;
 }
 
-.profile-bio-textarea {
-  resize: none;
-  overflow: hidden;
-  min-height: 44px;
-}
-
-.profile-readonly-input {
+.profile-form input:disabled {
   background: #f3f4f6;
   color: #6b7280;
   cursor: not-allowed;
 }
 
-.bio-char-count {
+.profile-form textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.profile-bio-counter {
   display: block;
   text-align: right;
   font-size: 11px;

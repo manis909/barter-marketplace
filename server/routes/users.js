@@ -7,7 +7,7 @@ const requireAuth = require('../middleware/auth');
 router.get('/me', requireAuth, async (req, res) => {
   const result = await db.query(
     `SELECT
-       u.id, u.username, u.email, u.full_name, u.profile_image, u.college, u.bio, u.created_at,
+       u.id, u.username, u.email, u.full_name, u.profile_image, u.college, u.bio, u.created_at, u.is_verified,
        (SELECT COUNT(*) FROM items WHERE owner_id = u.id) AS item_count,
        (SELECT COUNT(*) FROM trade_offers
           WHERE (sender_id = u.id OR receiver_id = u.id) AND status = 'completed') AS completed_trades
@@ -20,7 +20,7 @@ router.get('/me', requireAuth, async (req, res) => {
 router.get('/:id', async (req, res) => {
   const result = await db.query(
     `SELECT
-       u.id, u.username, u.full_name, u.profile_image, u.college, u.bio, u.created_at,
+       u.id, u.username, u.full_name, u.profile_image, u.college, u.bio, u.created_at, u.is_verified,
        (SELECT COUNT(*) FROM items WHERE owner_id = u.id) AS item_count,
        (SELECT COUNT(*) FROM trade_offers
           WHERE (sender_id = u.id OR receiver_id = u.id) AND status = 'completed') AS completed_trades

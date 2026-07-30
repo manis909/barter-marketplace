@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import VerifiedBadge from '../features/verification/VerifiedBadge';
 import './Profile.css';
 
 const MAX_IMAGE_SIZE_MB = 5; // raw file, before cropping — cropped output is much smaller
 const COLLEGE_OPTIONS = ["ST. ANN'S COLLEGE FOR WOMEN"];
-const BIO_MAX_LENGTH = 150;
 
 // Crops the selected image to a square using canvas, returns a Blob.
 async function getCroppedImageBlob(imageSrc, cropPixels) {
@@ -66,7 +66,8 @@ export default function Profile() {
   const [recentReviews, setRecentReviews] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
   const fileInputRef = useRef(null);
-  const bioTextareaRef = useRef(null);
+  const bioRef = useRef(null);
+  const BIO_MAX_LENGTH = 150;
 
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -102,14 +103,6 @@ export default function Profile() {
         .catch(() => setRecentReviews([]));
     }
   }, [profileData]);
-
-  // Auto-grow the bio textarea to fit its content, no manual resize handle
-  useEffect(() => {
-    if (bioTextareaRef.current) {
-      bioTextareaRef.current.style.height = 'auto';
-      bioTextareaRef.current.style.height = `${bioTextareaRef.current.scrollHeight}px`;
-    }
-  }, [bio, isEditing]);
 
   function handlePhotoSelect(e) {
     const file = e.target.files[0];
@@ -206,6 +199,20 @@ export default function Profile() {
     }
   }
 
+  useEffect(() => {
+    if (isEditing && bioRef.current) {
+      bioRef.current.style.height = 'auto';
+      bioRef.current.style.height = `${bioRef.current.scrollHeight}px`;
+    }
+  }, [isEditing]);
+
+  function handleBioChange(e) {
+    setBio(e.target.value.slice(0, BIO_MAX_LENGTH));
+    // Auto-expand: reset height first so it can shrink too, not just grow
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  }
+
   function handleCopyLink() {
     const url = `${window.location.origin}/profile/${profileData.id}`;
     navigator.clipboard.writeText(url).then(() => {
@@ -227,23 +234,23 @@ export default function Profile() {
 
   const displayImage = profileData.profile_image;
 
-  const BackArrow = ({ onClick, label }) => (
-    <button type="button" className="back-arrow-btn" onClick={onClick} aria-label={label}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 12H5" />
-        <path d="M12 19l-7-7 7-7" />
-      </svg>
-    </button>
-  );
-
   return (
     <div className="profile-page">
-      {!isEditing ? (
-        // ---------- VIEW MODE (Instagram-style horizontal) ----------
-        <div className="profile-view">
-          <BackArrow onClick={() => navigate('/explore')} label="Back to Explore" />
+      <button
+        type="button"
+        className="profile-back-btn"
+        onClick={() => isEditing ? setIsEditing(false) : navigate('/explore')}
+        aria-label={isEditing ? 'Back to Profile' : 'Back to Explore'}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
 
-          <div className="profile-header">
+      {!isEditing ? (
+        // ---------- VIEW MODE (Instagram-style) ----------
+        <div className="profile-view">
+          <div className="profile-header-row">
             {displayImage ? (
               <img src={displayImage} alt="Profile" className="profile-photo" />
             ) : (
@@ -256,16 +263,30 @@ export default function Profile() {
             )}
 
             <div className="profile-header-info">
-              <p className="profile-username">{profileData.username}</p>
+              <p className="profile-username">
+                {profileData.username}
+                {profileData.is_verified && <VerifiedBadge />}
+              </p>
 
-              <div className="profile-stats">
-                <span><strong>{profileData.item_count ?? 0}</strong> items</span>
-                <span><strong>{profileData.completed_trades ?? 0}</strong> trades</span>
-                <span>
-                  {ratingSummary && ratingSummary.avg_rating != null
-                    ? <><strong>★ {Number(ratingSummary.avg_rating).toFixed(1)}</strong> ({ratingSummary.total})</>
-                    : 'No ratings'}
-                </span>
+              <div className="profile-stats-row">
+                <div className="profile-stat">
+                  <span className="profile-stat-number">{profileData.item_count ?? 0}</span>
+                  <span className="profile-stat-label">items</span>
+                </div>
+                <div className="profile-stat">
+                  <span className="profile-stat-number">{profileData.completed_trades ?? 0}</span>
+                  <span className="profile-stat-label">trades</span>
+                </div>
+                <div className="profile-stat">
+                  {ratingSummary && ratingSummary.avg_rating != null ? (
+                    <>
+                      <span className="profile-stat-number">{Number(ratingSummary.avg_rating).toFixed(1)}</span>
+                      <span className="profile-stat-label">rating</span>
+                    </>
+                  ) : (
+                    <span className="profile-stat-label profile-no-rating">No ratings</span>
+                  )}
+                </div>
               </div>
 
               {profileData.created_at && (
@@ -280,16 +301,14 @@ export default function Profile() {
             </div>
           </div>
 
-          {(fullName || profileData.college || profileData.bio) && (
-            <div className="profile-bio-block">
-              {fullName && <p className="profile-fullname">{fullName}</p>}
-              {profileData.college && <p className="profile-college">{profileData.college}</p>}
-              {profileData.bio && <p className="profile-bio">{profileData.bio}</p>}
-            </div>
-          )}
+          {profileData.full_name && <p className="profile-fullname">{profileData.full_name}</p>}
 
-          <button type="button" className="profile-copy-link-btn" onClick={handleCopyLink}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {profileData.college && <p className="profile-college">{profileData.college}</p>}
+
+          {profileData.bio && <p className="profile-bio">{profileData.bio}</p>}
+
+          <button type="button" className="profile-copy-link" onClick={handleCopyLink}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" />
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
@@ -314,8 +333,6 @@ export default function Profile() {
       ) : (
         // ---------- EDIT MODE ----------
         <div className="profile-edit">
-          <BackArrow onClick={() => setIsEditing(false)} label="Back to profile" />
-
           <h2>Edit Profile</h2>
 
           <div className="profile-photo-section">
@@ -354,7 +371,7 @@ export default function Profile() {
           <form onSubmit={handleSave} className="profile-form">
             <label>
               Email
-              <input value={profileData?.email || ''} disabled className="profile-readonly-input" />
+              <input value={currentUser?.email || ''} disabled />
             </label>
             <label>
               Username
@@ -376,14 +393,13 @@ export default function Profile() {
             <label>
               Bio
               <textarea
-                ref={bioTextareaRef}
+                ref={bioRef}
                 value={bio}
-                onChange={e => setBio(e.target.value.slice(0, BIO_MAX_LENGTH))}
+                onChange={handleBioChange}
                 maxLength={BIO_MAX_LENGTH}
                 rows={1}
-                className="profile-bio-textarea"
               />
-              <span className="bio-char-count">{bio.length}/{BIO_MAX_LENGTH}</span>
+              <span className="profile-bio-counter">{bio.length}/{BIO_MAX_LENGTH}</span>
             </label>
             <div className="profile-edit-actions">
               <button type="button" className="profile-cancel" onClick={() => setIsEditing(false)}>
