@@ -31,7 +31,7 @@ export default function LoginPage() {
       if (err.response) {
         setError(backendMessage || `Login failed (${err.response.status} ${err.response.statusText || ''}). Please try again.`);
       } else if (err.request) {
-        setError('Could not connect to the backend. Please ensure the Cloudflare Tunnel is running.');
+        setError('Unable to connect to the server. Please try again.');
       } else {
         setError(err.message || 'An unexpected error occurred during login.');
       }

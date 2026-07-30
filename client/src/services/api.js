@@ -8,7 +8,7 @@ import axios from 'axios';
 import { getToken } from '../utils/storage';
 
 // Automatically normalize URL to ensure it always ends with /api
-const rawUrl = import.meta.env.VITE_API_URL || 'https://localhost:5000/api';
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
 const baseURL = cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
 
@@ -53,7 +53,7 @@ api.interceptors.response.use(
       console.error(`API Error [${status}]:`, data?.error || data?.message || data);
     } else if (error.request) {
       // Request went out, no response came back (backend down, network issue)
-      console.error('No response from server — is the backend or Cloudflare Tunnel running?');
+      console.error('No response from server — is the backend running?');
     } else {
       console.error('Request setup error:', error.message);
     }
