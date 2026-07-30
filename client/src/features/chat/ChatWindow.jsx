@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
 const API_URL = 'http://localhost:5000';
@@ -20,13 +20,14 @@ const T = {
   radiusControl: '9px',
 };
 
-/* ─── IST timestamp ─────────────────────────────────────────────────────── */
+/* ─── Timestamp: normalize to UTC then format as IST ───────────────────── */
 function formatTime(ts) {
   if (!ts) return '';
-  // The DB column is TIMESTAMP (no timezone). The server runs in UTC, so the
-  // value is UTC time but arrives without a 'Z' suffix — append it so that
-  // new Date() parses it as UTC, not as local time.
-  const normalized = /Z|[+-]\d{2}:?\d{2}$/.test(ts) ? ts : ts.replace(' ', 'T') + 'Z';
+  // pg sends TIMESTAMP columns without tz info, e.g. "2026-07-30T07:05:29.295195"
+  // Socket.io sends JS Date serialized with Z.  Handle both.
+  const normalized = /Z|[+-]\d{2}:?\d{2}$/.test(String(ts))
+    ? ts
+    : String(ts).replace(' ', 'T') + 'Z';
   return new Date(normalized).toLocaleTimeString('en-IN', {
     timeZone: 'Asia/Kolkata',
     hour: '2-digit',
@@ -35,10 +36,10 @@ function formatTime(ts) {
   });
 }
 
-/* ─── Avatar (profile image with initial fallback) ─────────────────────── */
+/* ─── Avatar ────────────────────────────────────────────────────────────── */
 function Avatar({ name, imageUrl, size = 34 }) {
-  const [imgErr, setImgErr] = useState(false);
-  const src = imageUrl && !imgErr
+  const [err, setErr] = useState(false);
+  const src = imageUrl && !err
     ? (imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`)
     : null;
   return (
@@ -51,7 +52,7 @@ function Avatar({ name, imageUrl, size = 34 }) {
       border: `1px solid ${T.border}`,
     }}>
       {src
-        ? <img src={src} alt={name} onError={() => setImgErr(true)}
+        ? <img src={src} alt={name} onError={() => setErr(true)}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         : (name || '?').trim().charAt(0).toUpperCase()
       }
@@ -59,46 +60,59 @@ function Avatar({ name, imageUrl, size = 34 }) {
   );
 }
 
-/* ─── Inline CSS (injected via <style>) ─────────────────────────────────── */
+/* ─── CSS ───────────────────────────────────────────────────────────────── */
 const CHAT_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
 
+/* ── Outer wrapper — fills whatever space ChatsLayout gives it ── */
 .cw-wrap {
   width: 100%; max-width: 100%; box-sizing: border-box;
   display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;
-  font-family: Manrope, sans-serif;
-  overflow: hidden; /* contain everything — no page scroll */
+  font-family: Manrope, sans-serif; overflow: hidden;
 }
 
-/* ── Desktop header — always visible, never scrolls ── */
+/* ── Desktop header (hidden on mobile; mobile header lives in ChatsLayout) ── */
 .cw-header {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px; border-bottom: 1px solid ${T.border};
-  background: ${T.surface};
-  flex-shrink: 0;   /* must not shrink */
-  min-height: 0;
-  z-index: 2;
+  background: ${T.surface}; flex-shrink: 0; z-index: 2;
 }
+.cw-header-info { flex: 1; min-width: 0; }
 .cw-header-name {
   font-size: 15px; font-weight: 600; color: ${T.text};
-  font-family: Fraunces, serif; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; flex: 1;
+  font-family: Fraunces, serif;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-
-/* Hide the in-window header on mobile — ChatsLayout's back bar already shows the name */
+.cw-header-status { font-size: 11px; color: ${T.muted}; margin-top: 1px; }
 @media (max-width: 767px) { .cw-header { display: none !important; } }
 
+/* ── Item context strip ── */
+.cw-item-strip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; background: ${T.bg};
+  border-bottom: 1px solid ${T.border}; flex-shrink: 0;
+  font-size: 12.5px; color: ${T.muted};
+}
+.cw-item-strip-title {
+  flex: 1; min-width: 0; font-weight: 500; color: ${T.text};
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cw-item-strip-btn {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid ${T.accent};
+  background: transparent; color: ${T.accent}; font-size: 11.5px;
+  font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  font-family: Manrope, sans-serif; transition: background 0.15s;
+}
+.cw-item-strip-btn:hover { background: rgba(61,110,99,0.08); }
+
+/* ── Bordered container wrapping messages + input ── */
 .cw-container {
   display: flex; flex-direction: column;
-  flex: 1;          /* fill all remaining height inside cw-wrap */
-  min-height: 0;    /* CRITICAL — lets flexbox shrink below content height */
+  flex: 1; min-height: 0;
   border: 1px solid ${T.border}; border-radius: ${T.radiusCard};
-  overflow: hidden; /* clip children — never let container itself scroll */
-  background: ${T.surface};
+  overflow: hidden; background: ${T.surface};
   box-sizing: border-box;
-  /* Inset spacing — replaces the removed padding on chatWindowWrap */
-  margin: 12px 12px 0;
-  width: calc(100% - 24px);
+  margin: 10px 12px 0; width: calc(100% - 24px);
 }
 @media (max-width: 767px) {
   .cw-container {
@@ -107,91 +121,104 @@ const CHAT_CSS = `
   }
 }
 
+/* ── Message scroll area ── */
 .cw-messages {
-  flex: 1;          /* take all available space between header and input */
-  min-height: 0;    /* CRITICAL — without this, flex won't clip the scroll area */
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px 12px;
-  display: flex; flex-direction: column; gap: 10px;
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  padding: 14px 12px 8px; display: flex; flex-direction: column; gap: 8px;
   width: 100%; box-sizing: border-box; background: ${T.bg};
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
-.cw-messages::-webkit-scrollbar { width: 4px; }
-.cw-messages::-webkit-scrollbar-track { background: transparent; }
+.cw-messages::-webkit-scrollbar { width: 3px; }
 .cw-messages::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
 
+/* ── Message row ── */
 .cw-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
-.cw-row.mine  { align-self: flex-end;  align-items: flex-end;  }
-.cw-row.theirs{ align-self: flex-start; align-items: flex-start; }
-@media (max-width: 767px) { .cw-row { max-width: 88%; } }
+.cw-row.mine   { align-self: flex-end;  align-items: flex-end;  }
+.cw-row.theirs { align-self: flex-start; align-items: flex-start; }
+@media (max-width: 767px) { .cw-row { max-width: 75%; } }
 
-.cw-sender {
-  font-size: 11px; font-weight: 500; color: ${T.muted};
-  margin-bottom: 3px; margin-left: 4px;
-}
+.cw-sender { font-size: 11px; font-weight: 500; color: ${T.muted}; margin-bottom: 2px; margin-left: 4px; }
 
+/* ── Bubble ── */
 .cw-bubble {
-  padding: 9px 13px; border-radius: ${T.radiusCard};
-  font-size: 13.5px; line-height: 1.5;
+  padding: 8px 12px; border-radius: 14px;
+  font-size: 14px; line-height: 1.5;
   word-break: break-word; overflow-wrap: break-word;
-  cursor: pointer; position: relative;
-  border: 1px solid transparent;
+  cursor: pointer; position: relative; border: 1px solid transparent;
+  transition: filter 0.12s;
 }
-.cw-bubble.mine   { background: ${T.mine}; color: #fff; border-bottom-right-radius: 4px; }
-.cw-bubble.theirs { background: ${T.theirs}; color: ${T.text}; border-bottom-left-radius: 4px; border-color: ${T.border}; }
-.cw-bubble.mine:hover   { background: ${T.accentStrong}; }
+.cw-bubble.mine   { background: ${T.mine}; color: #fff; border-bottom-right-radius: 3px; }
+.cw-bubble.theirs { background: ${T.theirs}; color: ${T.text}; border-bottom-left-radius: 3px; border-color: ${T.border}; }
+.cw-bubble.mine:hover   { filter: brightness(0.92); }
 .cw-bubble.theirs:hover { border-color: ${T.accent}; }
+@media (max-width: 767px) { .cw-bubble { font-size: 14.5px; } }
+
+/* ── Bubble footer: timestamp + status ── */
+.cw-bubble-footer {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 4px; margin-top: 3px;
+}
+.cw-ts { font-size: 10px; opacity: 0.65; }
+/* Sent status placeholder — ✓ shown for own messages */
+.cw-status { font-size: 11px; opacity: 0.7; letter-spacing: -1px; }
 
 .cw-quote {
   border-left: 3px solid rgba(61,110,99,0.4); padding: 4px 8px;
-  margin-bottom: 6px; font-size: 12px; opacity: 0.8;
+  margin-bottom: 5px; font-size: 12px; opacity: 0.8;
   border-radius: 4px; background: rgba(61,110,99,0.07);
 }
 
-.cw-attachment { max-width: 220px; width: 100%; border-radius: 10px; margin-bottom: 6px; display: block; }
-@media (max-width: 767px) { .cw-attachment { max-width: 180px; } }
+/* ── Attachments inside bubble ── */
+.cw-attachment {
+  max-width: 220px; width: 100%; border-radius: 10px; margin-bottom: 5px;
+  display: block; cursor: pointer;
+}
+@media (max-width: 767px) { .cw-attachment { max-width: 200px; } }
 
-.cw-ts { font-size: 10px; opacity: 0.6; display: block; margin-top: 3px; }
-
+/* ── Reactions ── */
 .cw-reactions { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
 .cw-reaction-badge {
   font-size: 12px; background: ${T.surface}; border-radius: 999px;
   padding: 1px 7px; border: 1px solid ${T.border};
 }
 
+/* ── Emoji picker ── */
 .cw-picker {
-  display: flex; align-items: center; gap: 4px; padding: 5px 8px;
+  display: flex; align-items: center; gap: 3px; padding: 5px 8px;
   background: ${T.surface}; border: 1px solid ${T.border};
   border-radius: 999px; position: absolute; top: -44px;
   width: max-content; max-width: 88vw; z-index: 20;
 }
 .cw-row.mine   .cw-picker { right: 0; left: auto; }
-.cw-row.theirs .cw-picker { left: 0; right: auto; }
-.cw-picker button { background: none; border: none; font-size: 17px; cursor: pointer; flex-shrink: 0; }
+.cw-row.theirs .cw-picker { left: 0;  right: auto; }
+.cw-picker button { background: none; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; padding: 2px; }
 
-.cw-actions { display: flex; gap: 6px; margin-top: 4px; }
+/* ── Action buttons (reply / edit / delete) ── */
+.cw-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .cw-actions button {
-  font-size: 11px; padding: 2px 7px; border: 1px solid ${T.border};
+  font-size: 11px; padding: 3px 8px; border: 1px solid ${T.border};
   background: ${T.surface}; cursor: pointer; color: ${T.muted};
-  border-radius: 6px; transition: border-color 0.15s;
+  border-radius: 6px; transition: border-color 0.12s; font-family: Manrope, sans-serif;
 }
 .cw-actions button:hover { border-color: ${T.accent}; color: ${T.accent}; }
 
+/* ── Delete sub-menu ── */
 .cw-del-menu {
   position: absolute; bottom: 26px; right: 0;
   background: ${T.surface}; border: 1px solid ${T.border};
-  border-radius: ${T.radiusCard}; z-index: 8; display: flex;
-  flex-direction: column; min-width: 155px; max-width: 90vw; overflow: hidden;
+  border-radius: ${T.radiusCard}; z-index: 8;
+  display: flex; flex-direction: column; min-width: 155px; max-width: 90vw; overflow: hidden;
 }
 .cw-del-menu button {
   padding: 9px 13px; text-align: left; border: none; background: none;
   cursor: pointer; font-size: 12.5px; color: ${T.text};
-  font-family: Manrope, sans-serif; transition: background 0.15s;
+  font-family: Manrope, sans-serif; transition: background 0.12s;
 }
 .cw-del-menu button:hover { background: ${T.bg}; }
 .cw-del-menu button.danger { color: ${T.danger}; }
 
+/* ── Edit row ── */
 .cw-edit-row { display: flex; gap: 6px; align-items: center; }
 .cw-edit-row input {
   flex: 1; min-width: 0; border-radius: 6px;
@@ -200,97 +227,122 @@ const CHAT_CSS = `
 }
 .cw-edit-row button { border: none; background: none; cursor: pointer; font-size: 14px; flex-shrink: 0; }
 
+/* ── Reply / attach previews ── */
 .cw-reply-preview {
   display: flex; justify-content: space-between; align-items: center;
   padding: 7px 12px; background: #EDF2F0;
   border-left: 3px solid ${T.accent}; font-size: 12.5px;
-  margin: 0 12px 4px; border-radius: 6px;
-  flex-shrink: 0; /* never scroll out of view */
-  color: ${T.muted};
+  margin: 0; border-top: 1px solid ${T.border};
+  flex-shrink: 0; color: ${T.muted};
 }
 .cw-reply-preview button { background: none; border: none; cursor: pointer; font-size: 14px; color: ${T.muted}; }
-
 .cw-attach-preview {
   display: flex; align-items: center; gap: 10px; padding: 8px 12px;
-  background: #EDF2F0; margin: 0 12px 4px; border-radius: 8px;
-  flex-shrink: 0; /* never scroll out of view */
+  background: #EDF2F0; border-top: 1px solid ${T.border}; flex-shrink: 0;
 }
 .cw-attach-preview img, .cw-attach-preview video {
-  width: 46px; height: 46px; object-fit: cover; border-radius: 7px;
+  width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
 }
 .cw-attach-preview span { font-size: 12px; color: ${T.muted}; flex: 1; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cw-attach-preview button { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 14px; color: ${T.muted}; }
+.cw-attach-preview button { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 16px; color: ${T.muted}; }
 
-/* ── Input row — always visible, never scrolls ── */
+/* ── Input row ── */
 .cw-input-row {
   display: flex; gap: 8px; padding: 10px 12px;
   border-top: 1px solid ${T.border}; box-sizing: border-box;
   align-items: center; background: ${T.surface};
-  flex-shrink: 0;   /* must not shrink */
-  width: 100%;
-  position: relative; /* for the attach menu absolute positioning */
+  flex-shrink: 0; width: 100%; position: relative;
 }
-@media (max-width: 767px) {
-  /* flex-shrink:0 is all that's needed — do NOT use position:sticky
-     (it fights with the flex column layout and can cause the input to scroll away) */
-  .cw-input-row { padding: 8px 10px; }
-}
+@media (max-width: 767px) { .cw-input-row { padding: 8px 10px 10px; } }
 
-/* "+" attach button */
+/* ── "+" attach button ── */
 .cw-plus-btn {
-  width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
+  width: 38px; height: 38px; min-width: 38px; border-radius: 50%;
   border: 1px solid ${T.border}; background: ${T.surface}; color: ${T.accent};
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 400; flex-shrink: 0; line-height: 1;
-  transition: border-color 0.15s, transform 0.15s;
+  font-size: 22px; font-weight: 300; flex-shrink: 0; line-height: 1;
+  transition: border-color 0.12s, background 0.12s;
 }
-.cw-plus-btn:hover { border-color: ${T.accent}; transform: translateY(-1px); }
+.cw-plus-btn:hover { border-color: ${T.accent}; background: rgba(61,110,99,0.06); }
 
-/* Attach menu (Camera / Gallery) */
-.cw-attach-menu {
-  position: absolute; bottom: 54px; left: 12px;
+/* ── Desktop attach dropdown ── */
+.cw-attach-menu-desktop {
+  position: absolute; bottom: 56px; left: 12px;
   background: ${T.surface}; border: 1px solid ${T.border};
-  border-radius: ${T.radiusCard}; z-index: 8;
-  display: flex; flex-direction: column; min-width: 160px; overflow: hidden;
+  border-radius: ${T.radiusCard}; z-index: 30;
+  display: flex; flex-direction: column; min-width: 170px; overflow: hidden;
 }
-@media (max-width: 767px) { .cw-attach-menu { left: 10px; right: 10px; min-width: unset; } }
-.cw-attach-menu button {
+.cw-attach-menu-desktop button {
   padding: 11px 14px; text-align: left; border: none; background: none;
   cursor: pointer; font-size: 13.5px; color: ${T.text};
   display: flex; align-items: center; gap: 9px;
-  font-family: Manrope, sans-serif; transition: background 0.15s;
+  font-family: Manrope, sans-serif; transition: background 0.12s;
 }
-.cw-attach-menu button:hover { background: ${T.bg}; }
+.cw-attach-menu-desktop button:hover { background: ${T.bg}; }
 
+/* ── Mobile bottom sheet ── */
+.cw-bottom-sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+}
+.cw-bottom-sheet {
+  width: 100%; max-width: 480px;
+  background: ${T.surface}; border-radius: 20px 20px 0 0;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.cw-bottom-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px; background: ${T.border};
+  margin: 0 auto 16px;
+}
+.cw-bottom-sheet button {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 20px; border: none; background: none;
+  cursor: pointer; font-size: 15px; color: ${T.text};
+  font-family: Manrope, sans-serif; text-align: left;
+  transition: background 0.12s;
+}
+.cw-bottom-sheet button:hover, .cw-bottom-sheet button:active { background: ${T.bg}; }
+.cw-bottom-sheet-icon { font-size: 22px; width: 28px; text-align: center; }
+
+/* ── Text input ── */
 .cw-text-input {
   flex: 1; min-width: 0; padding: 9px 14px;
-  border-radius: ${T.radiusControl}; border: 1px solid ${T.border};
+  border-radius: 22px; border: 1px solid ${T.border};
   outline: none; font-size: 14px; font-family: Manrope, sans-serif;
-  background: ${T.surface}; color: ${T.text}; transition: border-color 0.2s;
+  background: ${T.bg}; color: ${T.text}; transition: border-color 0.18s;
+  line-height: 1.4;
 }
-.cw-text-input:focus { border-color: ${T.accent}; }
+.cw-text-input:focus { border-color: ${T.accent}; background: ${T.surface}; }
 @media (max-width: 767px) { .cw-text-input { font-size: 16px; } }
 
+/* ── Send button ── */
 .cw-send-btn {
-  padding: 9px 20px; border-radius: ${T.radiusControl}; border: none;
-  background: ${T.accent}; color: #fff; cursor: pointer; font-weight: 600;
-  font-size: 13.5px; flex-shrink: 0; font-family: Manrope, sans-serif;
-  transition: background 0.15s, transform 0.15s;
+  width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none;
+  background: ${T.accent}; color: #fff; cursor: pointer; font-weight: 700;
+  font-size: 16px; flex-shrink: 0; display: flex; align-items: center;
+  justify-content: center; transition: background 0.12s, transform 0.12s;
 }
-.cw-send-btn:hover { background: ${T.accentStrong}; transform: translateY(-1px); }
+.cw-send-btn:hover { background: ${T.accentStrong}; transform: scale(1.06); }
+.cw-send-btn:disabled { background: ${T.border}; cursor: default; transform: none; }
 
+/* ── Deleted banner ── */
 .cw-deleted-banner {
-  padding: 14px; text-align: center; color: ${T.muted}; font-size: 13px; flex-shrink: 0;
+  padding: 10px 14px; text-align: center; color: ${T.muted}; font-size: 13px;
+  flex-shrink: 0; background: ${T.bg}; border-bottom: 1px solid ${T.border};
 }
 `;
 
-/* ─── Main component ────────────────────────────────────────────────────── */
+/* ─── Component ─────────────────────────────────────────────────────────── */
 export default function ChatWindow({
   tradeOfferId,
   currentUserId,
   otherUserName,
-  otherUserImage,   // passed from ChatsLayout — used for desktop header avatar
+  otherUserImage,
+  tradeItemTitle,      // item title for context strip
+  tradeItemId,         // item ID for "View Item" navigation
+  onViewItem,          // callback → navigate to item page
 }) {
   const [messages,       setMessages]       = useState([]);
   const [input,          setInput]          = useState('');
@@ -301,24 +353,35 @@ export default function ChatWindow({
   const [editText,       setEditText]       = useState('');
   const [deleteMenuId,   setDeleteMenuId]   = useState(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isMobile,       setIsMobile]       = useState(() => window.innerWidth < 768);
   const [pendingFile,    setPendingFile]    = useState(null);
   const [pendingUrl,     setPendingUrl]     = useState(null);
 
-  const socketRef      = useRef(null);
-  const bottomRef      = useRef(null);
-  const msgContRef     = useRef(null);
-  const galleryRef     = useRef(null);
-  const cameraRef      = useRef(null);
-  const initialScrollDone = useRef(false);
-  const prevMsgCount      = useRef(0);
+  const socketRef          = useRef(null);
+  const bottomRef          = useRef(null);
+  const msgContRef         = useRef(null);
+  const galleryRef         = useRef(null);
+  const cameraRef          = useRef(null);
+  const fileRef            = useRef(null);
+  const initialScrollDone  = useRef(false);
+  const prevMsgCount       = useRef(0);
 
-  /* reset scroll guards whenever the conversation changes */
+  /* detect mobile/desktop on resize */
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  /* reset scroll guards on trade switch */
   useEffect(() => {
     initialScrollDone.current = false;
     prevMsgCount.current = 0;
+    setMessages([]);
+    setDeletedForAll(false);
   }, [tradeOfferId]);
 
-  /* ── socket + polling (unchanged) ── */
+  /* ── socket + polling (logic unchanged) ── */
   useEffect(() => {
     const token = localStorage.getItem('token');
     fetch(`${API_URL}/api/chat/${tradeOfferId}`, {
@@ -330,17 +393,16 @@ export default function ChatWindow({
     const socket = io(API_URL, { auth: { token } });
     socketRef.current = socket;
     socket.emit('joinTrade', String(tradeOfferId));
-    socket.on('newMessage',             m  => setMessages(p => [...p, m]));
-    socket.on('messageReactionUpdated', m  => setMessages(p => p.map(x => x.id === m.id ? m : x)));
-    socket.on('messageEdited',          m  => setMessages(p => p.map(x => x.id === m.id ? m : x)));
-    socket.on('messageDeleted',         m  => setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    socket.on('newMessage',             m => setMessages(p => [...p, m]));
+    socket.on('messageReactionUpdated', m => setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    socket.on('messageEdited',          m => setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    socket.on('messageDeleted',         m => setMessages(p => p.map(x => x.id === m.id ? m : x)));
     socket.on('chatDeletedForEveryone', pl => {
       if (String(pl.tradeOfferId) === String(tradeOfferId)) {
-        setMessages([]);
-        setDeletedForAll(true);
+        setMessages([]); setDeletedForAll(true);
       }
     });
-    socket.on('connect_error', e => console.log('Socket error:', e.message));
+    socket.on('connect_error', e => console.log('Socket:', e.message));
 
     const poll = setInterval(() => {
       fetch(`${API_URL}/api/chat/${tradeOfferId}`, {
@@ -353,7 +415,7 @@ export default function ChatWindow({
     return () => { socket.disconnect(); clearInterval(poll); };
   }, [tradeOfferId]);
 
-  /* ── scroll to bottom on initial load (unconditional, instant) ── */
+  /* ── scroll to bottom on first load (instant) ── */
   useEffect(() => {
     if (messages.length > 0 && !initialScrollDone.current) {
       initialScrollDone.current = true;
@@ -361,24 +423,36 @@ export default function ChatWindow({
     }
   }, [messages]);
 
-  /* ── scroll to bottom on every new message (smooth, only when near bottom) ── */
+  /* ── scroll to bottom on new messages (smooth, only when near bottom) ── */
   useEffect(() => {
     const c = msgContRef.current;
     if (!c) return;
-    const isNewMessage = messages.length > prevMsgCount.current;
+    const isNew = messages.length > prevMsgCount.current;
     prevMsgCount.current = messages.length;
-    if (!isNewMessage) return;
-    const distFromBottom = c.scrollHeight - c.scrollTop - c.clientHeight;
-    if (distFromBottom < 200) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (!isNew) return;
+    const dist = c.scrollHeight - c.scrollTop - c.clientHeight;
+    if (dist < 220) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  /* ── keyboard: scroll to bottom when virtual keyboard opens ── */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      const c = msgContRef.current;
+      if (!c) return;
+      const dist = c.scrollHeight - c.scrollTop - c.clientHeight;
+      if (dist < 300) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    vv.addEventListener('resize', handler);
+    return () => vv.removeEventListener('resize', handler);
+  }, []);
 
   /* ── cleanup object URLs ── */
   useEffect(() => () => { if (pendingUrl) URL.revokeObjectURL(pendingUrl); }, [pendingUrl]);
 
-  /* ── send message (unchanged) ── */
-  const sendMessage = async () => {
+  /* ── send (logic unchanged) ── */
+  const sendMessage = useCallback(async () => {
     if (!input.trim() && !pendingFile) return;
     const token = localStorage.getItem('token');
     if (pendingFile) {
@@ -402,7 +476,9 @@ export default function ChatWindow({
       });
     }
     setInput(''); setReplyingTo(null); setDeletedForAll(false); clearPending();
-  };
+    // force scroll to bottom after sending
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+  }, [input, pendingFile, tradeOfferId, replyingTo]);
 
   const clearPending = () => {
     if (pendingUrl) URL.revokeObjectURL(pendingUrl);
@@ -417,7 +493,7 @@ export default function ChatWindow({
     setShowAttachMenu(false);
   };
 
-  /* ── reactions / edit / delete (unchanged) ── */
+  /* ── reactions / edit / delete (logic unchanged) ── */
   const toggleReaction = async (msgId, emoji) => {
     const token = localStorage.getItem('token');
     await fetch(`${API_URL}/api/chat/${msgId}/react`, {
@@ -457,31 +533,54 @@ export default function ChatWindow({
   };
 
   const findMsg = id => messages.find(m => m.id === id);
-  const headerName = otherUserName || messages.find(m => String(m.sender_id) !== String(currentUserId))?.sender_name || 'Chat';
+  const headerName = otherUserName
+    || messages.find(m => String(m.sender_id) !== String(currentUserId))?.sender_name
+    || 'Chat';
 
   return (
     <div className="cw-wrap">
       <style>{CHAT_CSS}</style>
 
-      {/* ── Desktop header: avatar + name, shown once, hidden on mobile ── */}
+      {/* ── Desktop header: avatar + name + online status (hidden on mobile) ── */}
       <div className="cw-header">
-        <Avatar name={headerName} imageUrl={otherUserImage} size={34} />
-        <span className="cw-header-name">{headerName}</span>
+        <Avatar name={headerName} imageUrl={otherUserImage} size={36} />
+        <div className="cw-header-info">
+          <div className="cw-header-name">{headerName}</div>
+          <div className="cw-header-status">Online</div>
+        </div>
       </div>
+
+      {/* ── Item context strip ── */}
+      {tradeItemTitle && (
+        <div className="cw-item-strip">
+          <span>🛍</span>
+          <span className="cw-item-strip-title">{tradeItemTitle}</span>
+          {tradeItemId && onViewItem && (
+            <button className="cw-item-strip-btn" onClick={() => onViewItem(tradeItemId)}>
+              View Item
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="cw-container">
         {deletedForAll && (
           <div className="cw-deleted-banner">This chat was deleted for everyone.</div>
         )}
 
-        {/* ── Message list ── */}
+        {/* ── Messages ── */}
         <div className="cw-messages" ref={msgContRef}>
           {messages.map(m => {
-            const isMine      = String(m.sender_id) === String(currentUserId);
-            const quoted      = m.reply_to_message_id ? findMsg(m.reply_to_message_id) : null;
-            const reactions   = Object.entries(m.reactions || {});
-            const isEditing   = editingId === m.id;
-            const isSelected  = pickerForId === m.id;
+            const isMine     = String(m.sender_id) === String(currentUserId);
+            const quoted     = m.reply_to_message_id ? findMsg(m.reply_to_message_id) : null;
+            const reactions  = Object.entries(m.reactions || {});
+            const isEditing  = editingId === m.id;
+            const isSelected = pickerForId === m.id;
+            const attachSrc  = m.attachment_url
+              ? (m.attachment_url.startsWith('http') ? m.attachment_url : `${API_URL}${m.attachment_url}`)
+              : null;
+            const isImg = attachSrc && (m.attachment_type === 'image' || String(m.attachment_type).startsWith('image/'));
+            const isVid = attachSrc && (m.attachment_type === 'video' || String(m.attachment_type).startsWith('video/'));
 
             return (
               <div key={m.id} className={`cw-row ${isMine ? 'mine' : 'theirs'}`}>
@@ -497,7 +596,6 @@ export default function ChatWindow({
                     setDeleteMenuId(null);
                   }}
                 >
-                  {/* Emoji picker */}
                   {isSelected && !m.deleted && (
                     <div className="cw-picker" onClick={e => e.stopPropagation()}>
                       {EMOJI_OPTIONS.map(e => (
@@ -506,14 +604,12 @@ export default function ChatWindow({
                     </div>
                   )}
 
-                  {/* Quote */}
                   {quoted && !m.deleted && (
                     <div className="cw-quote">
                       {quoted.message?.slice(0, 60)}{quoted.message?.length > 60 ? '…' : ''}
                     </div>
                   )}
 
-                  {/* Body */}
                   {m.deleted ? (
                     <p style={{ margin: 0, fontStyle: 'italic', opacity: 0.55 }}>
                       This message was deleted
@@ -534,20 +630,8 @@ export default function ChatWindow({
                     </div>
                   ) : (
                     <>
-                      {m.attachment_url && (m.attachment_type === 'image' || String(m.attachment_type).startsWith('image/')) && (
-                        <img
-                          src={m.attachment_url.startsWith('http') ? m.attachment_url : `${API_URL}${m.attachment_url}`}
-                          alt=""
-                          className="cw-attachment"
-                        />
-                      )}
-                      {m.attachment_url && (m.attachment_type === 'video' || String(m.attachment_type).startsWith('video/')) && (
-                        <video
-                          src={m.attachment_url.startsWith('http') ? m.attachment_url : `${API_URL}${m.attachment_url}`}
-                          controls
-                          className="cw-attachment"
-                        />
-                      )}
+                      {isImg && <img src={attachSrc} alt="" className="cw-attachment" />}
+                      {isVid && <video src={attachSrc} controls className="cw-attachment" />}
                       {m.message && (
                         <p style={{ margin: 0 }}>
                           {m.message}
@@ -557,13 +641,16 @@ export default function ChatWindow({
                     </>
                   )}
 
-                  {/* Timestamp — IST */}
+                  {/* Timestamp + sent status */}
                   {!m.deleted && (
-                    <span className="cw-ts">{formatTime(m.created_at)}</span>
+                    <div className="cw-bubble-footer">
+                      <span className="cw-ts">{formatTime(m.created_at)}</span>
+                      {/* Status placeholder — ✓ = sent. Replace with ✓✓ for delivered, blue ✓✓ for read when backend supports it */}
+                      {isMine && <span className="cw-status">✓</span>}
+                    </div>
                   )}
                 </div>
 
-                {/* Reactions */}
                 {reactions.length > 0 && !m.deleted && (
                   <div className="cw-reactions">
                     {reactions.map(([emoji, userIds]) => (
@@ -574,7 +661,6 @@ export default function ChatWindow({
                   </div>
                 )}
 
-                {/* Action buttons (reply / edit / delete) */}
                 {!m.deleted && !isEditing && isSelected && (
                   <div className="cw-actions" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setReplyingTo(m)}>↩ Reply</button>
@@ -586,7 +672,6 @@ export default function ChatWindow({
                     <button onClick={() => setDeleteMenuId(deleteMenuId === m.id ? null : m.id)}>
                       🗑 Delete
                     </button>
-
                     {deleteMenuId === m.id && (
                       <div className="cw-del-menu" onClick={e => e.stopPropagation()}>
                         {isMine && (
@@ -628,59 +713,76 @@ export default function ChatWindow({
         {/* ── Input row ── */}
         <div className="cw-input-row">
 
+          {/* Hidden file inputs */}
+          <input type="file" accept="image/*,video/*" capture="environment"
+            ref={cameraRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+          <input type="file" accept="image/*,video/*"
+            ref={galleryRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+          <input type="file" accept="*/*"
+            ref={fileRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+
           {/* "+" button */}
-          <button
-            type="button"
-            className="cw-plus-btn"
+          <button type="button" className="cw-plus-btn"
             onClick={() => setShowAttachMenu(p => !p)}
-            aria-label="Attach media"
-          >
+            aria-label="Attach media">
             +
           </button>
 
-          {/* Camera / Gallery menu */}
-          {showAttachMenu && (
-            <div className="cw-attach-menu" onClick={e => e.stopPropagation()}>
+          {/* Desktop: dropdown. Mobile: bottom sheet rendered via portal below */}
+          {showAttachMenu && !isMobile && (
+            <div className="cw-attach-menu-desktop" onClick={e => e.stopPropagation()}>
               <button onClick={() => { cameraRef.current?.click(); setShowAttachMenu(false); }}>
-                📷 Camera
+                <span>📷</span> Take Photo
               </button>
               <button onClick={() => { galleryRef.current?.click(); setShowAttachMenu(false); }}>
-                🖼️ Gallery
+                <span>🖼️</span> Choose from Gallery
+              </button>
+              <button onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }}>
+                <span>📄</span> Attach File
               </button>
             </div>
           )}
-
-          {/* Camera input — capture from device camera */}
-          <input
-            type="file"
-            accept="image/*,video/*"
-            capture="environment"
-            ref={cameraRef}
-            style={{ display: 'none' }}
-            onChange={e => handleFileChosen(e.target.files?.[0])}
-          />
-
-          {/* Gallery input — pick existing file */}
-          <input
-            type="file"
-            accept="image/*,video/*"
-            ref={galleryRef}
-            style={{ display: 'none' }}
-            onChange={e => handleFileChosen(e.target.files?.[0])}
-          />
 
           <input
             type="text"
             className="cw-text-input"
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
-            placeholder="Type a message…"
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            placeholder="Message…"
           />
 
-          <button className="cw-send-btn" onClick={sendMessage}>Send</button>
+          <button
+            className="cw-send-btn"
+            onClick={sendMessage}
+            disabled={!input.trim() && !pendingFile}
+            aria-label="Send message"
+          >
+            ➤
+          </button>
         </div>
       </div>
+
+      {/* Mobile bottom sheet for attachments */}
+      {showAttachMenu && isMobile && (
+        <div className="cw-bottom-sheet-overlay" onClick={() => setShowAttachMenu(false)}>
+          <div className="cw-bottom-sheet" onClick={e => e.stopPropagation()}>
+            <div className="cw-bottom-sheet-handle" />
+            <button onClick={() => { cameraRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="cw-bottom-sheet-icon">📷</span> Take Photo
+            </button>
+            <button onClick={() => { galleryRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="cw-bottom-sheet-icon">🖼️</span> Choose from Gallery
+            </button>
+            <button onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="cw-bottom-sheet-icon">📄</span> Attach File
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

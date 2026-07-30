@@ -415,9 +415,11 @@ export default function ChatsLayout() {
               >
                 <BackArrow />
               </button>
-              {/* Avatar + name — shown ONCE, only on mobile */}
-              <Avatar name={otherUserName} imageUrl={otherUserImage} size={32} />
-              <span style={s.mobileBackName}>{otherUserName || 'Chat'}</span>
+              <Avatar name={otherUserName} imageUrl={otherUserImage} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
+                <div style={s.mobileBackStatus}>Online</div>
+              </div>
             </div>
 
             {/* ChatWindow fill area */}
@@ -434,7 +436,9 @@ export default function ChatsLayout() {
                   currentUserId={userId}
                   otherUserName={otherUserName}
                   otherUserImage={otherUserImage}
-                  hideHeader={false}
+                  tradeItemTitle={selectedTrade?.requested_item_title || ''}
+                  tradeItemId={selectedTrade?.requested_item_id || null}
+                  onViewItem={(itemId) => navigate(`/item/${itemId}`)}
                 />
               </div>
             </div>
@@ -730,13 +734,14 @@ const s = {
 
   /* ── Mobile back bar (hidden on desktop via CSS) ── */
   mobileBackBar: {
-    display: 'none',           /* CSS class overrides to flex on mobile */
+    display: 'none',
     alignItems: 'center',
     gap: 10,
-    padding: '10px 14px',
+    padding: '8px 12px',
     background: T.surface,
     borderBottom: `1px solid ${T.border}`,
     flexShrink: 0,
+    minHeight: 56,
   },
   mobileBackName: {
     fontWeight: 600,
@@ -746,5 +751,12 @@ const s = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    lineHeight: 1.2,
+  },
+  mobileBackStatus: {
+    fontSize: 11,
+    color: T.accent,
+    marginTop: 1,
+    fontFamily: 'Manrope, sans-serif',
   },
 };
