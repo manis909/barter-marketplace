@@ -79,6 +79,15 @@ export async function addItemsToTrade(tradeId, itemIds) {
   return res.data; // { success, tradeOffer }
 }
 
+/**
+ * Cancel a pending trade offer (sender only).
+ * Sets status to 'cancelled'. Only works while trade is still pending.
+ */
+export async function cancelTrade(tradeId) {
+  const res = await api.patch(`/trades/${tradeId}/cancel`);
+  return res.data;
+}
+
 // ── Wishlist ──────────────────────────────────────────────────────────────
 
 export async function addWishlist(itemId) {
