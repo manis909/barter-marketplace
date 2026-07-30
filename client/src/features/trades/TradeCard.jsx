@@ -596,6 +596,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   const numConfirmations = (trade.sender_confirmed ? 1 : 0) + (trade.receiver_confirmed ? 1 : 0);
 
   const partnerName = isIncoming ? trade.sender_username : trade.receiver_username;
+  const partnerAvatarUrl = isIncoming ? trade.sender_profile_image : trade.receiver_profile_image;
   const headerLabel = isIncoming ? '↙ Incoming Request' : '↗ Your Offer';
   const headerBg = isIncoming ? 'rgba(240,253,244,0.85)' : 'rgba(239,246,255,0.85)';
   const headerColor = isIncoming ? '#14532d' : '#1e3a8a';
@@ -718,9 +719,27 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
         {/* ── Header ── */}
         <div className="ticket-head">
           <div className="who">
-            <div className="avatar">
-              {partnerName ? partnerName.charAt(0).toUpperCase() : '?'}
-            </div>
+            {partnerAvatarUrl ? (
+              <img
+                src={partnerAvatarUrl}
+                alt={partnerName || 'User'}
+                className="avatar"
+                style={{ objectFit: 'cover' }}
+                onError={e => {
+                  // If the image fails to load, swap to the initial letter avatar
+                  e.currentTarget.replaceWith((() => {
+                    const d = document.createElement('div');
+                    d.className = 'avatar';
+                    d.textContent = partnerName ? partnerName.charAt(0).toUpperCase() : '?';
+                    return d;
+                  })());
+                }}
+              />
+            ) : (
+              <div className="avatar">
+                {partnerName ? partnerName.charAt(0).toUpperCase() : '?'}
+              </div>
+            )}
             <div className="who-text">
               <div className="handle">
                 {isIncoming ? '↙ ' : '↗ '}@{partnerName || 'unknown'}
