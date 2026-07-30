@@ -4,6 +4,7 @@ const multer = require('multer');
 const requireAuth = require('../middleware/auth');
 const db = require('../models/db');
 const supabaseAdmin = require('../utils/supabaseAdmin');
+const { createNotification } = require('../routes/notifications');
 
 const upload = multer({ storage: multer.memoryStorage() });
 const BUCKET = 'id-verification'; // PRIVATE bucket — confirm name with Member 5
@@ -17,25 +18,29 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
-// ---- User: submit ID + Hall Ticket for verification ----
+// ---- User: (re)submit ID photo + hall ticket number for verification ----
+// Used after a rejection, when the user tries again from their Profile page.
+// NOTE: hallticket_verification_path used to hold a storage path — it's now
+// reused as a plain text column to hold the hall ticket number instead.
 router.post(
   '/submit',
   requireAuth,
-  upload.fields([{ name: 'id_photo', maxCount: 1 }, { name: 'hallticket_photo', maxCount: 1 }]),
+  upload.fields([{ name: 'id_photo', maxCount: 1 }]),
   async (req, res) => {
     try {
       const idFile = req.files?.id_photo?.[0];
-      const hallTicketFile = req.files?.hallticket_photo?.[0];
+      const { hallticket_number } = req.body;
 
-      if (!idFile || !hallTicketFile) {
-        return res.status(400).json({ error: 'Both ID card and hall ticket photos are required' });
+      if (!idFile) {
+        return res.status(400).json({ error: 'ID card photo is required' });
+      }
+      if (!hallticket_number || !hallticket_number.trim()) {
+        return res.status(400).json({ error: 'Hall ticket number is required' });
       }
 
       const userId = req.userId;
       const idExt = idFile.originalname.split('.').pop();
-      const hallTicketExt = hallTicketFile.originalname.split('.').pop();
       const idPath = `${userId}/id-${Date.now()}.${idExt}`;
-      const hallTicketPath = `${userId}/hallticket-${Date.now()}.${hallTicketExt}`;
 
       const { error: idUploadError } = await supabaseAdmin.storage
         .from(BUCKET)
@@ -46,17 +51,6 @@ router.post(
         return res.status(500).json({ error: 'ID upload failed' });
       }
 
-      const { error: hallTicketUploadError } = await supabaseAdmin.storage
-        .from(BUCKET)
-        .upload(hallTicketPath, hallTicketFile.buffer, { contentType: hallTicketFile.mimetype });
-
-      if (hallTicketUploadError) {
-        console.error('Hall ticket upload error:', hallTicketUploadError);
-        // Clean up the ID photo since we can't proceed with only one file
-        await supabaseAdmin.storage.from(BUCKET).remove([idPath]);
-        return res.status(500).json({ error: 'Hall ticket upload failed' });
-      }
-
       await db.query(
         `UPDATE users
          SET verification_status = 'pending',
@@ -64,7 +58,7 @@ router.post(
              hallticket_verification_path = $2,
              verification_rejection_reason = NULL
          WHERE id = $3`,
-        [idPath, hallTicketPath, userId]
+        [idPath, hallticket_number.trim(), userId]
       );
 
       res.json({ status: 'pending' });
@@ -84,7 +78,7 @@ router.get('/status', requireAuth, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-// ---- Admin: list all pending submissions with temporary signed view URLs ----
+// ---- Admin: list all pending submissions with a signed view URL for the ID, and hall ticket number as plain text ----
 router.get('/pending', requireAuth, requireAdmin, async (req, res) => {
   const result = await db.query(
     `SELECT id, username, full_name, id_verification_path, hallticket_verification_path
@@ -96,33 +90,28 @@ router.get('/pending', requireAuth, requireAdmin, async (req, res) => {
       .from(BUCKET)
       .createSignedUrl(u.id_verification_path, 300);
 
-    const { data: hallTicketData, error: hallTicketError } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .createSignedUrl(u.hallticket_verification_path, 300);
-
     return {
       ...u,
       id_signed_url: idError ? null : idData.signedUrl,
-      hallticket_signed_url: hallTicketError ? null : hallTicketData.signedUrl,
+      // hallticket_verification_path is plain text (the number) now — no signed URL needed
     };
   }));
 
   res.json({ pending: withUrls });
 });
 
-// ---- Admin: approve — deletes the image immediately, sets verified ----
+// ---- Admin: approve — deletes the ID image immediately, clears hall ticket number, sets verified ----
 router.post('/:userId/approve', requireAuth, requireAdmin, async (req, res) => {
   const { userId } = req.params;
 
   const result = await db.query(
-    'SELECT id_verification_path, hallticket_verification_path FROM users WHERE id = $1',
+    'SELECT id_verification_path FROM users WHERE id = $1',
     [userId]
   );
-  const { id_verification_path, hallticket_verification_path } = result.rows[0] || {};
-  const pathsToRemove = [id_verification_path, hallticket_verification_path].filter(Boolean);
+  const { id_verification_path } = result.rows[0] || {};
 
-  if (pathsToRemove.length > 0) {
-    await supabaseAdmin.storage.from(BUCKET).remove(pathsToRemove);
+  if (id_verification_path) {
+    await supabaseAdmin.storage.from(BUCKET).remove([id_verification_path]);
   }
 
   await db.query(
@@ -140,10 +129,12 @@ router.post('/:userId/approve', requireAuth, requireAdmin, async (req, res) => {
     [userId, req.userId]
   );
 
+  await createNotification(userId, 'verification_approved', 'Verification Approved', 'Your verification was approved.');
+
   res.json({ status: 'approved' });
 });
 
-// ---- Admin: reject — requires a reason, also deletes the image ----
+// ---- Admin: reject — requires a reason, also deletes the ID image and clears hall ticket number ----
 router.post('/:userId/reject', requireAuth, requireAdmin, async (req, res) => {
   const { userId } = req.params;
   const { reason } = req.body;
@@ -153,14 +144,13 @@ router.post('/:userId/reject', requireAuth, requireAdmin, async (req, res) => {
   }
 
   const result = await db.query(
-    'SELECT id_verification_path, hallticket_verification_path FROM users WHERE id = $1',
+    'SELECT id_verification_path FROM users WHERE id = $1',
     [userId]
   );
-  const { id_verification_path, hallticket_verification_path } = result.rows[0] || {};
-  const pathsToRemove = [id_verification_path, hallticket_verification_path].filter(Boolean);
+  const { id_verification_path } = result.rows[0] || {};
 
-  if (pathsToRemove.length > 0) {
-    await supabaseAdmin.storage.from(BUCKET).remove(pathsToRemove);
+  if (id_verification_path) {
+    await supabaseAdmin.storage.from(BUCKET).remove([id_verification_path]);
   }
 
   await db.query(
@@ -177,6 +167,8 @@ router.post('/:userId/reject', requireAuth, requireAdmin, async (req, res) => {
      VALUES ($1, $2, 'rejected', $3)`,
     [userId, req.userId, reason.trim()]
   );
+
+  await createNotification(userId, 'verification_rejected', 'Verification Rejected', `Your verification was rejected: ${reason.trim()}`);
 
   res.json({ status: 'rejected' });
 });

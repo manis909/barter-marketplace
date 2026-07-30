@@ -20,6 +20,7 @@ import LandingPage from './landing/LandingPage';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import './App.css';
+import AdminVerificationPage from './features/verification/AdminVerification';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/rent" element={<div style={{ padding: 40 }}>Renter — coming soon</div>} />
+            <Route path="/admin/verification" element={<AdminVerificationPage />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>

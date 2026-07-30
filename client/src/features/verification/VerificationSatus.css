@@ -1,0 +1,43 @@
+.verification-status {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 4px 0 16px;
+  font-size: 13px;
+}
+
+.verification-status-pending {
+  background: #fef9e7;
+  color: #92720c;
+  border: 1px solid #f5e6a8;
+}
+
+.verification-status-rejected {
+  background: #fdecec;
+  color: #9b2c2c;
+  border: 1px solid #f5c2c2;
+}
+
+.verification-status-rejected p {
+  margin: 0 0 8px;
+}
+
+.verification-status-unverified {
+  background: #f0fbe9;
+  border: 1px solid #d5f0c4;
+}
+
+.verification-status-btn {
+  display: inline-block;
+  background: #2f6f5e;
+  color: white;
+  text-decoration: none;
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.verification-status-btn:hover {
+  background: #26594b;
+}

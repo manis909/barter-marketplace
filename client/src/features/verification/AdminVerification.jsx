@@ -18,6 +18,22 @@ export default function AdminVerificationPage() {
       .catch(() => setError('Could not load pending submissions — admin access required.'));
   }
 
+  async function handleExportCsv() {
+    try {
+      const res = await api.get('/verification/logs/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'verification_log.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Could not export log.');
+    }
+  }
+
   async function handleApprove(userId) {
     await api.post(`/verification/${userId}/approve`);
     load();
@@ -33,22 +49,6 @@ export default function AdminVerificationPage() {
     setReasonText('');
     setError('');
     load();
-  }
-
-  async function handleExportCsv() {
-    try {
-      const res = await api.get('/verification/logs/export', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'verification_log.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Could not export log.');
-    }
   }
 
   return (
@@ -76,12 +76,10 @@ export default function AdminVerificationPage() {
                 <img src={u.id_signed_url} alt="Submitted ID" className="admin-verification-image" />
               </div>
             )}
-            {u.hallticket_signed_url && (
-              <div>
-                <p className="admin-image-label">Hall Ticket</p>
-                <img src={u.hallticket_signed_url} alt="Submitted Hall Ticket" className="admin-verification-image" />
-              </div>
-            )}
+            <div>
+              <p className="admin-image-label">Hall Ticket Number</p>
+              <p className="admin-hallticket-number">{u.hallticket_verification_path}</p>
+            </div>
           </div>
           <div className="admin-verification-info">
             <strong>{u.full_name || u.username}</strong>
