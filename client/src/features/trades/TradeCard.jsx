@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TRADE_STATUS } from '../../utils/constants';
-import { requestMoreItems, getTradeItems, addItemsToTrade } from '../../services/tradeService';
+import { requestMoreItems, getTradeItems, addItemsToTrade, cancelTrade } from '../../services/tradeService';
 import api from '../../services/api';
 
 const TRADE_ITEMS_ROW_CSS = `
@@ -394,16 +394,16 @@ const TRADE_ITEMS_ROW_CSS = `
 
 /* Completed → soft sage-green card */
 .ticket.is-completed {
-  background: #f0faf4;
-  border-color: rgba(44, 122, 75, 0.28);
-  box-shadow: 0 4px 14px rgba(44, 122, 75, 0.08);
+  background: #e8f8ee;
+  border-color: rgba(44, 122, 75, 0.36);
+  box-shadow: 0 4px 14px rgba(44, 122, 75, 0.10);
 }
 
 /* Declined / Cancelled → soft peach card */
 .ticket.is-declined {
-  background: #fef3ee;
-  border-color: rgba(180, 68, 46, 0.22);
-  box-shadow: 0 4px 14px rgba(180, 68, 46, 0.07);
+  background: #fdeee7;
+  border-color: rgba(180, 68, 46, 0.30);
+  box-shadow: 0 4px 14px rgba(180, 68, 46, 0.09);
 }
 
 /* Boost item-row contrast so both color layers are legible */
@@ -490,6 +490,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   // "Request More Items" dialog state
   const [showCounterDialog, setShowCounterDialog] = useState(false);
   const [counterMsg, setCounterMsg] = useState('');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Multi-item offered items state
   // offeredItems: full list (original + extras from trade_offer_items)
@@ -716,10 +717,10 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             </div>
             <div className="progress-label">
               {numConfirmations}/2 confirmations · {
-                numConfirmations === 2 
-                  ? 'Ready to swap!' 
-                  : !hasIConfirmed 
-                    ? 'waiting on you to confirm' 
+                numConfirmations === 2
+                  ? 'Ready to swap!'
+                  : !hasIConfirmed
+                    ? 'waiting on you to confirm'
                     : `waiting on @${partnerName || 'partner'}`
               }
             </div>
@@ -768,8 +769,8 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
               <div className="dash" />
               <div className="swap-badge" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 2L4 10M4 10L2 8M4 10L6 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 12L10 4M10 4L8 6M10 4L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M4 2L4 10M4 10L2 8M4 10L6 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M10 12L10 4M10 4L8 6M10 4L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <div className="dash" />
@@ -785,11 +786,6 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
               </div>
             </Link>
           </div>
-
-          {/* Date + partner */}
-          <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--muted)', fontFamily: 'IBM Plex Mono', textTransform: 'uppercase' }}>
-            {displayDate}
-          </p>
 
           {/* Message (non-counter) */}
           {trade.message && !hasCounter && (
@@ -845,11 +841,21 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
               </Btn>
             )}
 
-            {/* Pending sender status — only when NOT waiting for more items */}
+            {/* Pending sender: waiting label + cancel button */}
             {isOutgoing && trade.status === TRADE_STATUS.PENDING && !trade.needs_more_items && (
-              <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, alignSelf: 'center' }}>
-                Waiting for response...
-              </span>
+              <>
+                <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, alignSelf: 'center', flex: 1 }}>
+                  Waiting for response...
+                </span>
+                <Btn
+                  onClick={() => setShowCancelDialog(true)}
+                  variant="ghost"
+                  disabled={acting}
+                  style={{ color: '#b4442e', border: '1px solid rgba(180,68,46,0.2)', minWidth: 0 }}
+                >
+                  Withdraw Offer
+                </Btn>
+              </>
             )}
           </div>
 
@@ -912,7 +918,43 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             </div>
           </div>
         </div>
-      )}
+
+      {/* ── Withdraw Trade Offer dialog ── */}
+      {showCancelDialog && (
+        <div role="dialog" aria-modal="true" aria-label="Withdraw trade offer"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 18 }}
+        >
+          <div style={{ maxWidth: 400, width: '100%', borderRadius: 22, padding: 24, background: 'var(--paper)', border: '1px solid rgba(180,68,46,0.22)', boxShadow: '0 24px 60px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>Withdraw this offer?</h3>
+            <p style={{ margin: '0 0 22px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.65 }}>
+              The offer will be cancelled and the receiver will be notified. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <Btn onClick={() => setShowCancelDialog(false)} variant="secondary">Keep Offer</Btn>
+              <Btn
+                disabled={acting}
+                onClick={async () => {
+                  setActing(true);
+                  setActionError('');
+                  setShowCancelDialog(false);
+                  try {
+                    const data = await cancelTrade(trade.id);
+                    await onStatusChange(trade.id, 'refresh');
+                  } catch (err) {
+                    setActionError(err?.response?.data?.error || err?.message || 'Failed to cancel trade');
+                  } finally {
+                    setActing(false);
+                  }
+                }}
+                variant="ghost"
+                style={{ background: 'rgba(180,68,46,0.1)', color: '#b4442e', border: '1px solid rgba(180,68,46,0.25)' }}
+              >
+                {acting ? 'Withdrawing…' : 'Yes, withdraw'}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}      )}
 
       {/* ── Edit Trade Offer modal (sender adds items) ── */}
       {showEditModal && (

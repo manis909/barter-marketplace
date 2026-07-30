@@ -285,6 +285,7 @@ export default function MyTrades() {
   const [error,               setError]               = useState('');
   const [acceptedTradeModal,  setAcceptedTradeModal]  = useState(null);
   const [activeTab,           setActiveTab]           = useState('active');
+  const [historyFilter,       setHistoryFilter]       = useState('all'); // 'all' | 'completed' | 'declined'
 
   // ── Fetch ────────────────────────────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
@@ -365,6 +366,13 @@ export default function MyTrades() {
     t.status === TRADE_STATUS.COMPLETED || t.status === TRADE_STATUS.DECLINED ||
     t.status === TRADE_STATUS.CANCELLED
   );
+  const filteredPastTrades = historyFilter === 'all'
+    ? pastTrades
+    : pastTrades.filter(t => {
+        if (historyFilter === 'completed') return t.status === TRADE_STATUS.COMPLETED;
+        if (historyFilter === 'declined')  return t.status === TRADE_STATUS.DECLINED || t.status === TRADE_STATUS.CANCELLED;
+        return true;
+      });
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {
@@ -512,9 +520,43 @@ export default function MyTrades() {
             ) : (
               <>
                 <div className="section-label">History</div>
+
+                {/* History filter chips */}
+                <div style={{ display: 'flex', gap: 8, padding: '0 16px', marginBottom: 12, flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'all',       label: 'All',       count: pastTrades.length },
+                    { key: 'completed', label: 'Completed', count: pastTrades.filter(t => t.status === TRADE_STATUS.COMPLETED).length },
+                    { key: 'declined',  label: 'Declined',  count: pastTrades.filter(t => t.status === TRADE_STATUS.DECLINED || t.status === TRADE_STATUS.CANCELLED).length },
+                  ].map(chip => (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={() => setHistoryFilter(chip.key)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 20,
+                        border: 'none',
+                        background: historyFilter === chip.key ? 'var(--dark)' : 'rgba(15,61,46,0.07)',
+                        color: historyFilter === chip.key ? '#fff' : 'var(--muted)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                        transition: 'background 0.15s, color 0.15s',
+                      }}
+                    >
+                      {chip.label}
+                      {' '}
+                      <span style={{ opacity: 0.7, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>
+                        {chip.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
                 <TradeSection
-                  trades={pastTrades}
-                  emptyMessage="You haven't completed or declined any outgoing trades yet."
+                  trades={filteredPastTrades}
+                  emptyMessage={historyFilter === 'all' ? "You haven't completed or declined any trades yet." : `No ${historyFilter} trades.`}
                   currentUserId={userId}
                   onStatusChange={handleStatusChange}
                 />
