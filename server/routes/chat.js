@@ -96,6 +96,14 @@ router.post("/", requireAuth, upload.single("attachment"), async (req, res) => {
       return res.status(403).json({ message: "Not part of this trade" });
     }
 
+    // Completed trades are archived — no new messages allowed
+    if (t.status === "completed") {
+      return res.status(403).json({
+        message: "This trade has been completed. The chat is now closed.",
+        code: "TRADE_COMPLETED",
+      });
+    }
+
     // CHANGED: build attachment fields if a file was uploaded
     let attachment_url = null;
     let attachment_type = null;

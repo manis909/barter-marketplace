@@ -36,6 +36,22 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// DELETE bulk — removes a list of notifications that belong to this user.
+// Body: { ids: ["uuid1", "uuid2", ...] }
+router.delete("/bulk", requireAuth, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "ids must be a non-empty array" });
+  }
+  // Only delete rows that actually belong to the requesting user — prevents
+  // someone from deleting another user's notifications by guessing IDs.
+  await db.query(
+    "DELETE FROM notifications WHERE id = ANY($1::uuid[]) AND user_id = $2",
+    [ids, req.userId]
+  );
+  res.json({ success: true });
+});
+
 // Helper used by other routes (chat.js, trades.js, verification, etc.) to create a notification
 async function createNotification(userId, type, title, body, tradeOfferId = null) {
   const result = await db.query(

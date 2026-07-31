@@ -323,6 +323,16 @@ const CHAT_CSS = `
   padding: 10px 14px; text-align: center; color: ${T.muted}; font-size: 13px;
   flex-shrink: 0; background: ${T.bg}; border-bottom: 1px solid ${T.border};
 }
+
+/* ── Chat locked banner (replaces input when trade is completed) ── */
+.cw-chat-locked {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 16px; flex-shrink: 0;
+  background: ${T.bg}; border-top: 1px solid ${T.border};
+  font-size: 13px; color: ${T.muted}; font-family: Manrope, sans-serif;
+  text-align: center;
+}
+.cw-chat-locked-icon { font-size: 15px; flex-shrink: 0; }
 `;
 
 /* ─── Trade completed system message (renders inside .cw-messages scroll area) ── */
@@ -366,6 +376,7 @@ export default function ChatWindow({
   tradeItemId,         // item ID for "View Item" navigation
   onViewItem,          // callback → navigate to item page
   tradeCompletedAt,    // non-null when trade is completed; rendered as system message inside scroll area
+  chatLocked,          // true when trade.status === 'completed' — disables sending
 }) {
   const [messages,       setMessages]       = useState([]);
   const [input,          setInput]          = useState('');
@@ -758,7 +769,13 @@ export default function ChatWindow({
           </div>
         )}
 
-        {/* ── Input row ── */}
+        {/* ── Input row OR locked banner ── */}
+        {chatLocked ? (
+          <div className="cw-chat-locked">
+            <span className="cw-chat-locked-icon">🔒</span>
+            This conversation is closed. The trade has been completed.
+          </div>
+        ) : (
         <div className="cw-input-row">
 
           {/* Hidden file inputs */}
@@ -812,6 +829,7 @@ export default function ChatWindow({
             ➤
           </button>
         </div>
+        )}
       </div>
 
       {/* Mobile bottom sheet for attachments */}
