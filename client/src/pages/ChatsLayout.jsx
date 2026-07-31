@@ -288,16 +288,6 @@ export default function ChatsLayout() {
     finally { setDeleting(false); setDeleteMenuFor(null); }
   };
 
-  const handleDeleteForEveryone = async id => {
-    setDeleting(true);
-    try {
-      await deleteChatForEveryone(id);
-      setHiddenIds(p => [...p, id]);
-      if (String(id) === String(tradeId)) navigate('/chats');
-    } catch (err) { setError(getErrorMessage(err)); }
-    finally { setDeleting(false); setDeleteMenuFor(null); }
-  };
-
   const handleMarkComplete = async () => {
     if (!canMarkComplete) return;
     setCompleting(true); setCompleteError('');
@@ -400,10 +390,12 @@ export default function ChatsLayout() {
                     </div>
                     {menuOpen && (
                       <div style={s.deleteMenu}>
+                        {/* "Delete for everyone" removed from this chat-list menu —
+                            deleting the whole thread for both users only happens
+                            per-message inside the conversation (ChatWindow.jsx),
+                            not from this list-level menu. */}
                         <button className="chatslayout-del-opt" disabled={deleting}
                           onClick={() => handleDeleteForMe(trade.id)} style={s.deleteOpt}>Delete for me</button>
-                        <button className="chatslayout-del-opt" disabled={deleting}
-                          onClick={() => handleDeleteForEveryone(trade.id)} style={{ ...s.deleteOpt, color: T.danger }}>Delete for everyone</button>
                         <button className="chatslayout-del-opt"
                           onClick={() => setDeleteMenuFor(null)} style={s.deleteOpt}>Cancel</button>
                       </div>
