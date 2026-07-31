@@ -367,8 +367,9 @@ export default function ChatsLayout() {
                 const imgField = isSend
                   ? (trade.receiver_profile_image || trade.receiver_avatar || null)
                   : (trade.sender_profile_image   || trade.sender_avatar   || null);
-                const isActive = String(trade.id) === String(tradeId);
-                const menuOpen = deleteMenuFor === trade.id;
+                const isActive   = String(trade.id) === String(tradeId);
+                const menuOpen   = deleteMenuFor === trade.id;
+                const isComplete = trade.status === 'completed';
                 return (
                   <li key={trade.id} style={{ position: 'relative' }}>
                     <div
@@ -381,6 +382,9 @@ export default function ChatsLayout() {
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={s.rowName}>{name || 'Unknown user'}</span>
                         <span style={s.rowSub}>{trade.requested_item_title}</span>
+                        {isComplete && (
+                          <span style={s.rowCompletedBadge}>✓ Completed</span>
+                        )}
                       </span>
                       <button type="button" aria-label="Delete chat"
                         onClick={e => { e.stopPropagation(); setDeleteMenuFor(menuOpen ? null : trade.id); }}
@@ -501,6 +505,7 @@ export default function ChatsLayout() {
                 tradeItemId={null}
                 onViewItem={null}
                 tradeCompletedAt={tradeIsCompleted ? (selectedTrade.updated_at || null) : null}
+                chatLocked={tradeIsCompleted}
               />
             </div>
 
@@ -579,6 +584,10 @@ const s = {
   rowSub: {
     display: 'block', fontSize: 11.5, color: T.muted, overflow: 'hidden',
     textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
+  },
+  rowCompletedBadge: {
+    display: 'inline-block', marginTop: 3, fontSize: 10.5,
+    color: T.accent, fontWeight: 600, letterSpacing: 0.2,
   },
   trashBtn: {
     border: 'none', background: 'transparent', color: T.muted, cursor: 'pointer',
