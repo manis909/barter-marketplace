@@ -17,6 +17,8 @@ const ratingsRoutes = require("./routes/ratings");
 const notificationsRoutes = require("./routes/notifications");
 const reportsRoutes = require("./routes/reports");
 const verificationRoutes = require("./routes/verification");
+const rateLimit = require("express-rate-limit");
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
 
 const app = express();
 app.use(cors());
@@ -25,7 +27,7 @@ app.use(express.json());
 // Serve uploaded chat attachments (images/videos) as static files
 app.use("/uploads", express.static("uploads"));
 
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/trades", tradeRoutes);
@@ -54,11 +56,7 @@ app.get("/", async (req, res) => {
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    // TODO before final submission: replace '*' with the real deployed
-    // frontend URL, e.g. 'https://your-app.vercel.app'
-    origin: "*",
-  },
+  cors: { origin: process.env.CLIENT_URL || 'http://localhost:5173' },
 });
 
 // ------------------------------------------------------------
@@ -69,39 +67,49 @@ const io = new Server(server, {
 // ------------------------------------------------------------
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
-
   if (!token) {
     return next(new Error("Authentication required"));
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded; // available in all handlers below as socket.user
+    socket.user = decoded;
     next();
   } catch (err) {
     next(new Error("Invalid or expired token"));
   }
 });
+require('./routes/notifications').setIO(io);
 
-// ------------------------------------------------------------
-// Connection handling — one trade = one room, so messages only
-// broadcast to the 2 users actually in that trade.
-// ------------------------------------------------------------
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id, "user:", socket.user?.userId);
+  socket.join(`user:${socket.user.userId}`);
 
-  const userRoom = `user:${socket.user.userId}`;
-  socket.join(userRoom);
+  socket.on("joinTrade", async (tradeOfferId) => {
+    try {
+      const result = await db.query(
+        'SELECT sender_id, receiver_id FROM trade_offers WHERE id = $1',
+        [tradeOfferId]
+      );
+      const trade = result.rows[0];
+      if (!trade) return;
 
-  socket.on("joinTrade", (tradeOfferId) => {
-    socket.join(String(tradeOfferId));
+      const isParticipant = trade.sender_id === socket.user.userId || trade.receiver_id === socket.user.userId;
+      if (!isParticipant) {
+        console.log(`Blocked unauthorized joinTrade attempt: user ${socket.user.userId} on trade ${tradeOfferId}`);
+        return;
+      }
+
+      socket.join(String(tradeOfferId));
+    } catch (err) {
+      console.error('joinTrade error:', err);
+    }
   });
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
 });
-
 // Make io accessible inside route files via req.app.get('io')
 app.set("io", io);
 

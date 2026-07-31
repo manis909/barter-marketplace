@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fmtDateAndTime } from '../utils/helpers';
 
 const API_URL = 'http://localhost:5000';
 
@@ -59,37 +60,9 @@ function getNavigationPath(notification) {
   return null; // no navigation for unknown types
 }
 
-/* ─── Time formatting (Indian Standard Time) ────────────────────────────── */
-function normalizeTs(ts) {
-  // DB column is TIMESTAMP (no tz). Server runs UTC, so the value is UTC but
-  // arrives without 'Z'. Append 'Z' (and replace space separator) so that
-  // new Date() treats it as UTC — otherwise JS assumes local time and the
-  // IST conversion is wrong.
-  if (!ts) return null;
-  if (/Z|[+-]\d{2}:?\d{2}$/.test(ts)) return ts;   // already has tz info
-  return ts.replace(' ', 'T') + 'Z';
-}
-
-function formatNotificationTime(ts) {
-  if (!ts) return '';
-  const d = new Date(normalizeTs(ts));
-
-  const date = d.toLocaleDateString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  const time = d.toLocaleTimeString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-
-  return { date, time };
-}
+/* ─── Time formatting — delegates to the shared helper in utils/helpers.js ── */
+// fmtDateAndTime() imported above: uses the browser's locale + timezone,
+// no hardcoded 'en-IN' or 'Asia/Kolkata'.
 
 /* ─── Injected CSS ───────────────────────────────────────────────────────── */
 const NOTIF_CSS = `
@@ -261,7 +234,7 @@ const NOTIF_CSS = `
 function NotificationCard({ notification, onClick }) {
   const { title, body, type, is_read, created_at } = notification;
   const icon = getIcon(type);
-  const ts   = formatNotificationTime(created_at);
+  const ts   = fmtDateAndTime(created_at);
   const path = getNavigationPath(notification);
   const clickable = !!path;
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
- import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
+import WishlistButton from '../components/WishlistButton'
 import './ItemDetail.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -241,6 +242,7 @@ export default function ItemDetailPage() {
             onTouchEnd={handleTouchEnd}
           >
             <img src={displayImage} alt={normalizedItem.title} className="detail-main-image" />
+            <WishlistButton itemId={normalizedItem.id} />
 
             {images.length > 1 && (
               <>

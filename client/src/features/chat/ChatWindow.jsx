@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { fmtTime, fmtDate } from '../../utils/helpers';
 
 const API_URL = 'http://localhost:5000';
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -19,22 +20,6 @@ const T = {
   radiusCard:    '14px',
   radiusControl: '9px',
 };
-
-/* ─── Timestamp: normalize to UTC then format as IST ───────────────────── */
-function formatTime(ts) {
-  if (!ts) return '';
-  // pg sends TIMESTAMP columns without tz info, e.g. "2026-07-30T07:05:29.295195"
-  // Socket.io sends JS Date serialized with Z.  Handle both.
-  const normalized = /Z|[+-]\d{2}:?\d{2}$/.test(String(ts))
-    ? ts
-    : String(ts).replace(' ', 'T') + 'Z';
-  return new Date(normalized).toLocaleTimeString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
 
 /* ─── Avatar ────────────────────────────────────────────────────────────── */
 function Avatar({ name, imageUrl, size = 34 }) {
@@ -254,7 +239,13 @@ const CHAT_CSS = `
   align-items: center; background: ${T.surface};
   flex-shrink: 0; width: 100%; position: relative;
 }
-@media (max-width: 767px) { .cw-input-row { padding: 8px 10px 10px; } }
+@media (max-width: 767px) {
+  .cw-input-row {
+    padding: 8px 10px;
+    /* Push the input above the home indicator on notched iPhones */
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
 
 /* ── "+" attach button ── */
 .cw-plus-btn {
@@ -284,7 +275,7 @@ const CHAT_CSS = `
 /* ── Mobile bottom sheet ── */
 .cw-bottom-sheet-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+  z-index: 200; display: flex; align-items: flex-end; justify-content: center;
 }
 .cw-bottom-sheet {
   width: 100%; max-width: 480px;
@@ -334,15 +325,47 @@ const CHAT_CSS = `
 }
 `;
 
+/* ─── Trade completed system message (renders inside .cw-messages scroll area) ── */
+function TradeCompletedSystemMsg({ completedAt }) {
+  const label = completedAt ? fmtDate(completedAt) : null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '14px 4px', alignSelf: 'stretch',
+    }}>
+      <div style={{ flex: 1, height: 1, background: '#C9E5D8' }} />
+      <div style={{
+        textAlign: 'center', padding: '10px 18px',
+        background: '#EEF7F2', border: '1px solid #C9E5D8',
+        borderRadius: '999px', fontFamily: 'Manrope, sans-serif',
+      }}>
+        <div style={{ fontSize: 15 }}>✅</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#3D6E63', marginTop: 2 }}>
+          Trade Completed
+        </div>
+        <div style={{ fontSize: 11, color: '#5F5B52', marginTop: 1 }}>
+          Both users confirmed the exchange.
+        </div>
+        {label && (
+          <div style={{ fontSize: 10.5, color: '#5F5B52', marginTop: 2 }}>{label}</div>
+        )}
+      </div>
+      <div style={{ flex: 1, height: 1, background: '#C9E5D8' }} />
+    </div>
+  );
+}
+
 /* ─── Component ─────────────────────────────────────────────────────────── */
 export default function ChatWindow({
   tradeOfferId,
   currentUserId,
   otherUserName,
   otherUserImage,
+  otherUserId,         // ID of the other party — used for presence checks
   tradeItemTitle,      // item title for context strip
   tradeItemId,         // item ID for "View Item" navigation
   onViewItem,          // callback → navigate to item page
+  tradeCompletedAt,    // non-null when trade is completed; rendered as system message inside scroll area
 }) {
   const [messages,       setMessages]       = useState([]);
   const [input,          setInput]          = useState('');
@@ -356,6 +379,9 @@ export default function ChatWindow({
   const [isMobile,       setIsMobile]       = useState(() => window.innerWidth < 768);
   const [pendingFile,    setPendingFile]    = useState(null);
   const [pendingUrl,     setPendingUrl]     = useState(null);
+  /* presence & read receipts */
+  const [isOtherOnline,  setIsOtherOnline]  = useState(false);
+  const [chatIsRead,     setChatIsRead]     = useState(false);
 
   const socketRef          = useRef(null);
   const bottomRef          = useRef(null);
@@ -379,6 +405,7 @@ export default function ChatWindow({
     prevMsgCount.current = 0;
     setMessages([]);
     setDeletedForAll(false);
+    setChatIsRead(false);   // reset read state when switching conversations
   }, [tradeOfferId]);
 
   /* ── socket + polling (logic unchanged) ── */
@@ -403,6 +430,22 @@ export default function ChatWindow({
       }
     });
     socket.on('connect_error', e => console.log('Socket:', e.message));
+
+    /* ── Presence events ── */
+    socket.on('userOnline', ({ userId: uid }) => {
+      if (String(uid) === String(otherUserId)) setIsOtherOnline(true);
+    });
+    socket.on('userOffline', ({ userId: uid }) => {
+      if (String(uid) === String(otherUserId)) setIsOtherOnline(false);
+    });
+
+    /* ── Read receipt: other user opened this chat ── */
+    socket.on('messagesRead', ({ tradeOfferId: tid }) => {
+      if (String(tid) === String(tradeOfferId)) setChatIsRead(true);
+    });
+
+    /* ── Tell the other side our messages are read when we open ── */
+    socket.emit('markRead', { tradeOfferId: String(tradeOfferId) });
 
     const poll = setInterval(() => {
       fetch(`${API_URL}/api/chat/${tradeOfferId}`, {
@@ -546,7 +589,7 @@ export default function ChatWindow({
         <Avatar name={headerName} imageUrl={otherUserImage} size={36} />
         <div className="cw-header-info">
           <div className="cw-header-name">{headerName}</div>
-          <div className="cw-header-status">Online</div>
+          {isOtherOnline && <div className="cw-header-status">Online</div>}
         </div>
       </div>
 
@@ -644,9 +687,13 @@ export default function ChatWindow({
                   {/* Timestamp + sent status */}
                   {!m.deleted && (
                     <div className="cw-bubble-footer">
-                      <span className="cw-ts">{formatTime(m.created_at)}</span>
-                      {/* Status placeholder — ✓ = sent. Replace with ✓✓ for delivered, blue ✓✓ for read when backend supports it */}
-                      {isMine && <span className="cw-status">✓</span>}
+                      <span className="cw-ts">{fmtTime(m.created_at)}</span>
+                      {/* ✓ for own messages; turns blue when recipient has read the chat */}
+                      {isMine && (
+                        <span className="cw-status" style={{ color: chatIsRead ? '#53bdeb' : 'rgba(255,255,255,0.7)' }}>
+                          ✓✓
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -687,10 +734,11 @@ export default function ChatWindow({
               </div>
             );
           })}
+          {/* Trade completed system message — scrolls naturally with messages */}
+          {tradeCompletedAt != null && <TradeCompletedSystemMsg completedAt={tradeCompletedAt} />}
+
           <div ref={bottomRef} />
         </div>
-
-        {/* Reply preview */}
         {replyingTo && (
           <div className="cw-reply-preview">
             <span>Replying to: {replyingTo.message?.slice(0, 50)}{replyingTo.message?.length > 50 ? '…' : ''}</span>

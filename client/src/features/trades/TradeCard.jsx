@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { TRADE_STATUS } from '../../utils/constants';
 import { requestMoreItems, getTradeItems, addItemsToTrade, cancelTrade } from '../../services/tradeService';
 import api from '../../services/api';
+import { fmtDate } from '../../utils/helpers';
 
 const TRADE_ITEMS_ROW_CSS = `
 :root {
@@ -27,11 +28,12 @@ const TRADE_ITEMS_ROW_CSS = `
   background: var(--paper);
   border-radius: var(--radius);
   box-shadow: 0 4px 14px rgba(15,61,46,0.07);
-  overflow: hidden;
+  /* Do NOT use overflow:hidden — it creates a stacking context that traps
+     position:fixed children (modals). Use border-radius on a pseudo-element
+     or accept that child overflow clips at the rounded corner naturally. */
   border: 1px solid var(--line);
   transition: transform 0.2s, box-shadow 0.2s;
   margin: 0;
-  /* stretch to match tallest card in the grid row */
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -596,6 +598,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   const numConfirmations = (trade.sender_confirmed ? 1 : 0) + (trade.receiver_confirmed ? 1 : 0);
 
   const partnerName = isIncoming ? trade.sender_username : trade.receiver_username;
+  const partnerAvatarUrl = isIncoming ? trade.sender_profile_image : trade.receiver_profile_image;
   const headerLabel = isIncoming ? '↙ Incoming Request' : '↗ Your Offer';
   const headerBg = isIncoming ? 'rgba(240,253,244,0.85)' : 'rgba(239,246,255,0.85)';
   const headerColor = isIncoming ? '#14532d' : '#1e3a8a';
@@ -612,9 +615,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
     trade.requested_item_value ? `Est. $${trade.requested_item_value}` : null,
   ]);
 
-  const displayDate = trade.created_at
-    ? new Date(trade.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-    : '—';
+  const displayDate = trade.created_at ? fmtDate(trade.created_at) : '—';
 
   const handleAction = useCallback(async (newStatus) => {
     setActing(true);
@@ -718,9 +719,27 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
         {/* ── Header ── */}
         <div className="ticket-head">
           <div className="who">
-            <div className="avatar">
-              {partnerName ? partnerName.charAt(0).toUpperCase() : '?'}
-            </div>
+            {partnerAvatarUrl ? (
+              <img
+                src={partnerAvatarUrl}
+                alt={partnerName || 'User'}
+                className="avatar"
+                style={{ objectFit: 'cover' }}
+                onError={e => {
+                  // If the image fails to load, swap to the initial letter avatar
+                  e.currentTarget.replaceWith((() => {
+                    const d = document.createElement('div');
+                    d.className = 'avatar';
+                    d.textContent = partnerName ? partnerName.charAt(0).toUpperCase() : '?';
+                    return d;
+                  })());
+                }}
+              />
+            ) : (
+              <div className="avatar">
+                {partnerName ? partnerName.charAt(0).toUpperCase() : '?'}
+              </div>
+            )}
             <div className="who-text">
               <div className="handle">
                 {isIncoming ? '↙ ' : '↗ '}@{partnerName || 'unknown'}
