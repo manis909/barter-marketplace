@@ -19,7 +19,7 @@ import { categoryNames } from '../data/categories'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
 import UndoToast from '../components/UndoToast'
-import { fmtDate } from '../utils/helpers'
+import { fmtDate, normalizeToUTC } from '../utils/helpers'
 import './MyListings.css'
 
 const MAX_IMAGES = 3
@@ -320,7 +320,7 @@ export default function MyListingsPage() {
       setListings((prev) =>
         // Re-insert sorted by created_at descending so it lands in the right spot
         [...prev, item].sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          (a, b) => new Date(normalizeToUTC(b.created_at)) - new Date(normalizeToUTC(a.created_at))
         )
       )
     }
@@ -345,7 +345,7 @@ export default function MyListingsPage() {
       // Restore the item if the network request failed
       setListings((prev) =>
         [...prev, item].sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          (a, b) => new Date(normalizeToUTC(b.created_at)) - new Date(normalizeToUTC(a.created_at))
         )
       )
     }

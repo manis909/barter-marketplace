@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Fragment } from 'react';
 import { io } from 'socket.io-client';
-import { fmtTime, fmtDate } from '../../utils/helpers';
+import { fmtTime, fmtDate, formatChatDateHeader, getDateKey } from '../../utils/helpers';
 
 const API_URL = 'http://localhost:5000';
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -116,6 +116,19 @@ const CHAT_CSS = `
 }
 .cw-messages::-webkit-scrollbar { width: 3px; }
 .cw-messages::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
+
+/* ── Date separator pill ── */
+.cw-date-separator {
+  display: flex; align-items: center; justify-content: center;
+  margin: 10px 0 4px; width: 100%; box-sizing: border-box;
+}
+.cw-date-pill {
+  background: ${T.surface}; color: ${T.muted};
+  border: 1px solid ${T.border}; font-size: 11px; font-weight: 600;
+  padding: 3px 12px; border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  letter-spacing: 0.2px; user-select: none;
+}
 
 /* ── Message row ── */
 .cw-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
@@ -624,7 +637,7 @@ export default function ChatWindow({
 
         {/* ── Messages ── */}
         <div className="cw-messages" ref={msgContRef}>
-          {messages.map(m => {
+          {messages.map((m, idx) => {
             const isMine     = String(m.sender_id) === String(currentUserId);
             const quoted     = m.reply_to_message_id ? findMsg(m.reply_to_message_id) : null;
             const reactions  = Object.entries(m.reactions || {});
@@ -636,8 +649,18 @@ export default function ChatWindow({
             const isImg = attachSrc && (m.attachment_type === 'image' || String(m.attachment_type).startsWith('image/'));
             const isVid = attachSrc && (m.attachment_type === 'video' || String(m.attachment_type).startsWith('video/'));
 
+            const prevMsg = idx > 0 ? messages[idx - 1] : null;
+            const showDateSeparator = !prevMsg || getDateKey(m.created_at) !== getDateKey(prevMsg.created_at);
+            const dateLabel = showDateSeparator ? formatChatDateHeader(m.created_at) : null;
+
             return (
-              <div key={m.id} className={`cw-row ${isMine ? 'mine' : 'theirs'}`}>
+              <Fragment key={m.id || idx}>
+                {showDateSeparator && dateLabel && (
+                  <div className="cw-date-separator">
+                    <span className="cw-date-pill">{dateLabel}</span>
+                  </div>
+                )}
+                <div className={`cw-row ${isMine ? 'mine' : 'theirs'}`}>
                 {!isMine && m.sender_name && (
                   <span className="cw-sender">{m.sender_name}</span>
                 )}
@@ -743,8 +766,9 @@ export default function ChatWindow({
                   </div>
                 )}
               </div>
-            );
-          })}
+            </Fragment>
+          );
+        })}
           {/* Trade completed system message — scrolls naturally with messages */}
           {tradeCompletedAt != null && <TradeCompletedSystemMsg completedAt={tradeCompletedAt} />}
 

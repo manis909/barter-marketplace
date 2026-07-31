@@ -26,8 +26,11 @@
  */
 export function normalizeToUTC(ts) {
   if (!ts) return ts;
-  const s = String(ts);
-  if (/Z$|[+-]\d{2}:?\d{2}$/.test(s)) return s;   // already has tz info
+  if (typeof ts === 'number') return ts;
+  if (ts instanceof Date) return ts;
+  const s = String(ts).trim();
+  if (!s) return s;
+  if (/Z$|[+-]\d{2}:?\d{2}$/i.test(s)) return s;   // already has tz info
   return s.replace(' ', 'T') + 'Z';                // add UTC marker
 }
 
@@ -36,7 +39,9 @@ export function normalizeToUTC(ts) {
  */
 export function fmtTime(ts) {
   if (!ts) return '';
-  return new Date(normalizeToUTC(ts)).toLocaleTimeString([], {
+  const d = new Date(normalizeToUTC(ts));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -48,7 +53,9 @@ export function fmtTime(ts) {
  */
 export function fmtDate(ts) {
   if (!ts) return '';
-  return new Date(normalizeToUTC(ts)).toLocaleDateString([], {
+  const d = new Date(normalizeToUTC(ts));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString([], {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -60,7 +67,9 @@ export function fmtDate(ts) {
  */
 export function fmtDateTime(ts) {
   if (!ts) return '';
-  return new Date(normalizeToUTC(ts)).toLocaleString([], {
+  const d = new Date(normalizeToUTC(ts));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString([], {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
@@ -74,10 +83,52 @@ export function fmtDateTime(ts) {
 export function fmtDateAndTime(ts) {
   if (!ts) return { date: '', time: '' };
   const d = new Date(normalizeToUTC(ts));
+  if (isNaN(d.getTime())) return { date: '', time: '' };
   return {
     date: d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }),
     time: d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }),
   };
+}
+
+/**
+ * Returns YYYY-MM-DD string in user's local timezone for grouping messages by day.
+ */
+export function getDateKey(ts) {
+  if (!ts) return '';
+  const d = new Date(normalizeToUTC(ts));
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Returns a human-readable date header string in user's local timezone:
+ * - "Today"
+ * - "Yesterday"
+ * - "Monday", "Tuesday", etc. (if within the last 6 days)
+ * - "31 July 2026" (otherwise)
+ */
+export function formatChatDateHeader(ts) {
+  if (!ts) return '';
+  const d = new Date(normalizeToUTC(ts));
+  if (isNaN(d.getTime())) return '';
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  const sixDaysAgoStart = todayStart - 6 * 86400000;
+
+  const msgDayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+  if (msgDayStart === todayStart) {
+    return 'Today';
+  }
+  if (msgDayStart === yesterdayStart) {
+    return 'Yesterday';
+  }
+  if (msgDayStart >= sixDaysAgoStart && msgDayStart < yesterdayStart) {
+    return d.toLocaleDateString([], { weekday: 'long' });
+  }
+  return d.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 // ---------------------------------------------------------------------------
@@ -92,9 +143,10 @@ export function formatDate(timestamp) {
 /** Formats a timestamp as relative time. e.g. "3 hours ago" */
 export function timeAgo(timestamp) {
   if (!timestamp) return '';
-  const seconds = Math.floor(
-    (Date.now() - new Date(normalizeToUTC(timestamp)).getTime()) / 1000
-  );
+  const d = new Date(normalizeToUTC(timestamp));
+  if (isNaN(d.getTime())) return '';
+  const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (seconds < 30) return 'just now';
   const intervals = [
     { label: 'year',   secs: 31536000 },
     { label: 'month',  secs: 2592000  },
