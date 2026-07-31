@@ -222,7 +222,7 @@ const BARTER_CSS = `
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 
 @media (min-width: 768px) {

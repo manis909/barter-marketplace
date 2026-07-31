@@ -33,7 +33,6 @@ const TRADE_ITEMS_ROW_CSS = `
   margin: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 .ticket:hover {
