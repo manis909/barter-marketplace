@@ -88,6 +88,40 @@ export async function cancelTrade(tradeId) {
   return res.data;
 }
 
+/**
+ * Submit exchange proof for a trade (Member 3 → Admin flow).
+ * Called by each user independently. Backend accumulates both submissions,
+ * then auto-transitions trade to 'awaiting_admin_verification'.
+ *
+ * @param {string} tradeId
+ * @param {File[]} images   - One or more proof images
+ * @param {string} [note]   - Optional note e.g. "Received in good condition."
+ */
+export async function submitProof(tradeId, images, note = '') {
+  const formData = new FormData();
+  images.forEach((file) => formData.append('proof_images', file));
+  if (note.trim()) formData.append('note', note.trim());
+
+  const res = await api.post(`/trades/${tradeId}/proof`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
+/**
+ * Get proof submission state for a trade.
+ * Returns { sender_proof_submitted, receiver_proof_submitted, status, timeline }
+ * Falls back gracefully if backend doesn't yet support this endpoint.
+ */
+export async function getTradeProofStatus(tradeId) {
+  try {
+    const res = await api.get(`/trades/${tradeId}`);
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
 // ── Wishlist ──────────────────────────────────────────────────────────────
 
 export async function addWishlist(itemId) {

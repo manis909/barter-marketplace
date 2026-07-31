@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import TradeCard from '../features/trades/TradeCard';
-import { getMyTrades, acceptTrade, declineTrade, completeTrade } from '../services/tradeService';
+import { getMyTrades, acceptTrade, declineTrade } from '../services/tradeService';
 import { getErrorMessage } from '../utils/helpers';
 import { TRADE_STATUS } from '../utils/constants';
 import { useAuth } from '../features/auth/AuthContext';
@@ -365,10 +365,10 @@ export default function MyTrades() {
       updatedData = await acceptTrade(tradeId);
     } else if (newStatus === TRADE_STATUS.DECLINED) {
       updatedData = await declineTrade(tradeId);
-    } else if (newStatus === TRADE_STATUS.COMPLETED) {
-      updatedData = await completeTrade(tradeId);
     } else {
-      throw new Error(`Unsupported trade status: ${newStatus}`);
+      // All other status changes (proof flow, etc.) are handled by TradeCard directly.
+      // Do NOT allow client-side completion — admin controls that.
+      throw new Error(`Unsupported status change from client: ${newStatus}`);
     }
 
     // Re-fetch so the trade sections reflect the latest status.
@@ -381,20 +381,35 @@ export default function MyTrades() {
 
   // ── Derived splits ────────────────────────────────────────────────────────
   const userId     = currentUser?.id;
+
+  // Active = pending, accepted, and all proof-based in-progress states
   const activeTrades = trades.filter(t =>
-    t.status === TRADE_STATUS.PENDING || t.status === TRADE_STATUS.ACCEPTED
+    t.status === TRADE_STATUS.PENDING ||
+    t.status === TRADE_STATUS.ACCEPTED ||
+    t.status === TRADE_STATUS.PROOF_PENDING ||
+    t.status === TRADE_STATUS.AWAITING_ADMIN_VERIFICATION
   );
+
   const pastTrades = trades.filter(t =>
-    t.status === TRADE_STATUS.COMPLETED || t.status === TRADE_STATUS.DECLINED ||
-    t.status === TRADE_STATUS.CANCELLED
+    t.status === TRADE_STATUS.COMPLETED ||
+    t.status === TRADE_STATUS.DECLINED  ||
+    t.status === TRADE_STATUS.CANCELLED ||
+    t.status === TRADE_STATUS.REJECTED
   );
+
   const filteredPastTrades = historyFilter === 'all'
     ? pastTrades
     : pastTrades.filter(t => {
-        if (historyFilter === 'completed') return t.status === TRADE_STATUS.COMPLETED;
-        if (historyFilter === 'declined')  return t.status === TRADE_STATUS.DECLINED || t.status === TRADE_STATUS.CANCELLED;
+        if (historyFilter === 'completed')    return t.status === TRADE_STATUS.COMPLETED;
+        if (historyFilter === 'declined')     return t.status === TRADE_STATUS.DECLINED || t.status === TRADE_STATUS.CANCELLED;
+        if (historyFilter === 'rejected')     return t.status === TRADE_STATUS.REJECTED;
         return true;
       });
+
+  // Pending verification count (for stat display)
+  const pendingVerificationCount = trades.filter(t =>
+    t.status === TRADE_STATUS.AWAITING_ADMIN_VERIFICATION
+  ).length;
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !currentUser) {
@@ -480,6 +495,12 @@ export default function MyTrades() {
               <b>{trades.filter(t => t.status === TRADE_STATUS.COMPLETED).length}</b>
               <span>Completed</span>
             </div>
+            {pendingVerificationCount > 0 && (
+              <div className="stat">
+                <b style={{ color: '#2563eb' }}>{pendingVerificationCount}</b>
+                <span>Pending Admin</span>
+              </div>
+            )}
             <div className="stat">
               <b>{trades.filter(t => t.status === TRADE_STATUS.DECLINED || t.status === TRADE_STATUS.CANCELLED).length}</b>
               <span>Declined</span>
@@ -546,10 +567,11 @@ export default function MyTrades() {
                 {/* History filter chips */}
                 <div style={{ display: 'flex', gap: 8, padding: '0 16px', marginBottom: 12, flexWrap: 'wrap' }}>
                   {[
-                    { key: 'all',       label: 'All',       count: pastTrades.length },
+                    { key: 'all',       label: 'All',      count: pastTrades.length },
                     { key: 'completed', label: 'Completed', count: pastTrades.filter(t => t.status === TRADE_STATUS.COMPLETED).length },
                     { key: 'declined',  label: 'Declined',  count: pastTrades.filter(t => t.status === TRADE_STATUS.DECLINED || t.status === TRADE_STATUS.CANCELLED).length },
-                  ].map(chip => (
+                    { key: 'rejected',  label: 'Rejected',  count: pastTrades.filter(t => t.status === TRADE_STATUS.REJECTED).length },
+                  ].filter(chip => chip.key === 'all' || chip.key === 'completed' || chip.key === 'declined' || chip.count > 0).map(chip => (
                     <button
                       key={chip.key}
                       type="button"

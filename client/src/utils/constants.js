@@ -26,6 +26,11 @@ export const TRADE_STATUS = {
   DECLINED: 'declined',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
+  // ── Proof-based completion flow (Member 3 + Admin) ──────────────────────
+  // Set by backend after trade is accepted and before admin reviews.
+  PROOF_PENDING: 'proof_pending',               // accepted, no proof yet
+  AWAITING_ADMIN_VERIFICATION: 'awaiting_admin_verification', // both proofs in
+  REJECTED: 'rejected',                          // admin rejected after review
 };
 
 // Frontend route paths — import these instead of hardcoding strings
