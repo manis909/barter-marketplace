@@ -44,6 +44,13 @@
   margin-bottom: 12px;
 }
 
+.verification-success {
+  color: #059669;
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
 .verification-upload-slot {
   margin-bottom: 16px;
 }
@@ -229,16 +236,4 @@
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 13px;
-}
-/* ---------- Add this to Verification.css ---------- */
-
-.admin-hallticket-number {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2937;
-  background: #f3f4f6;
-  padding: 8px 12px;
-  border-radius: 8px;
-  display: inline-block;
-  margin: 0;
 }

@@ -7,6 +7,7 @@ export default function AdminVerificationPage() {
   const [rejectingId, setRejectingId] = useState(null);
   const [reasonText, setReasonText] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     load();
@@ -34,21 +35,34 @@ export default function AdminVerificationPage() {
     }
   }
 
-  async function handleApprove(userId) {
-    await api.post(`/verification/${userId}/approve`);
-    load();
+  async function handleApprove(userId, username) {
+    setError('');
+    setSuccessMessage('');
+    try {
+      await api.post(`/verification/${userId}/approve`);
+      setSuccessMessage(`@${username} approved — they've been notified.`);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Approval failed. Please try again.');
+    }
   }
 
-  async function handleReject(userId) {
+  async function handleReject(userId, username) {
     if (!reasonText.trim()) {
       setError('Please enter a reason before rejecting.');
       return;
     }
-    await api.post(`/verification/${userId}/reject`, { reason: reasonText });
-    setRejectingId(null);
-    setReasonText('');
     setError('');
-    load();
+    setSuccessMessage('');
+    try {
+      await api.post(`/verification/${userId}/reject`, { reason: reasonText });
+      setSuccessMessage(`@${username} rejected — they've been notified with your reason.`);
+      setRejectingId(null);
+      setReasonText('');
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Rejection failed. Please try again.');
+    }
   }
 
   return (
@@ -64,6 +78,7 @@ export default function AdminVerificationPage() {
         </button>
       </div>
       {error && <p className="verification-error">{error}</p>}
+      {successMessage && <p className="verification-success">{successMessage}</p>}
 
       {pending.length === 0 && <p>No pending submissions.</p>}
 
@@ -94,7 +109,7 @@ export default function AdminVerificationPage() {
                   onChange={e => setReasonText(e.target.value)}
                 />
                 <div className="admin-verification-actions">
-                  <button className="admin-reject-btn" onClick={() => handleReject(u.id)}>
+                  <button className="admin-reject-btn" onClick={() => handleReject(u.id, u.username)}>
                     Confirm Reject
                   </button>
                   <button onClick={() => { setRejectingId(null); setReasonText(''); }}>
@@ -104,7 +119,7 @@ export default function AdminVerificationPage() {
               </>
             ) : (
               <div className="admin-verification-actions">
-                <button className="admin-approve-btn" onClick={() => handleApprove(u.id)}>
+                <button className="admin-approve-btn" onClick={() => handleApprove(u.id, u.username)}>
                   Approve
                 </button>
                 <button className="admin-reject-btn" onClick={() => setRejectingId(u.id)}>
