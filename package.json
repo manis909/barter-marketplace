@@ -1,4 +1,10 @@
 {
+  "name": "barter-marketplace",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix client",
+    "start": "npm run start --prefix client"
+  },
   "dependencies": {
     "multer": "^2.2.0"
   }
