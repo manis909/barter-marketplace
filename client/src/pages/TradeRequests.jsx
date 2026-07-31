@@ -118,7 +118,7 @@ const BARTER_CSS = `
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 @media (min-width: 768px) {
   .cards-grid { padding: 0 32px; grid-template-columns: repeat(2, 1fr); gap: 20px; }
