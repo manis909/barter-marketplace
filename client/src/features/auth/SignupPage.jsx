@@ -8,6 +8,7 @@ import './AuthPages.css';
 
 function getPasswordError(password) {
   if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (password.length > 32) return 'Password must be 32 characters or fewer.';
   if (!/[0-9]/.test(password)) return 'Password must include at least one number.';
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     return 'Password must include at least one symbol (e.g. ! @ # $ %).';
@@ -130,6 +131,7 @@ export default function SignupPage() {
               onChange={e => setPassword(e.target.value)}
               required
               minLength={8}
+              maxLength={32}
             />
             <button
               type="button"
@@ -161,6 +163,7 @@ export default function SignupPage() {
               onChange={e => setConfirmPassword(e.target.value)}
               required
               minLength={8}
+              maxLength={32}
             />
           </div>
 
