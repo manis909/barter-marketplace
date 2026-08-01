@@ -6,37 +6,96 @@
   background: #F8F6F1;
 }
 
-.my-listings-hero {
+/* ── Premium hero band ──────────────────────────────────────────── */
+.ml-hero {
+  background: linear-gradient(135deg, #0f3d2e 0%, #1b4d3e 42%, #2f6b52 78%, #4f8a67 100%);
+  padding: 40px 24px 80px;
+  position: relative;
+  overflow: hidden;
+  /* cancel the grid gap at top so it sits flush */
+  margin-top: -16px;
+}
+
+@media (min-width: 768px) {
+  .ml-hero {
+    padding: 52px 40px 90px;
+  }
+}
+
+/* Decorative lime circle — top-right accent */
+.ml-hero::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: #c6e930;
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+/* ── Back button ────────────────────────────────────────────────── */
+.ml-hero-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.18s;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.ml-hero-back:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* ── White overlapping title card ───────────────────────────────── */
+.ml-title-card {
+  background: #ffffff;
+  margin: -40px 16px 0;
+  border-radius: 22px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 12px 30px rgba(15, 61, 46, 0.10);
+  /* cancel the extra grid gap so toolbar sits naturally below */
+  margin-bottom: 4px;
+}
+
+@media (min-width: 768px) {
+  .ml-title-card {
+    margin: -44px 32px 4px;
+    border-radius: 26px;
+  }
+}
+
+.ml-title-card__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 24px 28px;
-  border-radius: 20px;
-  border: 1px solid #DCE8E1;
-  background: #FCFBF7;
-  box-shadow: 0 8px 24px rgba(36, 35, 31, 0.04);
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 16px;
+  padding: 24px 22px;
+  flex-wrap: wrap;
 }
 
-.my-listings-hero::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: #2F6B57;
-  border-radius: 0 6px 6px 0;
+@media (min-width: 768px) {
+  .ml-title-card__inner {
+    padding: 28px 32px;
+    flex-wrap: nowrap;
+  }
 }
 
-.hero-copy {
+.ml-title-card__copy {
   display: grid;
   gap: 10px;
-  position: relative;
-  z-index: 1;
 }
 
 .hero-badge {
@@ -55,15 +114,15 @@
   text-transform: uppercase;
 }
 
-.hero-copy h1 {
+.ml-title-card__copy h1 {
   margin: 0;
   font-family: 'Fraunces', serif;
   font-size: clamp(1.6rem, 2.1vw, 2.15rem);
   line-height: 1.15;
-  color: #24231F;
+  color: #0f3d2e;
 }
 
-.hero-copy p {
+.ml-title-card__copy p {
   margin: 0;
   max-width: 580px;
   color: #5F5B52;
@@ -699,10 +758,9 @@
 }
 
 @media (max-width: 760px) {
-  .my-listings-hero {
+  .ml-title-card__inner {
     flex-direction: column;
     align-items: flex-start;
-    padding: 22px;
   }
 
   .primary-button {

@@ -41,6 +41,7 @@ router.post('/', requireAuth, async (req, res) => {
 
     const { title, description, category, image_urls, condition, item_condition } = req.body;
     const rawEstimatedValue = req.body.estimated_value ?? req.body.coinValue;
+    const desiredItem = req.body.desired_item ?? req.body.desiredItem ?? null;
     const normalizedCondition = normalizeCondition(item_condition || condition);
     const normalizedCategory = normalizeCategory(category);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
@@ -58,8 +59,8 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO items (owner_id, title, description, category, item_condition, estimated_value, image_urls)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO items (owner_id, title, description, category, item_condition, estimated_value, image_urls, desired_item)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         req.userId,
@@ -68,7 +69,8 @@ router.post('/', requireAuth, async (req, res) => {
         normalizedCategory || null,
         normalizedCondition,
         rawEstimatedValue || null,
-        normalizedImageUrls
+        normalizedImageUrls,
+        desiredItem || null
       ]
     );
 
@@ -259,6 +261,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     }
 
     const { title, description, category, image_urls, condition, item_condition } = req.body;
+    const desiredItem = req.body.desired_item ?? req.body.desiredItem ?? null;
     const normalizedCondition = normalizeCondition(item_condition || condition);
     const normalizedCategory = normalizeCategory(category);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
@@ -278,8 +281,9 @@ router.put('/:id', requireAuth, async (req, res) => {
            category = $3,
            item_condition = $4,
            image_urls = $5,
+           desired_item = $6,
            updated_at = NOW()
-       WHERE id = $6
+       WHERE id = $7
        RETURNING *`,
       [
         title,
@@ -287,6 +291,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         normalizedCategory || null,
         normalizedCondition,
         normalizedImageUrls,
+        desiredItem || null,
         id
       ]
     );

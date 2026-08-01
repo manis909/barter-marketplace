@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Crop,
   ImagePlus,
@@ -35,6 +36,7 @@ const EMPTY_FORM = {
 }
 
 export default function MyListingsPage() {
+  const navigate = useNavigate()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [imagePreviews, setImagePreviews] = useState([])
@@ -255,7 +257,9 @@ export default function MyListingsPage() {
         description: form.description,
         category: form.category,
         condition: form.condition,
-        image_urls: finalImageUrls
+        image_urls: finalImageUrls,
+        desired_item: form.desiredItem || null,
+        estimated_value: form.coinValue || null
       }
 
       if (isEditing) {
@@ -392,22 +396,35 @@ export default function MyListingsPage() {
   return (
     <>
     <section className="my-listings-page">
-      <header className="my-listings-hero">
-        <div className="hero-copy">
-          <div className="hero-badge">
-            <Package size={16} />
-            <span>My Listings</span>
-          </div>
-          <h1>Manage your listings</h1>
-          <p>
-            Keep your inventory polished, visible, and ready for trade.
-          </p>
-        </div>
-        <button type="button" className="primary-button" onClick={handleOpenCreateForm}>
-          <Plus size={18} />
-          <span>Add Listing</span>
+      {/* ── Premium Hero ─────────────────────────────────────────── */}
+      <div className="ml-hero">
+        <button
+          type="button"
+          className="ml-hero-back"
+          onClick={() => navigate('/explore')}
+          aria-label="Back to Explore"
+        >
+          ←
         </button>
-      </header>
+      </div>
+
+      {/* ── Title Card (overlaps hero) ────────────────────────────── */}
+      <div className="ml-title-card">
+        <div className="ml-title-card__inner">
+          <div className="ml-title-card__copy">
+            <div className="hero-badge">
+              <Package size={16} />
+              <span>MY LISTINGS</span>
+            </div>
+            <h1>Manage your listings</h1>
+            <p>Keep your inventory polished, visible, and ready for trade.</p>
+          </div>
+          <button type="button" className="primary-button" onClick={handleOpenCreateForm}>
+            <Plus size={18} />
+            <span>Add Listing</span>
+          </button>
+        </div>
+      </div>
 
 
       <div className="toolbar">

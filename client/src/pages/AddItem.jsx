@@ -59,7 +59,8 @@ export default function AddItemPage() {
         description: form.description,
         category: form.category,
         condition: form.condition,
-        image_urls: uploadedImageUrls
+        image_urls: uploadedImageUrls,
+        desired_item: form.desiredItem || null
       }
 
       console.log('Request payload sent to backend:', payload)

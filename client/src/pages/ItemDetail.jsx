@@ -77,7 +77,7 @@ export default function ItemDetailPage() {
       ownerName: item.ownerName || item.owner_name || 'Owner',
       ownerId: item.owner_id || item.ownerId,
       ownerRating: item.ownerRating ?? item.owner_rating ?? 4.5,
-      tradeRating: item.tradeRating ?? item.trade_rating ?? 4.5,
+      desiredItem: item.desired_item || item.desiredItem || '',
       images: Array.isArray(item.image_urls) && item.image_urls.length > 0
         ? item.image_urls
         : (item.images && item.images.length > 0 ? item.images : [item.image || 'https://via.placeholder.com/900x600?text=Barter+Item'])
@@ -297,8 +297,8 @@ export default function ItemDetailPage() {
               <p>{normalizedItem.ownerRating.toFixed(1)}</p>
             </div>
             <div>
-              <span className="detail-label">Trade Rating</span>
-              <p>{normalizedItem.tradeRating.toFixed(1)}</p>
+              <span className="detail-label">Desired Item</span>
+              <p>{normalizedItem.desiredItem || 'Open to any suitable trade'}</p>
             </div>
           </div>
           <div className="detail-info-grid">
