@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
 import {
-    ArrowLeft,
   Crop,
   ImagePlus,
   Package,
@@ -396,41 +393,19 @@ export default function MyListingsPage() {
     <>
     <section className="my-listings-page">
       <header className="my-listings-hero">
-      <Link
-          to="/explore"
-          aria-label="Back to Explore"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
-            background: '#FFFFFF',
-            border: '1px solid #E4E2D9',
-            color: '#1C1917',
-            marginBottom: '16px',
-            textDecoration: 'none',
-            transition: 'background 0.2s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = '#F5F4F0'}
-          onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
-        >
-          <ArrowLeft size={20} />
-        </Link>
         <div className="hero-copy">
           <div className="hero-badge">
             <Package size={16} />
             <span>My Listings</span>
           </div>
-          <h1>Manage, edit and track all your listed items from one place.</h1>
+          <h1>Manage your listings</h1>
           <p>
-            Keep your inventory polished, visible, and ready for trade with a calmer, more premium workflow.
+            Keep your inventory polished, visible, and ready for trade.
           </p>
         </div>
         <button type="button" className="primary-button" onClick={handleOpenCreateForm}>
           <Plus size={18} />
-          <span>Add New Listing</span>
+          <span>Add Listing</span>
         </button>
       </header>
 
@@ -731,11 +706,11 @@ export default function MyListingsPage() {
                     style={{
                       textTransform: 'capitalize',
                       background:
-                        item.status === 'available' ? '#D1FAE5' :
-                        item.status === 'traded' ? '#FEE2E2' : '#FEF3C7',
+                        item.status === 'available' ? '#E8F5EE' :
+                        item.status === 'traded' ? '#FDEBEC' : '#FFF6E2',
                       color:
-                        item.status === 'available' ? '#065F46' :
-                        item.status === 'traded' ? '#991B1B' : '#92400E',
+                        item.status === 'available' ? '#2F6B57' :
+                        item.status === 'traded' ? '#B74A56' : '#A56A00',
                       padding: '2px 10px',
                       borderRadius: 12,
                       fontSize: 12,

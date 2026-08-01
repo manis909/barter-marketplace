@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FaInstagram, FaXTwitter } from 'react-icons/fa6'
 import { Compass, LayoutGrid, Package, LifeBuoy, MessageCircleMore } from 'lucide-react'
 import './Footer.css'
@@ -19,6 +19,29 @@ const legalLinks = [
 ]
 
 export default function Footer() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  function jumpToExploreTop() {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }
+
+  function handleExploreClick(e) {
+    e.preventDefault()
+
+    if (location.pathname === '/explore') {
+      jumpToExploreTop()
+      return
+    }
+
+    navigate('/explore')
+    window.setTimeout(() => {
+      jumpToExploreTop()
+    }, 220)
+  }
+
   return (
     <footer className="site-footer">
       <div className="footer-mobile-header">
@@ -52,12 +75,28 @@ export default function Footer() {
         <div className="footer-col">
           <p className="footer-heading">Navigation</p>
           <nav className="footer-nav footer-nav-grid">
-            {quickLinks.map(({ to, label, icon: Icon }) => (
-              <Link key={label} to={to} className="footer-link-item">
-                <Icon size={15} />
-                <span>{label}</span>
-              </Link>
-            ))}
+            {quickLinks.map(({ to, label, icon: Icon }) => {
+              if (label === 'Explore') {
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    className="footer-link-item"
+                    onClick={handleExploreClick}
+                  >
+                    <Icon size={15} />
+                    <span>{label}</span>
+                  </button>
+                )
+              }
+
+              return (
+                <Link key={label} to={to} className="footer-link-item">
+                  <Icon size={15} />
+                  <span>{label}</span>
+                </Link>
+              )
+            })}
           </nav>
         </div>
 

@@ -15,10 +15,24 @@ const conditionMap = {
   'like new': 'like_new'
 };
 
+const categoryNormalizationMap = {
+  'fashion & accessories': 'Fashion',
+  'home & living': 'Home',
+  'musical instruments': 'Music',
+  'sports & fitness': 'Sports',
+};
+
 function normalizeCondition(value) {
   if (!value) return null;
   const normalized = String(value).trim().toLowerCase();
   return conditionMap[normalized] || null;
+}
+
+function normalizeCategory(value) {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  const lower = trimmed.toLowerCase();
+  return categoryNormalizationMap[lower] || trimmed;
 }
 
 router.post('/', requireAuth, async (req, res) => {
@@ -28,6 +42,7 @@ router.post('/', requireAuth, async (req, res) => {
     const { title, description, category, image_urls, condition, item_condition } = req.body;
     const rawEstimatedValue = req.body.estimated_value ?? req.body.coinValue;
     const normalizedCondition = normalizeCondition(item_condition || condition);
+    const normalizedCategory = normalizeCategory(category);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
 
     console.log('Normalized image_urls:', normalizedImageUrls);
@@ -50,7 +65,7 @@ router.post('/', requireAuth, async (req, res) => {
         req.userId,
         title,
         description || null,
-        category || null,
+        normalizedCategory || null,
         normalizedCondition,
         rawEstimatedValue || null,
         normalizedImageUrls
@@ -96,8 +111,14 @@ router.get('/', async (req, res) => {
     const values = ['available'];
 
     if (category) {
-      query += ` AND i.category ILIKE $${values.length + 1}`;
-      values.push(category);
+      const normalizedCategory = normalizeCategory(category);
+      const categoryFilters = [normalizedCategory.toLowerCase()];
+      const rawCategory = String(category).trim().toLowerCase();
+      if (rawCategory !== normalizedCategory.toLowerCase()) {
+        categoryFilters.push(rawCategory);
+      }
+      query += ` AND LOWER(i.category) = ANY($${values.length + 1})`;
+      values.push(categoryFilters);
     }
 
     if (normalizedSearch) {
@@ -239,6 +260,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 
     const { title, description, category, image_urls, condition, item_condition } = req.body;
     const normalizedCondition = normalizeCondition(item_condition || condition);
+    const normalizedCategory = normalizeCategory(category);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
 
     if (!title) {
@@ -262,7 +284,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       [
         title,
         description || null,
-        category || null,
+        normalizedCategory || null,
         normalizedCondition,
         normalizedImageUrls,
         id
