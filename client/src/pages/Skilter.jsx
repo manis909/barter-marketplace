@@ -1,4 +1,4 @@
-import Footer from '../components/Footer'
+import Footer from '../components/Footer';
 
 export default function Skilter() {
   return (
@@ -13,5 +13,5 @@ export default function Skilter() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }

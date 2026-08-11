@@ -167,6 +167,33 @@ router.delete("/wishlist/:itemId", requireAuth, async (req, res) => {
 });
 
 
+// ── GET /api/trades/admin/awaiting-verification ──────────────────────────
+// Admin: list all trades awaiting proof verification.
+router.get('/admin/awaiting-verification', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT t.id, t.status, t.proof_status,
+              t.sender_proof_submitted, t.receiver_proof_submitted,
+              t.created_at, t.updated_at,
+              u_s.username AS sender_username, u_s.full_name AS sender_name,
+              u_r.username AS receiver_username, u_r.full_name AS receiver_name,
+              oi.title AS offered_item_title,
+              ri.title AS requested_item_title
+       FROM trade_offers t
+       JOIN users u_s ON u_s.id = t.sender_id
+       JOIN users u_r ON u_r.id = t.receiver_id
+       JOIN items oi ON oi.id = t.offered_item_id
+       JOIN items ri ON ri.id = t.requested_item_id
+       WHERE t.status = 'awaiting_admin_verification'
+       ORDER BY t.updated_at DESC`
+    );
+    res.json({ success: true, trades: result.rows });
+  } catch (err) {
+    console.error('GET /trades/admin/awaiting-verification error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ── POST /api/trades/:id/proof ────────────────────────────────────────
 // Upload proof images to Supabase and record submission flags.
 router.post('/:id/proof', requireAuth, upload.array('proof_images'), async (req, res) => {
@@ -250,8 +277,10 @@ router.get('/:id/proof-status', requireAuth, async (req, res) => {
     if (tradeRes.rows.length === 0) return res.status(404).json({ error: 'Trade not found' });
     const trade = tradeRes.rows[0];
     
-    // Ensure requester is part of trade
-    if (req.userId !== trade.sender_id && req.userId !== trade.receiver_id) {
+    // Allow participant OR admin to access proof status
+    const adminCheck = await db.query('SELECT is_admin FROM users WHERE id = $1', [req.userId]);
+    const isAdmin = adminCheck.rows[0]?.is_admin === true;
+    if (req.userId !== trade.sender_id && req.userId !== trade.receiver_id && !isAdmin) {
       return res.status(403).json({ error: 'You are not part of this trade' });
     }
 
