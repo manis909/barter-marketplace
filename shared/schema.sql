@@ -107,8 +107,8 @@ CREATE TABLE trade_offers (
 
     message             TEXT,
 
-    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
-                        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
+    status              VARCHAR(30) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled', 'awaiting_admin_verification')),
 
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -146,6 +146,21 @@ CREATE TABLE trade_events (
   trade_id UUID REFERENCES trade_offers(id),
   event_type TEXT, -- 'offer_sent', 'requested_more', 'offer_updated', 'accepted', 'completed'
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- For trade proof flow
+ALTER TABLE trade_offers ADD COLUMN sender_proof_submitted BOOLEAN DEFAULT FALSE;
+ALTER TABLE trade_offers ADD COLUMN receiver_proof_submitted BOOLEAN DEFAULT FALSE;
+ALTER TABLE trade_offers ADD COLUMN proof_status VARCHAR(30) DEFAULT 'proof_pending'
+  CHECK (proof_status IN ('proof_pending', 'awaiting_admin_verification', 'completed'));
+
+CREATE TABLE trade_proofs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trade_id      UUID REFERENCES trade_offers(id) ON DELETE CASCADE,
+  user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+  image_path    TEXT NOT NULL,
+  note          TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ------------------------------------------------------------

@@ -1,0 +1,130 @@
+.mode-switcher {
+    position: relative;
+}
+
+.mode-switcher-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 8px 12px;
+
+    border-radius: 999px;
+
+    transition: .25s;
+}
+
+.mode-switcher-trigger:hover {
+    background: rgba(0, 0, 0, .04);
+}
+
+.chevron {
+    transition: transform .25s ease;
+}
+
+.chevron-open {
+    transform: rotate(180deg);
+}
+
+.mode-switcher-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+
+    width: 230px;
+
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 22px;
+
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, .12),
+        0 2px 8px rgba(15, 23, 42, .06);
+
+    padding: 10px;
+
+    z-index: 100;
+}
+
+.mode-switcher-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    width: 100%;
+
+    padding: 14px 16px;
+
+    border: none;
+    border-radius: 16px;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    transition:
+        background .25s ease,
+        transform .18s ease;
+
+    text-align: left;
+}
+
+.mode-switcher-item:hover {
+    background: rgba(57, 122, 91, .10);
+    transform: translateX(4px);
+}
+
+.mode-switcher-item-mark {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background: linear-gradient(135deg,
+            #3e7c59,
+            #77c66e);
+
+    color: rgb(26, 4, 4);
+
+    font-size: 18px;
+
+    flex-shrink: 0;
+}
+
+.mode-switcher-item-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #234233;
+}
+
+.mode-switcher-item-subtitle {
+    font-size: 12px;
+    color: #8b8b8b;
+    margin-top: 2px;
+}
+
+.mode-switcher-item-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mode-switcher-item-title {
+    color: #234233;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.mode-switcher-item-subtitle {
+    color: #7b7b7b;
+    font-size: 12px;
+    margin-top: 3px;
+}
