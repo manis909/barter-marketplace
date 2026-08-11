@@ -58,15 +58,13 @@
   border-bottom-color: #2F6B57;
 }
 
-/* ── Scroll track — clips on mobile, visible on desktop ────────── */
+/* ── Scroll track ──────────────────────────────────────────────── */
+/* MOBILE (default): horizontal scroll carousel, hidden scrollbar  */
 .smart-section__scroll-track {
-  /* Allow the inner row to scroll horizontally when it overflows */
   overflow-x: auto;
   overflow-y: visible;
-  /* Hide scrollbar visually but keep it functional */
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE / Edge legacy */
-  /* Extra bottom padding so card hover shadows aren't clipped */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding-bottom: 8px;
 }
 
@@ -75,26 +73,55 @@
 }
 
 /* ── Card row ─────────────────────────────────────────────────── */
+/* MOBILE (default): single nowrap row — enables horizontal scroll */
 .smart-section__row {
   display: flex;
   gap: 16px;
-  /* Prevent the row itself from wrapping — horizontal scroll instead */
   flex-wrap: nowrap;
   align-items: stretch;
 }
 
-/* Each card wrapper has a fixed width so all cards are uniform */
+/* Each card wrapper: fixed width on mobile for the carousel */
 .smart-section__card-wrap {
   flex: 0 0 220px;
   width: 220px;
   min-width: 0;
 }
 
-/* On wider screens give cards a little more breathing room */
-@media (min-width: 1200px) {
+/* ── DESKTOP overrides (768px and above) ───────────────────────── */
+/* Match the project's standard mobile/desktop breakpoint (App.css,
+   Navbar.css, CategorySection.css all use 767px/768px).            */
+@media (min-width: 768px) {
+  /* No scroll container needed on desktop */
+  .smart-section__scroll-track {
+    overflow-x: visible;
+    overflow-y: visible;
+    padding-bottom: 0;
+  }
+
+  /* Switch the row to a grid so cards always fill the full width
+     regardless of how many are present.
+     auto-fill + minmax: browser fits as many columns as possible
+     while keeping each at least 200px wide; remaining space is
+     distributed equally — no empty gap on the right side.          */
+  .smart-section__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    flex-wrap: unset; /* clear the mobile flex-wrap */
+  }
+
   .smart-section__card-wrap {
-    flex: 0 0 240px;
-    width: 240px;
+    flex: unset;      /* grid manages sizing — flex shorthand not needed */
+    width: auto;
+    max-width: none;  /* let the grid column dictate the width */
+    min-width: 0;     /* prevent grid blowout */
+  }
+}
+
+/* ── Wider desktop: slightly wider minimum column ──────────────── */
+@media (min-width: 1200px) {
+  .smart-section__row {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 }
 
@@ -108,10 +135,12 @@
   border: 1px solid #E4E2D9;
 }
 
-@media (min-width: 1200px) {
+/* Desktop: skeleton sits in the same grid as real cards */
+@media (min-width: 768px) {
   .smart-section__skeleton {
-    flex: 0 0 240px;
-    width: 240px;
+    flex: unset;
+    width: auto;
+    min-width: 0;
   }
 }
 

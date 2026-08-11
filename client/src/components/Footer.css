@@ -1,7 +1,11 @@
 .site-footer {
-  width: 100vw;
-  margin: 48px 0 0;
-  margin-left: calc(50% - 50vw);
+  /* Full-bleed footer: stretch to the edges of the viewport even though
+     the parent (.app-main) is a centred, max-width container.
+     Using 100% + a matching negative margin keeps the technique intact
+     without the 100vw pitfall — 100vw counts the scrollbar width and
+     causes a horizontal scrollbar on any page with vertical overflow. */
+  width: calc(100% + 40px);
+  margin: 48px -20px 0;
   padding: 48px 24px 24px;
   border-top: 1px solid #E4E2D9;
   background: #F4F7F5;
