@@ -974,3 +974,21 @@
     gap: 6px;
   }
 }
+
+/* ── Backend-integration additions ──────────────────────────────── */
+.fr-submit-error {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+  font-size: 0.87rem;
+  font-weight: 500;
+}
+
+.fr-reviews-loading {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 0.88rem;
+  color: #78716C;
+}
