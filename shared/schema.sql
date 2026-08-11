@@ -107,8 +107,8 @@ CREATE TABLE trade_offers (
 
     message             TEXT,
 
-    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
-                        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
+    status              VARCHAR(30) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled', 'awaiting_admin_verification')),
 
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
