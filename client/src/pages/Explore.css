@@ -36,3 +36,45 @@
     align-items: flex-start;
   }
 }
+
+/* ================================================================
+   Smart sections block
+   Added for the Trending / Recommended / etc. horizontal rows.
+   All rules below are new — nothing above this line was changed.
+   ================================================================ */
+
+/* Wrapper that groups all smart sections together with consistent spacing */
+.smart-sections-block {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+/* Thin visual divider between the smart block and the main All Listings grid */
+.explore-all-section {
+  border-top: 1px solid #E7E3DA;
+  padding-top: 8px;
+}
+
+/* "View all listings" link below More Listings section */
+.explore-all-section__header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.explore-view-all-link {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2F6B57;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  padding-bottom: 1px;
+}
+
+.explore-view-all-link:hover {
+  color: #1b4d3e;
+  border-bottom-color: #2F6B57;
+}

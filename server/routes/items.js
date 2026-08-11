@@ -242,6 +242,184 @@ router.get('/recommended', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/items/matches ────────────────────────────────────────────────
+// Items whose desired_item field contains keywords from the current user's
+// wishlisted/owned item titles, AND items whose title matches the
+// desired_item fields of the current user's own listings.
+// Auth-gated. Falls back to empty array — frontend hides the section.
+router.get('/matches', requireAuth, async (req, res) => {
+  try {
+    // 1. Collect signal terms: titles of items the user has wishlisted
+    const wishlistTitles = await db.query(
+      `SELECT DISTINCT i.title, i.category
+       FROM wishlists w
+       JOIN items i ON i.id = w.item_id
+       WHERE w.user_id = $1`,
+      [req.userId]
+    );
+
+    // 2. Collect desired_item values from the user's own listings
+    const ownDesired = await db.query(
+      `SELECT DISTINCT desired_item
+       FROM items
+       WHERE owner_id = $1
+         AND desired_item IS NOT NULL
+         AND desired_item != ''`,
+      [req.userId]
+    );
+
+    // Build a flat list of keyword tokens from both sources
+    const rawTerms = [
+      ...wishlistTitles.rows.map(r => r.title),
+      ...ownDesired.rows.map(r => r.desired_item),
+    ];
+
+    if (rawTerms.length === 0) {
+      return res.json({ items: [] });
+    }
+
+    // Tokenise: split on spaces/commas, keep tokens ≥ 3 chars, deduplicate
+    const tokens = [...new Set(
+      rawTerms
+        .join(' ')
+        .split(/[\s,]+/)
+        .map(t => t.toLowerCase().trim())
+        .filter(t => t.length >= 3)
+    )];
+
+    if (tokens.length === 0) {
+      return res.json({ items: [] });
+    }
+
+    // Build ILIKE OR clauses — one per token, applied to items.desired_item
+    // (what other listings are looking for that the current user could offer)
+    const conditions = tokens.map((_, i) => `LOWER(i.desired_item) LIKE $${i + 2}`);
+    const values = ['available', ...tokens.map(t => `%${t}%`)];
+
+    const result = await db.query(
+      `SELECT DISTINCT i.*, u.username AS owner_name, u.id AS owner_id
+       FROM items i
+       JOIN users u ON u.id = i.owner_id
+       WHERE i.status = $1
+         AND i.owner_id != ${ values.length + 1 }
+         AND i.desired_item IS NOT NULL
+         AND i.desired_item != ''
+         AND (${conditions.join(' OR ')})
+       ORDER BY i.created_at DESC
+       LIMIT 8`,
+      [...values, req.userId]
+    );
+
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('GET /items/matches error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── GET /api/items/similar ────────────────────────────────────────────────
+// "You May Also Like" — items in the same categories as the caller's
+// wishlisted items, PLUS items whose title keywords overlap with those
+// wishlisted items (cross-category similarity).
+// Accepts optional ?exclude=id1,id2,... from the frontend dedup set.
+// Auth-gated. Falls back to latest items for logged-out users.
+router.get('/similar', requireAuth, async (req, res) => {
+  try {
+    // IDs already shown on the page — sent by the frontend dedup set
+    const excludeParam = req.query.exclude || '';
+    const excludeIds = excludeParam
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    // 1. User's wishlist: titles + categories
+    const wishlistData = await db.query(
+      `SELECT i.title, i.category
+       FROM wishlists w
+       JOIN items i ON i.id = w.item_id
+       WHERE w.user_id = $1`,
+      [req.userId]
+    );
+
+    if (wishlistData.rows.length === 0) {
+      // No wishlist signal — fall back to latest non-excluded items
+      const fallbackValues = ['available', req.userId];
+      let fallbackQuery = `
+        SELECT i.*, u.username AS owner_name, u.id AS owner_id
+        FROM items i
+        JOIN users u ON u.id = i.owner_id
+        WHERE i.status = $1
+          AND i.owner_id != $2
+      `;
+      if (excludeIds.length > 0) {
+        fallbackQuery += ` AND i.id != ALL($3::uuid[])`;
+        fallbackValues.push(excludeIds);
+      }
+      fallbackQuery += ` ORDER BY i.created_at DESC LIMIT 8`;
+      const fallback = await db.query(fallbackQuery, fallbackValues);
+      return res.json({ items: fallback.rows });
+    }
+
+    const categories = [...new Set(wishlistData.rows.map(r => r.category).filter(Boolean))];
+    const titleTokens = [...new Set(
+      wishlistData.rows
+        .map(r => r.title)
+        .join(' ')
+        .split(/[\s,]+/)
+        .map(t => t.toLowerCase().trim())
+        .filter(t => t.length >= 4)
+    )];
+
+    // 2. Build query: category match OR title keyword match in i.title/description
+    //    Exclude: items already wishlisted by user, user's own items, and page-dedup ids
+    const values = ['available', req.userId];
+
+    // category placeholders
+    const catPlaceholders = categories.map((_, i) => `$${values.length + i + 1}`);
+    values.push(...categories);
+
+    // title token ILIKE placeholders (search in other items' titles)
+    const tokenConditions = titleTokens.slice(0, 10).map((_, i) => {
+      const idx = values.length + i + 1;
+      return `(LOWER(i.title) LIKE $${idx} OR LOWER(i.description) LIKE $${idx})`;
+    });
+    values.push(...titleTokens.slice(0, 10).map(t => `%${t}%`));
+
+    // exclude dedup ids
+    let excludeClause = '';
+    if (excludeIds.length > 0) {
+      excludeClause = `AND i.id != ALL($${values.length + 1}::uuid[])`;
+      values.push(excludeIds);
+    }
+
+    const categoryClause = catPlaceholders.length > 0
+      ? `i.category IN (${catPlaceholders.join(', ')})`
+      : 'FALSE';
+    const tokenClause = tokenConditions.length > 0
+      ? tokenConditions.join(' OR ')
+      : 'FALSE';
+
+    const result = await db.query(
+      `SELECT DISTINCT i.*, u.username AS owner_name, u.id AS owner_id
+       FROM items i
+       JOIN users u ON u.id = i.owner_id
+       WHERE i.status = $1
+         AND i.owner_id != $2
+         AND i.id NOT IN (SELECT item_id FROM wishlists WHERE user_id = $2)
+         ${excludeClause}
+         AND (${categoryClause} OR ${tokenClause})
+       ORDER BY i.created_at DESC
+       LIMIT 8`,
+      values
+    );
+
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('GET /items/similar error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
