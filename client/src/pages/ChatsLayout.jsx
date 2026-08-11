@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMyTrades, completeTrade } from '../services/tradeService';
+import { getMyTrades, submitProof, getTradeProofStatus } from '../services/tradeService';
 import { getHiddenChatIds, deleteChatForMe, deleteChatForEveryone } from '../services/chatService';
 import { getErrorMessage, fmtDate } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 import ChatWindow from '../features/chat/ChatWindow';
-import RatingForm from '../features/ratings/RatingForm';
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
 const T = {
@@ -174,8 +173,9 @@ function BackArrow() {
   );
 }
 
-/* Trade completion status banner shown inside the chat pane */
-function TradeInfoBanner() {
+/* Proof submission info banner — shown when trade is accepted and
+   current user has not yet submitted proof */
+function ProofInfoBanner() {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 10,
@@ -185,8 +185,8 @@ function TradeInfoBanner() {
     }}>
       <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>ℹ️</span>
       <p style={{ margin: 0, fontSize: 12, color: T.muted, lineHeight: 1.5, fontFamily: 'Manrope, sans-serif' }}>
-        <strong style={{ color: T.accent }}>Complete your trade in person first.</strong>
-        {' '}Only click "Mark Trade Completed" after both of you have successfully exchanged your items.
+        <strong style={{ color: T.accent }}>Exchange items in person first.</strong>
+        {' '}Then submit photo proof so the admin can verify and complete the trade.
       </p>
     </div>
   );
@@ -233,9 +233,14 @@ export default function ChatsLayout() {
   const [reportReason, setReportReason] = useState('');
   const [otherUserId,  setOtherUserId]  = useState(null);
 
-  /* completion */
-  const [completing,    setCompleting]    = useState(false);
-  const [completeError, setCompleteError] = useState('');
+  /* proof submission */
+  const [proofStatus,     setProofStatus]     = useState(null);  // backend response from getTradeProofStatus
+  const [showProofModal,  setShowProofModal]  = useState(false);
+  const [proofImages,     setProofImages]     = useState([]);    // File[]
+  const [proofPreviews,   setProofPreviews]   = useState([]);    // object URL[]
+  const [proofNote,       setProofNote]       = useState('');
+  const [proofSubmitting, setProofSubmitting] = useState(false);
+  const [proofError,      setProofError]      = useState('');
 
   /* ── fetch trades + hidden ids ── */
   const fetchAll = useCallback(async () => {
@@ -256,7 +261,23 @@ export default function ChatsLayout() {
     fetchAll();
   }, [authLoading, currentUser, fetchAll]);
 
-  /* ── derived values ── */
+  /* ── fetch proof status from backend whenever tradeId changes ── */
+  const fetchProofStatus = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const data = await getTradeProofStatus(id);
+      setProofStatus(data);
+    } catch {
+      setProofStatus(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    setProofStatus(null);
+    setProofError('');
+    if (tradeId) fetchProofStatus(tradeId);
+  }, [tradeId, fetchProofStatus]);
+
   const visibleTrades = trades.filter(t => !hiddenIds.includes(t.id));
   const selectedTrade = visibleTrades.find(t => String(t.id) === String(tradeId));
 
@@ -269,11 +290,23 @@ export default function ChatsLayout() {
     : null;
 
   /* completion state derived from trade fields */
-  const isMeSender        = selectedTrade?.sender_id === userId;
-  const iHaveConfirmed    = selectedTrade ? (isMeSender ? selectedTrade.sender_confirmed : selectedTrade.receiver_confirmed) : false;
-  const tradeIsCompleted  = selectedTrade?.status === 'completed';
-  const tradeIsAccepted   = selectedTrade?.status === 'accepted';
-  const canMarkComplete   = tradeIsAccepted && !iHaveConfirmed && !tradeIsCompleted;
+  const isMeSender       = selectedTrade?.sender_id === userId;
+  const tradeIsCompleted = selectedTrade?.status === 'completed';
+  const tradeIsAccepted  = selectedTrade?.status === 'accepted';
+  const tradeIsAwaitingAdmin = selectedTrade?.status === 'awaiting_admin_verification';
+
+  /* proof state — backend is the source of truth via proofStatus */
+  const iHaveSubmittedProof = proofStatus
+    ? (isMeSender ? proofStatus.sender_proof_submitted : proofStatus.receiver_proof_submitted)
+    : false;
+  const bothSubmittedProof = proofStatus
+    ? (proofStatus.sender_proof_submitted && proofStatus.receiver_proof_submitted)
+    : false;
+  const showProofBtn =
+    tradeIsAccepted &&
+    !iHaveSubmittedProof &&
+    !tradeIsCompleted &&
+    !tradeIsAwaitingAdmin;
 
   /* ── handlers ── */
   const handleSelectChat = id => navigate(`/chat/${id}`);
@@ -289,19 +322,50 @@ export default function ChatsLayout() {
   };
 
   const handleMarkComplete = async () => {
-    if (!canMarkComplete) return;
-    setCompleting(true); setCompleteError('');
+    // completeTrade is no longer called from the Chat UI.
+    // Trade completion is handled by the Admin after both users submit proof.
+  };
+
+  /* ── proof modal helpers ── */
+  const handleProofImagesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setProofImages(prev => [...prev, ...files]);
+    setProofPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+    e.target.value = '';
+  };
+
+  const handleRemoveProofImage = (idx) => {
+    URL.revokeObjectURL(proofPreviews[idx]);
+    setProofImages(prev => prev.filter((_, i) => i !== idx));
+    setProofPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleCloseProofModal = () => {
+    setShowProofModal(false);
+    setProofImages([]);
+    setProofPreviews(prev => { prev.forEach(u => URL.revokeObjectURL(u)); return []; });
+    setProofNote('');
+    setProofError('');
+  };
+
+  const handleSubmitProof = async () => {
+    if (proofImages.length === 0) { setProofError('Please add at least one photo.'); return; }
+    setProofSubmitting(true);
+    setProofError('');
     try {
-      const data  = await completeTrade(tradeId);
-      const trade = data.tradeOffer;
-      const otherId = trade.sender_id === userId ? trade.receiver_id : trade.sender_id;
-      setOtherUserId(otherId);
-      /* refresh trade list so confirmation flags update */
+      await submitProof(tradeId, proofImages, proofNote);
+      handleCloseProofModal();
+      // Re-fetch proof status — backend is the source of truth
+      await fetchProofStatus(tradeId);
       await fetchAll();
-      if (trade.status === 'completed') setShowRating(true);
     } catch (err) {
-      setCompleteError(err?.response?.data?.error || err?.message || 'Failed to mark trade complete');
-    } finally { setCompleting(false); }
+      setProofError(
+        err?.response?.data?.error || err?.message || 'Failed to submit proof. Please try again.'
+      );
+    } finally {
+      setProofSubmitting(false);
+    }
   };
 
   const handleSubmitReport = async () => {
@@ -320,17 +384,6 @@ export default function ChatsLayout() {
         <p style={{ color: T.text }}>🔐 You're not logged in. Please log in to view your chats.</p>
       </div>
     );
-  }
-
-  /* ── button label & state ── */
-  let completeBtnLabel = 'Mark Trade Completed';
-  let completeBtnDisabled = false;
-  if (tradeIsCompleted) {
-    completeBtnLabel = '✓ Trade Completed'; completeBtnDisabled = true;
-  } else if (iHaveConfirmed) {
-    completeBtnLabel = '✓ You Confirmed — Waiting…'; completeBtnDisabled = true;
-  } else if (!tradeIsAccepted) {
-    completeBtnDisabled = true;
   }
 
   const showListOnMobile = !tradeId;
@@ -454,7 +507,7 @@ export default function ChatsLayout() {
               </button>
             </div>
 
-            {/* ── Action bar: View Item + Mark Trade Completed ── */}
+            {/* ── Action bar: View Item + Proof submission ── */}
             <div style={s.actionBar}>
               {selectedTrade.requested_item_id && (
                 <button type="button"
@@ -463,35 +516,35 @@ export default function ChatsLayout() {
                   🛍 View Item
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleMarkComplete}
-                disabled={completeBtnDisabled || completing}
-                style={{
-                  ...s.actionBtnFill,
-                  ...(completeBtnDisabled ? s.actionBtnDisabled : {}),
-                  flexShrink: 0,
-                }}
-              >
-                {completing ? 'Confirming…' : completeBtnLabel}
-              </button>
+
+              {/* Proof button — only for accepted trades where user hasn't submitted yet */}
+              {showProofBtn && (
+                <button
+                  type="button"
+                  onClick={() => setShowProofModal(true)}
+                  style={{ ...s.actionBtnFill, flexShrink: 0 }}
+                >
+                  📸 Submit Exchange Proof
+                </button>
+              )}
+
+              {/* Current user submitted, waiting for other */}
+              {tradeIsAccepted && iHaveSubmittedProof && !bothSubmittedProof && !tradeIsAwaitingAdmin && (
+                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 500 }}>
+                  ✓ Proof Submitted · Waiting for other user.
+                </span>
+              )}
+
+              {/* Both submitted or admin verification in progress */}
+              {(bothSubmittedProof || tradeIsAwaitingAdmin) && !tradeIsCompleted && (
+                <span style={{ fontSize: 12.5, color: T.muted, fontFamily: 'Manrope, sans-serif', fontWeight: 500 }}>
+                  👥 Both users submitted proof · Waiting for admin verification.
+                </span>
+              )}
             </div>
 
-            {completeError && (
-              <p style={{ color: T.danger, fontSize: 12.5, padding: '4px 14px 0', margin: 0, flexShrink: 0, fontFamily: 'Manrope, sans-serif' }}>
-                {completeError}
-              </p>
-            )}
-
-            {/* Confirmation waiting notice */}
-            {iHaveConfirmed && !tradeIsCompleted && (
-              <div style={s.waitingBanner}>
-                ⏳ Waiting for the other user to confirm the trade…
-              </div>
-            )}
-
-            {/* Info banner — only shown when trade is accepted and not yet complete */}
-            {tradeIsAccepted && !tradeIsCompleted && <TradeInfoBanner />}
+            {/* Info banner — only for accepted trades where user hasn't submitted proof yet */}
+            {tradeIsAccepted && !tradeIsCompleted && !tradeIsAwaitingAdmin && !iHaveSubmittedProof && <ProofInfoBanner />}
 
             {/* Messages fill area */}
             <div style={s.chatFill}>
@@ -508,20 +561,121 @@ export default function ChatsLayout() {
                 chatLocked={tradeIsCompleted}
               />
             </div>
-
-            {/* Rating form — fixed below messages, above nothing */}
-            {showRating && (
-              <div style={s.ratingWrap}>
-                <RatingForm
-                  tradeOfferId={tradeId}
-                  revieweeId={otherUserId}
-                  onSubmitted={() => setShowRating(false)}
-                />
-              </div>
-            )}
           </>
         )}
       </div>
+
+      {/* ── Proof submission modal ── */}
+      {showProofModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={handleCloseProofModal}
+        >
+          <div
+            style={{
+              background: T.surface, borderRadius: T.radiusCard, padding: 24,
+              width: '100%', maxWidth: 460, boxSizing: 'border-box',
+              maxHeight: '90vh', overflowY: 'auto',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 4px', fontSize: 16, fontFamily: 'Fraunces, serif', color: T.text }}>
+              📸 Submit Exchange Proof
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: T.muted, fontFamily: 'Manrope, sans-serif' }}>
+              Upload photos showing the completed exchange. Both users must submit proof before the admin can verify the trade.
+            </p>
+
+            {/* Image previews */}
+            {proofPreviews.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {proofPreviews.map((url, idx) => (
+                  <div key={idx} style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
+                    <img
+                      src={url}
+                      alt={`proof-${idx + 1}`}
+                      style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: `1px solid ${T.border}`, display: 'block' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveProofImage(idx)}
+                      style={{
+                        position: 'absolute', top: 2, right: 2,
+                        width: 20, height: 20, borderRadius: '50%',
+                        border: 'none', background: 'rgba(0,0,0,0.6)',
+                        color: '#fff', fontSize: 11, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: 0, lineHeight: 1,
+                      }}
+                      aria-label="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add photos button */}
+            <label style={{
+              display: 'inline-block', marginBottom: 12,
+              padding: '7px 14px', borderRadius: T.radiusCtrl,
+              border: `1px dashed ${T.accent}`, color: T.accent,
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'Manrope, sans-serif',
+            }}>
+              + Add Photos
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleProofImagesChange}
+              />
+            </label>
+
+            {/* Optional note */}
+            <textarea
+              placeholder="Optional note (e.g. received in good condition)"
+              value={proofNote}
+              onChange={e => setProofNote(e.target.value)}
+              rows={3}
+              style={{
+                width: '100%', borderRadius: T.radiusCtrl, border: `1px solid ${T.border}`,
+                padding: '10px 12px', boxSizing: 'border-box', resize: 'vertical',
+                fontFamily: 'Manrope, sans-serif', fontSize: 13.5, color: T.text,
+                background: T.surface, marginBottom: 12, display: 'block',
+              }}
+            />
+
+            {proofError && (
+              <p style={{ color: T.danger, fontSize: 13, margin: '0 0 10px', fontFamily: 'Manrope, sans-serif' }}>
+                {proofError}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={handleCloseProofModal} style={s.secondaryBtn} disabled={proofSubmitting}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitProof}
+                disabled={proofSubmitting || proofImages.length === 0}
+                style={{
+                  ...s.ctaBtn,
+                  ...(proofImages.length === 0 ? { background: T.border, color: T.muted, cursor: 'default' } : {}),
+                }}
+              >
+                {proofSubmitting ? 'Submitting…' : 'Submit Proof'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Report modal ── */}
       {showReport && (
