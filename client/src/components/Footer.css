@@ -1,9 +1,10 @@
 .site-footer {
-  /* Full-bleed footer: stretch to the edges of the viewport even though
-     the parent (.app-main) is a centred, max-width container.
-     Using 100% + a matching negative margin keeps the technique intact
-     without the 100vw pitfall — 100vw counts the scrollbar width and
-     causes a horizontal scrollbar on any page with vertical overflow. */
+  /* Full-bleed technique: escape the centred .app-main container.
+     On desktop, .app-main is min(1180px, calc(100% - 40px)) — the 40px
+     is the combined left+right margin (20px each side). We reverse that
+     with negative margins so the footer runs edge-to-edge.
+     On mobile (.app-main becomes calc(100% - 24px), 12px each side)
+     the overrides below handle the different offset.               */
   width: calc(100% + 40px);
   margin: 48px -20px 0;
   padding: 48px 24px 24px;
@@ -11,6 +12,16 @@
   background: #F4F7F5;
   color: var(--text);
   box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .site-footer {
+    /* On mobile, .app-main uses calc(100% - 24px) so the offset is 12px
+       each side. Recalculate to avoid overflowing the document width.  */
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    margin-right: -12px;
+  }
 }
 
 .footer-widgets {

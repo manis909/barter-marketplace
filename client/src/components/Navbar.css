@@ -334,6 +334,12 @@
 /* Horizontally Scrollable Category Container - Touch Swipe Smooth */
 .mobile-row-3-categories-scroll {
   width: 100%;
+  /* Prevent the max-content categories-track from leaking to the
+     document width when the Framer Motion parent uses overflow:hidden
+     during its height animation. Without this, the max-content inner
+     track overrides the scroll container's overflow-x:auto and
+     expands the page width on mobile.                               */
+  max-width: 100%;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   white-space: nowrap;

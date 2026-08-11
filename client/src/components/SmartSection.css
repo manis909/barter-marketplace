@@ -62,10 +62,16 @@
 /* MOBILE (default): horizontal scroll carousel, hidden scrollbar  */
 .smart-section__scroll-track {
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
+  /* Constrain the track to the parent's width so the nowrap card row
+     scrolls INSIDE this element rather than expanding the document.  */
+  max-width: 100%;
+  /* Prevent the track itself from becoming wider than the viewport   */
+  width: 100%;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding-bottom: 8px;
+  box-sizing: border-box;
 }
 
 .smart-section__scroll-track::-webkit-scrollbar {

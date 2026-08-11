@@ -171,7 +171,8 @@ router.get('/trending', async (req, res) => {
            GROUP BY item_id
        ) w ON w.item_id = i.id
        WHERE i.status = $1
-       ORDER BY trending_score DESC, i.created_at DESC
+         AND (i.view_count + COALESCE(w.wishlist_count, 0)) > 0
+       ORDER BY trending_score DESC
        LIMIT 8`,
       ['available']
     );
@@ -192,7 +193,8 @@ router.get('/recommended', requireAuth, async (req, res) => {
     );
 
     if (wishlistCheck.rows.length === 0) {
-      // Return the same results as the Trending endpoint
+      // No wishlist history — fall back to genuinely trending items
+      // (same logic as GET /trending: score > 0 only, no recency tiebreaker).
       const result = await db.query(
         `SELECT i.*, u.username AS owner_name, u.id AS owner_id,
                 COALESCE(w.wishlist_count, 0) AS wishlist_count,
@@ -205,7 +207,8 @@ router.get('/recommended', requireAuth, async (req, res) => {
              GROUP BY item_id
          ) w ON w.item_id = i.id
          WHERE i.status = $1
-         ORDER BY trending_score DESC, i.created_at DESC
+           AND (i.view_count + COALESCE(w.wishlist_count, 0)) > 0
+         ORDER BY trending_score DESC
          LIMIT 8`,
         ['available']
       );
