@@ -58,8 +58,8 @@ export default function MySkillBookingsPage() {
       {/* Hero Header */}
       <header className="bookings-hero">
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <Link to="/skilter" style={{ color: '#c6e930', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600 }}>
-            ← Back to Skilter
+          <Link to="/explore" style={{ color: '#c6e930', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600 }}>
+            ← Back to Explore
           </Link>
           <h1 className="bookings-hero-title">My Skill Bookings</h1>
           <p className="bookings-hero-sub">
@@ -107,8 +107,8 @@ export default function MySkillBookingsPage() {
                 ? "You haven't requested or received any skill session bookings yet."
                 : `No bookings matching the "${activeFilter}" filter.`}
             </p>
-            <Link to="/skilter" className="bookings-empty-btn">
-              Explore Skills
+            <Link to="/explore" className="bookings-empty-btn">
+              Explore Platform
             </Link>
           </div>
         ) : (

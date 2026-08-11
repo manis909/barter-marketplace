@@ -301,7 +301,7 @@ router.get('/matches', requireAuth, async (req, res) => {
        FROM items i
        JOIN users u ON u.id = i.owner_id
        WHERE i.status = $1
-         AND i.owner_id != ${ values.length + 1 }
+         AND i.owner_id != $${values.length + 1}
          AND i.desired_item IS NOT NULL
          AND i.desired_item != ''
          AND (${conditions.join(' OR ')})
