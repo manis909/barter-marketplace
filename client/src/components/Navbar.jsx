@@ -6,19 +6,10 @@ import ProfileDrawer from './ProfileDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
 import { User, Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
+import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import './Navbar.css'
 
-const CATEGORIES = [
-  { id: 'all', name: 'All', color: '#3D6E63', lightBg: '#E4F0ED' },
-  { id: 'books', name: 'Books', color: '#EA580C', lightBg: 'rgba(234, 88, 12, 0.12)' },
-  { id: 'electronics', name: 'Electronics', color: '#2563EB', lightBg: 'rgba(37, 99, 235, 0.12)' },
-  { id: 'gaming', name: 'Gaming', color: '#9333EA', lightBg: 'rgba(147, 51, 234, 0.12)' },
-  { id: 'fashion', name: 'Fashion', color: '#DB2777', lightBg: 'rgba(219, 39, 119, 0.12)' },
-  { id: 'home', name: 'Home', color: '#16A34A', lightBg: 'rgba(22, 163, 74, 0.12)' },
-  { id: 'sports', name: 'Sports', color: '#059669', lightBg: 'rgba(5, 150, 105, 0.12)' },
-  { id: 'music', name: 'Music', color: '#4F46E5', lightBg: 'rgba(79, 70, 229, 0.12)' },
-  { id: 'others', name: 'Others', color: '#475569', lightBg: 'rgba(71, 85, 105, 0.12)' },
-]
+const CATEGORIES = CATEGORY_META
 
 export default function Navbar() {
   const location = useLocation()
@@ -30,7 +21,7 @@ export default function Navbar() {
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [activeCategory, setActiveCategory] = useState(() => {
     const cat = new URLSearchParams(location.search).get('category')
-    return cat ? cat.toLowerCase() : 'all'
+    return cat ? normalizeCategory(cat) : 'All'
   })
   const [scrolled, setScrolled] = useState(false)
   const lastScrollY = useRef(0)
@@ -41,7 +32,7 @@ export default function Navbar() {
     const params = new URLSearchParams(location.search)
     setSearch(params.get('search') || '')
     const cat = params.get('category')
-    setActiveCategory(cat ? cat.toLowerCase() : 'all')
+    setActiveCategory(cat ? normalizeCategory(cat) : 'All')
   }, [location.search])
 
   // Close brand dropdown on route change
@@ -130,13 +121,13 @@ export default function Navbar() {
   )
 
   const handleCategoryClick = useCallback(
-    (catId) => {
-      setActiveCategory(catId)
+    (categoryName) => {
+      setActiveCategory(categoryName)
       const params = new URLSearchParams(location.search)
-      if (catId === 'all') {
+      if (!categoryName || categoryName === 'All') {
         params.delete('category')
       } else {
-        params.set('category', catId)
+        params.set('category', categoryName)
       }
       navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
     },
@@ -144,7 +135,7 @@ export default function Navbar() {
   )
 
   const activeCategoryObj = useMemo(
-    () => CATEGORIES.find((c) => c.id === activeCategory) || CATEGORIES[0],
+    () => CATEGORIES.find((c) => c.name === activeCategory) || CATEGORIES[0],
     [activeCategory]
   )
 
@@ -401,13 +392,13 @@ export default function Navbar() {
                   <div className="mobile-row-3-categories-scroll">
                     <div className="categories-track">
                       {CATEGORIES.map((cat) => {
-                        const isActive = activeCategory === cat.id
+                        const isActive = activeCategory === cat.name
                         return (
                           <button
                             key={cat.id}
                             type="button"
                             className={`category-chip ${isActive ? 'active' : ''}`}
-                            onClick={() => handleCategoryClick(cat.id)}
+                            onClick={() => handleCategoryClick(cat.name)}
                             aria-label={`Category ${cat.name}`}
                             style={{
                               '--chip-color': cat.color,

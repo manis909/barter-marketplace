@@ -8,11 +8,10 @@ export default function IdVerification() {
   const [status, setStatus] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [idFile, setIdFile] = useState(null);
-  const [hallTicketFile, setHallTicketFile] = useState(null);
+  const [hallTicketNumber, setHallTicketNumber] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const idInputRef = useRef(null);
-  const hallTicketInputRef = useRef(null);
 
   useEffect(() => {
     fetchStatus();
@@ -27,37 +26,30 @@ export default function IdVerification() {
       .catch(() => {});
   }
 
-  function validateFile(file) {
-    if (!file.type.startsWith('image/')) {
-      return 'Please choose an image file.';
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      return 'Image must be smaller than 8MB.';
-    }
-    return null;
-  }
-
   function handleIdSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const err = validateFile(file);
-    if (err) { setError(err); return; }
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('Image must be smaller than 8MB.');
+      return;
+    }
+
     setError('');
     setIdFile(file);
   }
 
-  function handleHallTicketSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const err = validateFile(file);
-    if (err) { setError(err); return; }
-    setError('');
-    setHallTicketFile(file);
-  }
-
   async function handleSubmit() {
-    if (!idFile || !hallTicketFile) {
-      setError('Both ID card and hall ticket photos are required.');
+    if (!idFile) {
+      setError('ID card photo is required.');
+      return;
+    }
+    if (!hallTicketNumber.trim()) {
+      setError('Hall ticket number is required.');
       return;
     }
 
@@ -67,7 +59,7 @@ export default function IdVerification() {
     try {
       const formData = new FormData();
       formData.append('id_photo', idFile);
-      formData.append('hallticket_photo', hallTicketFile);
+      formData.append('hallticket_number', hallTicketNumber.trim());
 
       await api.post('/verification/submit', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -75,7 +67,7 @@ export default function IdVerification() {
 
       setStatus('pending');
       setIdFile(null);
-      setHallTicketFile(null);
+      setHallTicketNumber('');
     } catch (err) {
       setError(err.response?.data?.error || 'Upload failed. Please try again.');
     } finally {
@@ -96,14 +88,14 @@ export default function IdVerification() {
     <div className="verification-card">
       <h3>Get Verified</h3>
       <p className="verification-intro">
-        Upload a clear photo of your college ID card <strong>and</strong> your hall ticket to get a verified
-        badge on your profile. Both are used only for verification and are deleted immediately after review —
-        we don't keep copies.
+        Upload a clear photo of your college ID card and enter your hall ticket number to get a verified
+        badge on your profile. Your ID photo is used only for verification and is deleted immediately after
+        review — we don't keep a copy.
       </p>
 
       {status === 'pending' && (
         <div className="verification-status verification-status-pending">
-          Your documents are under review. This usually takes a day or two.
+          Your submission is under review. This usually takes a day or two.
         </div>
       )}
 
@@ -111,7 +103,7 @@ export default function IdVerification() {
         <div className="verification-status verification-status-rejected">
           <strong>Your last submission wasn't approved:</strong>
           <p>{rejectionReason}</p>
-          <p>You can upload new photos below and try again.</p>
+          <p>You can submit again below.</p>
         </div>
       )}
 
@@ -121,7 +113,7 @@ export default function IdVerification() {
         <>
           <div className="verification-upload-slot">
             <div className="verification-upload-label">
-              <span>ID Card</span>
+              <span>ID Card Photo</span>
               {idFile && <span className="verification-file-chosen">✓ {idFile.name}</span>}
             </div>
             <button
@@ -143,23 +135,15 @@ export default function IdVerification() {
 
           <div className="verification-upload-slot">
             <div className="verification-upload-label">
-              <span>Hall Ticket</span>
-              {hallTicketFile && <span className="verification-file-chosen">✓ {hallTicketFile.name}</span>}
+              <span>Hall Ticket Number</span>
             </div>
-            <button
-              type="button"
-              className="verification-upload-btn"
-              onClick={() => hallTicketInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {hallTicketFile ? 'Change Hall Ticket Photo' : 'Upload Hall Ticket Photo'}
-            </button>
             <input
-              ref={hallTicketInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleHallTicketSelect}
-              style={{ display: 'none' }}
+              type="text"
+              className="verification-hallticket-input"
+              placeholder="Enter your hall ticket number"
+              value={hallTicketNumber}
+              onChange={e => setHallTicketNumber(e.target.value)}
+              disabled={uploading}
             />
           </div>
 
@@ -167,14 +151,14 @@ export default function IdVerification() {
             type="button"
             className="verification-submit-btn"
             onClick={handleSubmit}
-            disabled={uploading || !idFile || !hallTicketFile}
+            disabled={uploading || !idFile || !hallTicketNumber.trim()}
           >
             {uploading ? 'Submitting...' : 'Submit for Verification'}
           </button>
 
           <p className="verification-tips">
-            📸 For a smooth review: take both photos in good lighting, keep all four corners visible,
-            avoid glare or blur, and make sure your name and photo are clearly readable on each document.
+            📸 For a smooth review: take the ID photo in good lighting, keep all four corners visible,
+            avoid glare or blur, and make sure your name and photo are clearly readable.
           </p>
         </>
       )}

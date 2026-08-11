@@ -386,3 +386,10 @@
   justify-content: flex-end;
   gap: 10px;
 }
+/* ---------- Add this to Profile.css ---------- */
+
+.verification-rejected-note {
+  color: #9b2c2c;
+  font-size: 12px;
+  margin: 4px 0 6px;
+}

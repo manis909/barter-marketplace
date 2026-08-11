@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
-import { fmtDate, normalizeToUTC } from '../utils/helpers';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
+import IdVerification from '../features/verification/IdVerification';
 import './Profile.css';
 
 const MAX_IMAGE_SIZE_MB = 5; // raw file, before cropping — cropped output is much smaller
@@ -55,6 +55,8 @@ export default function Profile() {
   const profileData = isOwnProfile ? currentUser : viewedUser;
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState(null);
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [profileImage, setProfileImage] = useState('');
@@ -104,6 +106,17 @@ export default function Profile() {
         .catch(() => setRecentReviews([]));
     }
   }, [profileData]);
+
+  // Pull live verification status from the backend instead of relying on
+  // the possibly-stale currentUser object, so rejections/approvals show
+  // up immediately without needing a fresh login.
+  useEffect(() => {
+    if (isOwnProfile) {
+      api.get('/verification/status')
+        .then(res => setVerificationStatus(res.data))
+        .catch(() => setVerificationStatus(null));
+    }
+  }, [isOwnProfile, showVerification]);
 
   function handlePhotoSelect(e) {
     const file = e.target.files[0];
@@ -224,10 +237,8 @@ export default function Profile() {
 
   function formatJoinedDate(dateString) {
     if (!dateString) return null;
-    // Use browser locale + timezone; show month + year only (e.g. "July 2026")
-    const d = new Date(normalizeToUTC(dateString));
-    if (isNaN(d.getTime())) return null;
-    return d.toLocaleDateString([], { month: 'long', year: 'numeric' });
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }
 
   if (loading || viewedUserLoading) return <p>Loading...</p>;
@@ -242,15 +253,21 @@ export default function Profile() {
       <button
         type="button"
         className="profile-back-btn"
-        onClick={() => isEditing ? setIsEditing(false) : navigate('/explore')}
-        aria-label={isEditing ? 'Back to Profile' : 'Back to Explore'}
+        onClick={() => {
+          if (showVerification) setShowVerification(false);
+          else if (isEditing) setIsEditing(false);
+          else navigate('/explore');
+        }}
+        aria-label={showVerification || isEditing ? 'Back to Profile' : 'Back to Explore'}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
       </button>
 
-      {!isEditing ? (
+      {showVerification ? (
+        <IdVerification />
+      ) : !isEditing ? (
         // ---------- VIEW MODE (Instagram-style) ----------
         <div className="profile-view">
           <div className="profile-header-row">
@@ -317,6 +334,26 @@ export default function Profile() {
             </svg>
             {linkCopied ? 'Link copied!' : 'Copy profile link'}
           </button>
+
+          {isOwnProfile && verificationStatus?.verification_status === 'rejected' && (
+            <>
+              <p className="verification-rejected-note">
+                Rejected: {verificationStatus.verification_rejection_reason}
+              </p>
+              <button
+                type="button"
+                className="profile-copy-link"
+                onClick={() => setShowVerification(true)}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 4v6h-6" />
+                  <path d="M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+                Resubmit ID Verification
+              </button>
+            </>
+          )}
 
           {recentReviews.length > 0 && (
             <div className="profile-reviews">

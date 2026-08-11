@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
 import Footer from '../components/Footer'
+import { normalizeCategory } from '../data/categories'
 import './Explore.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -10,18 +11,29 @@ const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 export default function ExplorePage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [activeCategory, setActiveCategory] = useState(() => new URLSearchParams(location.search).get('category') || '')
+  const [activeCategory, setActiveCategory] = useState(() => normalizeCategory(new URLSearchParams(location.search).get('category')) || '')
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Sync state with URL params without calling scrollIntoView or double navigate loops
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     setSearch(params.get('search') || '')
-    setActiveCategory(params.get('category') || '')
+    setActiveCategory(normalizeCategory(params.get('category')) || '')
   }, [location.search])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+
+    if (params.get('fromFooter') !== '1') {
+      return
+    }
+
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [location.pathname, location.search])
 
   // Fetch items when activeCategory or search changes
   useEffect(() => {
@@ -93,6 +105,7 @@ export default function ExplorePage() {
 
   return (
     <div className="explore-page">
+      <div id="explore-top" />
       <CategoryFilter activeCategory={activeCategory} onSelect={handleCategorySelect} />
 
       <div className="market-summary">

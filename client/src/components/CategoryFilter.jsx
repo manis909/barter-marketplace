@@ -1,20 +1,7 @@
-import { Book, Cpu, Shirt, Home, Gamepad2, Music, Dumbbell, Package, LayoutGrid } from 'lucide-react'
 import './CategoryFilter.css'
-import { categoryNames } from '../data/categories'
+import { CATEGORY_META } from '../data/categories'
 
-const categories = ['All', ...categoryNames]
-
-const categoryIcons = {
-  All: LayoutGrid,
-  Books: Book,
-  Electronics: Cpu,
-  'Fashion & Accessories': Shirt,
-  'Home & Living': Home,
-  Gaming: Gamepad2,
-  'Musical Instruments': Music,
-  'Sports & Fitness': Dumbbell,
-  Others: Package
-}
+const categories = CATEGORY_META
 
 export default function CategoryFilter({ activeCategory, onSelect }) {
   return (
@@ -22,16 +9,19 @@ export default function CategoryFilter({ activeCategory, onSelect }) {
       <h2>Browse categories</h2>
       <div className="category-grid">
         {categories.map((category) => {
-          const Icon = categoryIcons[category]
+          const isActive = category.name === activeCategory
+          const Icon = category.icon
           return (
             <button
-              key={category}
+              key={category.name}
               type="button"
-              className={category === activeCategory ? 'category-pill active' : 'category-pill'}
-              onClick={() => onSelect(category)}
+              className={isActive ? 'category-pill active' : 'category-pill'}
+              onClick={() => onSelect(category.name)}
             >
-              <span className="category-icon" aria-hidden="true"><Icon size={18} /></span>
-              <span>{category}</span>
+              <span className="category-icon" aria-hidden="true">
+                <Icon size={18} />
+              </span>
+              <span>{category.name}</span>
             </button>
           )
         })}
