@@ -242,6 +242,38 @@ CREATE TABLE verification_logs (
 
 ); 
 -- ============================================================
+-- SKILLS FEATURE
+-- ============================================================
+CREATE TABLE skill_listings (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    teacher_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    skill_name    VARCHAR(150) NOT NULL,
+    description   TEXT,
+    category      VARCHAR(100),
+    price_type    VARCHAR(20) DEFAULT 'free' CHECK (price_type IN ('free', 'coins', 'negotiable')),
+    status        VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE skill_bookings (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    skill_listing_id    UUID NOT NULL REFERENCES skill_listings(id) ON DELETE CASCADE,
+    requester_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    teacher_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scheduled_time      TIMESTAMPTZ,
+    status              VARCHAR(20) DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
+    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE skill_messages (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id    UUID NOT NULL REFERENCES skill_bookings(id) ON DELETE CASCADE,
+    sender_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message       TEXT NOT NULL,
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+-- ============================================================
 -- INDEXES
 -- ============================================================
 CREATE INDEX idx_items_owner        ON items(owner_id);
