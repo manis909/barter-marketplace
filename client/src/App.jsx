@@ -20,6 +20,7 @@ import LandingPage from './landing/LandingPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsAndConditionsPage from './pages/TermsAndConditions';
 import SkilterPage from './pages/Skilter';
+import MySkillBookingsPage from './pages/MySkillBookings';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
@@ -54,11 +55,13 @@ function App() {
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/skilter" element={<SkilterPage />} />
             <Route path="/skills" element={<SkilterPage />} />
+            <Route path="/skill-bookings" element={<MySkillBookingsPage />} />
+            <Route path="/my-bookings" element={<MySkillBookingsPage />} />
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
-           <Route path="/admin/verification" element={<AdminVerificationPage />} />
+            <Route path="/admin/verification" element={<AdminVerificationPage />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>
