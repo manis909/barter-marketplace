@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatWindow from '../features/chat/ChatWindow';
-import RatingForm from '../features/ratings/RatingForm';
 import { useAuth } from '../features/auth/AuthContext';
-import { completeTrade, getMyTrades } from '../services/tradeService';
+import { getMyTrades } from '../services/tradeService';
 
 const API_URL = 'http://localhost:5000';
 
 export default function Chat() {
   const { tradeId } = useParams();
-  const [showRating, setShowRating] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSuccess, setReportSuccess] = useState(false);
   const [otherUserId, setOtherUserId] = useState(null);
   const [otherUserName, setOtherUserName] = useState('');
-  const [completeError, setCompleteError] = useState('');
 
   const { currentUser } = useAuth();
   const currentUserId = currentUser?.id;
@@ -46,19 +43,6 @@ export default function Chat() {
     if (tradeId && currentUserId) loadTradeInfo();
   }, [tradeId, currentUserId]);
 
-  const handleMarkComplete = async () => {
-    setCompleteError('');
-    try {
-      const data = await completeTrade(tradeId);
-      const trade = data.tradeOffer;
-      const otherId = trade.sender_id === currentUserId ? trade.receiver_id : trade.sender_id;
-      setOtherUserId(otherId);
-      setShowRating(true);
-    } catch (err) {
-      setCompleteError(err?.response?.data?.error || err?.message || 'Failed to mark trade complete');
-    }
-  };
-
   const handleSubmitReport = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -76,8 +60,6 @@ export default function Chat() {
       setShowReport(false);
       setReportReason('');
       setReportSuccess(true);
-      // No auto-hide timer — message stays visible until the user
-      // reopens the "Report User" box (cleared in the button's onClick below)
     } catch (err) {
       console.error('Report submission failed:', err);
     }
@@ -88,7 +70,6 @@ export default function Chat() {
       <ChatWindow tradeOfferId={tradeId} currentUserId={currentUserId} otherUserName={otherUserName} />
 
       <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-        <button onClick={handleMarkComplete}>Mark Trade Complete</button>
         <button
           onClick={() => {
             setShowReport(!showReport);
@@ -99,7 +80,6 @@ export default function Chat() {
         </button>
       </div>
 
-      {completeError && <p style={{ color: 'red', fontSize: 13 }}>{completeError}</p>}
       {reportSuccess && <p style={{ color: 'green', fontSize: 13 }}>Report submitted successfully</p>}
 
       {showReport && (
@@ -111,16 +91,6 @@ export default function Chat() {
             style={{ width: '100%' }}
           />
           <button onClick={handleSubmitReport}>Submit Report</button>
-        </div>
-      )}
-
-      {showRating && (
-        <div style={{ marginTop: 12 }}>
-          <RatingForm
-            tradeOfferId={tradeId}
-            revieweeId={otherUserId}
-            onSubmitted={() => setShowRating(false)}
-          />
         </div>
       )}
     </div>

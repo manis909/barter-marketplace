@@ -114,12 +114,8 @@ export async function submitProof(tradeId, images, note = '') {
  * Falls back gracefully if backend doesn't yet support this endpoint.
  */
 export async function getTradeProofStatus(tradeId) {
-  try {
-    const res = await api.get(`/trades/${tradeId}`);
-    return res.data;
-  } catch {
-    return null;
-  }
+  const res = await api.get(`/trades/${tradeId}/proof-status`);
+  return res.data;
 }
 
 // ── Wishlist ──────────────────────────────────────────────────────────────

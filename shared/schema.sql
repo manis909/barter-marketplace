@@ -148,6 +148,21 @@ CREATE TABLE trade_events (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- For trade proof flow
+ALTER TABLE trade_offers ADD COLUMN sender_proof_submitted BOOLEAN DEFAULT FALSE;
+ALTER TABLE trade_offers ADD COLUMN receiver_proof_submitted BOOLEAN DEFAULT FALSE;
+ALTER TABLE trade_offers ADD COLUMN proof_status VARCHAR(30) DEFAULT 'proof_pending'
+  CHECK (proof_status IN ('proof_pending', 'awaiting_admin_verification', 'completed'));
+
+CREATE TABLE trade_proofs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trade_id      UUID REFERENCES trade_offers(id) ON DELETE CASCADE,
+  user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+  image_path    TEXT NOT NULL,
+  note          TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ------------------------------------------------------------
 -- Member 4 — Chat & Meetup
 -- ------------------------------------------------------------

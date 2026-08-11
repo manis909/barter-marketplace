@@ -4,6 +4,10 @@ const router = express.Router();
 const db = require("../models/db");
 const requireAuth = require("../middleware/auth");
 const { createNotification } = require("./notifications");
+const supabaseAdmin = require("../utils/supabaseAdmin");
+const requireAdmin = require("../middleware/admin");
+const multer = require("multer");
+const upload = multer();
 
 // ── UUID guard ────────────────────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -159,6 +163,155 @@ router.delete("/wishlist/:itemId", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("DELETE /trades/wishlist/:itemId error:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+// ── POST /api/trades/:id/proof ────────────────────────────────────────
+// Upload proof images to Supabase and record submission flags.
+router.post('/:id/proof', requireAuth, upload.array('proof_images'), async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    if (!isValidUUID(tradeId)) return res.status(400).json({ error: 'Invalid trade id' });
+    const tradeRes = await db.query('SELECT * FROM trade_offers WHERE id = $1', [tradeId]);
+    if (tradeRes.rows.length === 0) return res.status(404).json({ error: 'Trade not found' });
+    const trade = tradeRes.rows[0];
+    if (trade.sender_id !== req.userId && trade.receiver_id !== req.userId) {
+      return res.status(403).json({ error: 'You are not part of this trade' });
+    }
+    // Upload each file to Supabase Storage and track relative paths
+    const uploadedPaths = [];
+    const uploadedUrls = [];
+    for (const file of req.files) {
+      const filePath = `${tradeId}/${Date.now()}_${file.originalname}`;
+      const { data, error } = await supabaseAdmin.storage.from('trade-proofs').upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+      if (error) throw error;
+      uploadedPaths.push(filePath);
+
+      // Generate a short-lived signed URL for the upload response preview
+      const { data: signData, error: signError } = await supabaseAdmin.storage
+        .from('trade-proofs')
+        .createSignedUrl(filePath, 3600);
+      if (!signError) {
+        uploadedUrls.push(signData.signedUrl);
+      }
+    }
+    // Insert proof records (storing relative path)
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+      for (const path of uploadedPaths) {
+        await client.query(
+          `INSERT INTO trade_proofs (trade_id, user_id, image_path) VALUES ($1, $2, $3)`,
+          [tradeId, req.userId, path]
+        );
+      }
+      // Update submission flags
+      const isSender = trade.sender_id === req.userId;
+      const updateRes = await client.query(
+        `UPDATE trade_offers SET ${isSender ? 'sender_proof_submitted' : 'receiver_proof_submitted'} = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+        [tradeId]
+      );
+      const updatedTrade = updateRes.rows[0];
+      // If both submitted, move to awaiting admin verification
+      if (updatedTrade.sender_proof_submitted && updatedTrade.receiver_proof_submitted) {
+        await client.query(
+          `UPDATE trade_offers SET proof_status = 'awaiting_admin_verification', status = 'awaiting_admin_verification' WHERE id = $1`,
+          [tradeId]
+        );
+      }
+      await client.query('COMMIT');
+      // Notify parties
+      const otherUserId = req.userId === trade.sender_id ? trade.receiver_id : trade.sender_id;
+      createNotification(otherUserId, 'trade_proof_submitted', 'Proof Submitted', 'The other party has submitted proof for the trade.')
+        .catch(err => console.error('Notification error (proof):', err));
+      res.json({ success: true, trade: updatedTrade, uploadedUrls });
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('POST /trades/:id/proof error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── GET /api/trades/:id/proof-status ─────────────────────────────────────
+router.get('/:id/proof-status', requireAuth, async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    if (!isValidUUID(tradeId)) return res.status(400).json({ error: 'Invalid trade id' });
+    const tradeRes = await db.query('SELECT sender_proof_submitted, receiver_proof_submitted, proof_status, sender_id, receiver_id FROM trade_offers WHERE id = $1', [tradeId]);
+    if (tradeRes.rows.length === 0) return res.status(404).json({ error: 'Trade not found' });
+    const trade = tradeRes.rows[0];
+    
+    // Ensure requester is part of trade
+    if (req.userId !== trade.sender_id && req.userId !== trade.receiver_id) {
+      return res.status(403).json({ error: 'You are not part of this trade' });
+    }
+
+    // Fetch the trade proofs
+    const proofsRes = await db.query('SELECT id, user_id, image_path, created_at FROM trade_proofs WHERE trade_id = $1', [tradeId]);
+    
+    // Generate signed URLs for each proof image
+    const proofsWithUrls = await Promise.all(proofsRes.rows.map(async (p) => {
+      const { data: signData, error: signError } = await supabaseAdmin.storage
+        .from('trade-proofs')
+        .createSignedUrl(p.image_path, 3600); // 1 hour expiry
+      return {
+        id: p.id,
+        user_id: p.user_id,
+        created_at: p.created_at,
+        url: signError ? null : signData.signedUrl
+      };
+    }));
+
+    res.json({
+      success: true,
+      proofStatus: {
+        sender_proof_submitted: trade.sender_proof_submitted,
+        receiver_proof_submitted: trade.receiver_proof_submitted,
+        proof_status: trade.proof_status,
+        proofs: proofsWithUrls
+      }
+    });
+  } catch (err) {
+    console.error('GET /trades/:id/proof-status error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── PATCH /api/trades/:id/verify ────────────────────────────────────────
+// Admin verifies trade after both proofs submitted.
+router.patch('/:id/verify', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    if (!isValidUUID(tradeId)) return res.status(400).json({ error: 'Invalid trade id' });
+    const tradeRes = await db.query('SELECT * FROM trade_offers WHERE id = $1', [tradeId]);
+    if (tradeRes.rows.length === 0) return res.status(404).json({ error: 'Trade not found' });
+    const trade = tradeRes.rows[0];
+    if (!trade.sender_proof_submitted || !trade.receiver_proof_submitted) {
+      return res.status(400).json({ error: 'Both parties must submit proof before verification' });
+    }
+    const updatedRes = await db.query(
+      `UPDATE trade_offers SET proof_status = 'completed', status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+      [tradeId]
+    );
+    const updatedTrade = updatedRes.rows[0];
+    // Notify both parties
+    createNotification(trade.sender_id, 'trade_verified', 'Trade Completed', 'Admin has verified the trade and marked it as completed.')
+      .catch(err => console.error('Notification error (verify):', err));
+    createNotification(trade.receiver_id, 'trade_verified', 'Trade Completed', 'Admin has verified the trade and marked it as completed.')
+      .catch(err => console.error('Notification error (verify):', err));
+    res.json({ success: true, trade: updatedTrade });
+  } catch (err) {
+    console.error('PATCH /trades/:id/verify error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -541,9 +694,10 @@ async function handleConfirmTrade(req, res) {
       return res.status(403).json({ error: "You are not part of this trade" });
     }
 
-    if (t.status !== "accepted") {
+    // Updated status check: only allow confirming when awaiting admin verification
+    if (t.status !== "awaiting_admin_verification") {
       return res.status(400).json({
-        error: "Only accepted trades can be confirmed for completion.",
+        error: "Trade must be awaiting admin verification before users can confirm completion.",
         current_status: t.status,
       });
     }

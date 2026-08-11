@@ -1,17 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Star,
   Upload,
   X,
   Check,
-  ChevronRight,
   ThumbsUp,
   MessageSquare,
 } from 'lucide-react'
+import api from '../services/api'
+import { useAuth } from '../features/auth/AuthContext'
 import './FeedbackReviews.css'
 
-// ── Static data ────────────────────────────────────────────────────────────
+// ── Static UI data ─────────────────────────────────────────────────────────
 const CATEGORIES = [
   'Bug Report',
   'Feature Request',
@@ -19,57 +20,6 @@ const CATEGORIES = [
   'Performance',
   'General Feedback',
 ]
-
-const STATIC_REVIEWS = [
-  {
-    id: 1,
-    name: 'Rahul M.',
-    initials: 'RM',
-    rating: 5,
-    text: 'Great platform for trading books and gadgets. The trade flow is smooth and the UI looks really clean.',
-    date: 'Jul 18, 2026',
-    helpful: 12,
-  },
-  {
-    id: 2,
-    name: 'Priya S.',
-    initials: 'PS',
-    rating: 4,
-    text: 'Easy to use and well-designed. Would love to see more category filters in the Explore page.',
-    date: 'Jul 10, 2026',
-    helpful: 8,
-  },
-  {
-    id: 3,
-    name: 'Arjun K.',
-    initials: 'AK',
-    rating: 5,
-    text: 'Looking forward to more features in future updates. The verification system gives me confidence in other traders.',
-    date: 'Jun 29, 2026',
-    helpful: 15,
-  },
-  {
-    id: 4,
-    name: 'Meera D.',
-    initials: 'MD',
-    rating: 4,
-    text: 'The chat feature works great. Wish there was a way to share multiple images during a trade negotiation.',
-    date: 'Jun 14, 2026',
-    helpful: 6,
-  },
-]
-
-const RATING_DIST = [
-  { stars: 5, count: 68 },
-  { stars: 4, count: 22 },
-  { stars: 3, count: 7 },
-  { stars: 2, count: 2 },
-  { stars: 1, count: 1 },
-]
-const TOTAL_REVIEWS = RATING_DIST.reduce((s, r) => s + r.count, 0)
-const AVG_RATING = (
-  RATING_DIST.reduce((s, r) => s + r.stars * r.count, 0) / TOTAL_REVIEWS
-).toFixed(1)
 
 const IMPROVEMENTS = [
   {
@@ -161,8 +111,9 @@ function ReviewCard({ review, onHelpful }) {
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function FeedbackReviews() {
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
 
-  // form state
+  // ── form state ─────────────────────────────────────────────────────────
   const [rating, setRating] = useState(0)
   const [category, setCategory] = useState('')
   const [feedback, setFeedback] = useState('')
@@ -172,15 +123,52 @@ export default function FeedbackReviews() {
   const [isDragging, setIsDragging] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
-  // reviews state
-  const [reviews, setReviews] = useState(STATIC_REVIEWS)
+  // ── reviews state (real data) ───────────────────────────────────────────
+  const [reviews, setReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(true)
   const [helpfulVoted, setHelpfulVoted] = useState(new Set())
+
+  // ── rating summary state (real data) ───────────────────────────────────
+  // Derived from the reviews array — no separate summary fetch needed.
+  // This avoids pg string-coercion issues (AVG returns "5.0" not 5) and
+  // keeps the displayed counts always in sync with the visible review list.
 
   const fileInputRef = useRef(null)
   const MAX_CHARS = 1000
 
-  // ── handlers ───────────────────────────────────────────────────
+  // ── Helper: derive initials from a display name ─────────────────────────
+  function getInitials(name) {
+    if (!name) return '?'
+    const parts = name.trim().split(/\s+/)
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase()
+  }
+
+  // ── Load reviews on mount ──────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setReviewsLoading(true)
+      try {
+        const reviewsRes = await api.get('/feedback')
+        if (cancelled) return
+        setReviews(reviewsRes.data.feedback || [])
+      } catch (err) {
+        if (!cancelled) console.error('Failed to load feedback:', err.message)
+      } finally {
+        if (!cancelled) setReviewsLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  // ── file / drag handlers (unchanged) ───────────────────────────────────
   const handleFile = (file) => {
     if (!file || !file.type.startsWith('image/')) return
     setScreenshot(file)
@@ -190,8 +178,7 @@ export default function FeedbackReviews() {
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    handleFile(file)
+    handleFile(e.dataTransfer.files[0])
   }
 
   const removeScreenshot = () => {
@@ -201,32 +188,60 @@ export default function FeedbackReviews() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // ── Real submit ─────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (rating === 0 || !feedback.trim()) return
     setSubmitting(true)
-    // Simulate async submit
-    await new Promise((r) => setTimeout(r, 900))
-    setSubmitting(false)
-    setSubmitted(true)
-    // Add the new review to the local list (optimistic)
-    const newReview = {
-      id: Date.now(),
-      name: anonymous ? 'Anonymous' : 'You',
-      initials: anonymous ? 'AN' : 'YO',
-      rating,
-      text: feedback.trim(),
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      helpful: 0,
+    setSubmitError('')
+
+    try {
+      const res = await api.post('/feedback', {
+        rating,
+        category: category || null,
+        message: feedback.trim(),
+        is_anonymous: anonymous,
+      })
+
+      const saved = res.data.feedback
+
+      // Build display name for the optimistic card
+      const displayName = anonymous
+        ? 'Anonymous'
+        : (currentUser?.full_name || currentUser?.username || 'You')
+
+      const newReview = {
+        id: saved.id,
+        rating: saved.rating,
+        message: saved.message,
+        is_anonymous: saved.is_anonymous,
+        created_at: saved.created_at,
+        username: anonymous ? null : (currentUser?.username || null),
+        full_name: anonymous ? null : (currentUser?.full_name || null),
+        // helpers for ReviewCard
+        _displayName: displayName,
+        _initials: getInitials(displayName),
+        helpful: 0,
+      }
+
+      // Prepend to list — summary values are derived from reviews automatically
+      setReviews((prev) => [newReview, ...prev])
+
+      setSubmitted(true)
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to submit feedback. Please try again.'
+      setSubmitError(msg)
+    } finally {
+      setSubmitting(false)
     }
-    setReviews((prev) => [newReview, ...prev])
   }
 
+  // ── Helpful vote (client-side only) ────────────────────────────────────
   const handleHelpful = (id) => {
     if (helpfulVoted.has(id)) return
     setHelpfulVoted((prev) => new Set([...prev, id]))
     setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, helpful: r.helpful + 1 } : r))
+      prev.map((r) => (r.id === id ? { ...r, helpful: (r.helpful || 0) + 1 } : r))
     )
   }
 
@@ -235,9 +250,21 @@ export default function FeedbackReviews() {
     setCategory('')
     setFeedback('')
     setAnonymous(false)
+    setSubmitError('')
     removeScreenshot()
     setSubmitted(false)
   }
+
+  // ── Derived summary values — computed from real reviews array ─────────
+  // All values are numbers from the start; no pg string coercion involved.
+  const totalReviews = reviews.length
+  const avgRating = totalReviews > 0
+    ? (reviews.reduce((sum, r) => sum + Number(r.rating), 0) / totalReviews).toFixed(1)
+    : '—'
+  const ratingDist = [5, 4, 3, 2, 1].map((stars) => ({
+    stars,
+    count: reviews.filter((r) => Number(r.rating) === stars).length,
+  }))
 
   return (
     <div className="fr-page">
@@ -415,6 +442,10 @@ export default function FeedbackReviews() {
                   </div>
                 </div>
 
+                {submitError && (
+                  <div className="fr-submit-error" role="alert">{submitError}</div>
+                )}
+
                 {/* Submit */}
                 <button
                   type="submit"
@@ -442,22 +473,22 @@ export default function FeedbackReviews() {
             {/* Rating summary */}
             <div className="fr-rating-summary">
               <div className="fr-avg">
-                <span className="fr-avg__number">{AVG_RATING}</span>
+                <span className="fr-avg__number">{avgRating}</span>
                 <div className="fr-avg__right">
-                  <StarRating value={Math.round(parseFloat(AVG_RATING))} readonly size={16} />
-                  <span className="fr-avg__count">{TOTAL_REVIEWS} reviews</span>
+                  <StarRating value={Math.round(parseFloat(avgRating) || 0)} readonly size={16} />
+                  <span className="fr-avg__count">{totalReviews} review{totalReviews !== 1 ? 's' : ''}</span>
                 </div>
               </div>
 
               <div className="fr-dist">
-                {RATING_DIST.map(({ stars, count }) => (
+                {ratingDist.map(({ stars, count }) => (
                   <div key={stars} className="fr-dist__row">
                     <span className="fr-dist__label">{stars}</span>
                     <Star size={11} className="fr-dist__star" />
                     <div className="fr-dist__bar">
                       <div
                         className="fr-dist__fill"
-                        style={{ width: `${(count / TOTAL_REVIEWS) * 100}%` }}
+                        style={{ width: totalReviews > 0 ? `${(count / totalReviews) * 100}%` : '0%' }}
                       />
                     </div>
                     <span className="fr-dist__count">{count}</span>
@@ -473,7 +504,9 @@ export default function FeedbackReviews() {
             </div>
 
             {/* Review cards */}
-            {reviews.length === 0 ? (
+            {reviewsLoading ? (
+              <div className="fr-reviews-loading">Loading reviews…</div>
+            ) : reviews.length === 0 ? (
               <div className="fr-empty">
                 <div className="fr-empty__icon">
                   <MessageSquare size={28} />
@@ -483,9 +516,27 @@ export default function FeedbackReviews() {
               </div>
             ) : (
               <div className="fr-review-list">
-                {reviews.map((r) => (
-                  <ReviewCard key={r.id} review={r} onHelpful={handleHelpful} />
-                ))}
+                {reviews.map((r) => {
+                  // Normalise both freshly-submitted (optimistic) and API-loaded rows
+                  const displayName = r._displayName
+                    || (r.is_anonymous ? 'Anonymous' : (r.full_name || r.username || 'User'))
+                  const initials = r._initials || getInitials(displayName)
+                  const dateStr = r.created_at
+                    ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : ''
+                  const adapted = {
+                    id: r.id,
+                    name: displayName,
+                    initials,
+                    rating: r.rating,
+                    text: r.message,
+                    date: dateStr,
+                    helpful: r.helpful || 0,
+                  }
+                  return (
+                    <ReviewCard key={r.id} review={adapted} onHelpful={handleHelpful} />
+                  )
+                })}
               </div>
             )}
           </section>
