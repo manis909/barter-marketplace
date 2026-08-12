@@ -110,6 +110,8 @@ io.on("connection", (socket) => {
     }
   });
 
+  require('./sockets/skillBookingChatHandlers')(io, socket);
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
