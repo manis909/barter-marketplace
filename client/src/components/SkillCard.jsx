@@ -69,25 +69,24 @@ export default function SkillCard({ skill }) {
 
         {/* Row 5: Clean Equal-Width Buttons */}
         <div className="card-actions-row">
-          {isOwner ? (
-            <span className="card-status-pill owner-pill full-width">Mine</span>
-          ) : (
-            <>
-              <Link to={`/skilter/skill/${skill.id}`} className="btn-compact btn-compact-secondary">
-                View Details
-              </Link>
-              <button
-                type="button"
-                className="btn-compact btn-compact-primary"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  // TODO: Member 3 will wire this to their booking flow
-                  alert('Booking functionality will be connected by Member 3')
-                }}
-              >
-                Book Session
-              </button>
-            </>
+          {isOwner && (
+            <span className="card-status-pill owner-pill">Mine</span>
+          )}
+          <Link to={`/skilter/skill/${skill.id}`} className="btn-compact btn-compact-secondary">
+            View Details
+          </Link>
+          {!isOwner && (
+            <button
+              type="button"
+              className="btn-compact btn-compact-primary"
+              onClick={(e) => {
+                e.stopPropagation()
+                // TODO: Member 3 will wire this to their booking flow
+                alert('Booking functionality will be connected by Member 3')
+              }}
+            >
+              Book Session
+            </button>
           )}
         </div>
       </div>

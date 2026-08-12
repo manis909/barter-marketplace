@@ -210,7 +210,24 @@ export default function SkillDetailPage() {
         </div>
 
         <div className="detail-copy">
-          <h1>{normalizedSkill.skill_name}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <h1 style={{ margin: 0 }}>{normalizedSkill.skill_name}</h1>
+            {isOwner && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '6px 14px',
+                background: '#F3F4F6',
+                color: '#6B7280',
+                border: '1px dashed #D1D5DB',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: '600'
+              }}>
+                Mine
+              </span>
+            )}
+          </div>
           <p className="detail-description">{normalizedSkill.description}</p>
           <div className="detail-info-grid">
             <div>
