@@ -393,3 +393,24 @@
   font-size: 12px;
   margin: 4px 0 6px;
 }
+.profile-items-grid {
+  width: 100%;
+  margin-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+.profile-items-grid h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.profile-items-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.profile-item-thumb img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+}
