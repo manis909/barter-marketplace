@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
+import SkilterDrawer from './SkilterDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
 import { User, Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
@@ -90,11 +91,52 @@ export default function Navbar() {
 
   const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
 
-  const currentPlatform = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
-    ? 'Skilter'
-    : location.pathname.startsWith('/renter') || location.pathname.startsWith('/rent')
-    ? 'Renter'
-    : 'Barter'
+  // ── Platform detection ───────────────────────────────────────────────────
+  // Paths that are explicitly owned by a platform:
+  const SKILTER_PREFIXES = ['/skilter', '/skills', '/skill-bookings', '/my-bookings']
+  const RENTER_PREFIXES  = ['/renter', '/rent']
+  const BARTER_PREFIXES  = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
+                             '/wishlist', '/wallet', '/add-item', '/item/']
+
+  // Paths that are platform-neutral (shared pages like Profile, Feedback, etc.)
+  // When navigating to these, we keep whichever platform was active before.
+  const isNeutralPath = (p) =>
+    p.startsWith('/profile') ||
+    p === '/feedback'        ||
+    p === '/help'            ||
+    p === '/notifications'   ||
+    p === '/privacy'         ||
+    p === '/terms'           ||
+    p === '/chats'           ||
+    p.startsWith('/chat/')   ||
+    p === '/logout'
+
+  // Remember the last explicitly-set platform so neutral pages don't reset it
+  const lastPlatformRef = useRef('Barter')
+
+  const currentPlatform = useMemo(() => {
+    const p = location.pathname
+    if (SKILTER_PREFIXES.some((prefix) => p.startsWith(prefix))) {
+      lastPlatformRef.current = 'Skilter'
+      return 'Skilter'
+    }
+    if (RENTER_PREFIXES.some((prefix) => p.startsWith(prefix))) {
+      lastPlatformRef.current = 'Renter'
+      return 'Renter'
+    }
+    if (BARTER_PREFIXES.some((prefix) => p.startsWith(prefix))) {
+      lastPlatformRef.current = 'Barter'
+      return 'Barter'
+    }
+    // Neutral path — return the last known platform instead of defaulting to Barter
+    if (isNeutralPath(p)) {
+      return lastPlatformRef.current
+    }
+    // Fallback for any other path (landing, login, etc.)
+    lastPlatformRef.current = 'Barter'
+    return 'Barter'
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   const handleSearchChange = useCallback((event) => {
     setSearch(event.target.value)
@@ -424,7 +466,12 @@ export default function Navbar() {
         </div>
       </header>
 
-      {currentUser && <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
+      {currentUser && currentPlatform !== 'Skilter' && (
+        <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
+      {currentUser && currentPlatform === 'Skilter' && (
+        <SkilterDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
     </>
   )
 }

@@ -27,6 +27,22 @@ import ChatsLayout from './pages/ChatsLayout';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 
+// ── Skilter placeholder ───────────────────────────────────────────────────
+// Rendered for Skilter-specific routes whose full page is being built
+// separately. Replace each import individually when the real page is ready.
+function SkilterPlaceholder({ title }) {
+  return (
+    <div style={{ padding: '60px 24px', textAlign: 'center', color: '#64748B' }}>
+      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.8rem', color: '#0F172A', marginBottom: 12 }}>
+        {title}
+      </h2>
+      <p style={{ maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>
+        This section is being built. Check back soon.
+      </p>
+    </div>
+  )
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -62,6 +78,15 @@ function App() {
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
+
+            {/* ── Skilter-specific routes ──────────────────────────────── */}
+            {/* Replace SkilterPlaceholder with the real page when ready    */}
+            <Route path="/skilter/skills"    element={<SkilterPlaceholder title="My Skills" />} />
+            <Route path="/skilter/learning"  element={<SkilterPlaceholder title="My Learning" />} />
+            <Route path="/skilter/teaching"  element={<SkilterPlaceholder title="My Teaching" />} />
+            <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
+            <Route path="/skilter/wishlist"  element={<SkilterPlaceholder title="Skilter Wishlist" />} />
+            <Route path="/skilter/chat"      element={<SkilterPlaceholder title="Skilter Chat" />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>
