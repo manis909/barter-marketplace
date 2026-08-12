@@ -131,5 +131,19 @@ router.get('/:id/reviews', async (req, res) => {
   );
   res.json({ reviews: result.rows });
 });
+// ---- Get all items listed by a specific user (for their Profile page grid) ----
+// Replace your existing '
+//' route in users.js with this one —
+// the items table uses "image_urls" (an array), not "image_url".
+router.get('/:id/items', async (req, res) => {
+  const result = await db.query(
+    `SELECT id, title, image_urls, category, status
+     FROM items
+     WHERE owner_id = $1
+     ORDER BY created_at DESC`,
+    [req.params.id]
+  );
+  res.json({ items: result.rows });
+});
 
 module.exports = router;

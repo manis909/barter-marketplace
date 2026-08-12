@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
@@ -67,6 +67,7 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const [ratingSummary, setRatingSummary] = useState(null);
   const [recentReviews, setRecentReviews] = useState([]);
+  const [listedItems, setListedItems] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
@@ -104,6 +105,10 @@ export default function Profile() {
       api.get(`/users/${profileData.id}/reviews`)
         .then(res => setRecentReviews(res.data.reviews || []))
         .catch(() => setRecentReviews([]));
+
+      api.get(`/users/${profileData.id}/items`)
+        .then(res => setListedItems(res.data.items || []))
+        .catch(() => setListedItems([]));
     }
   }, [profileData]);
 
@@ -367,6 +372,26 @@ export default function Profile() {
                   <p className="profile-review-text">{r.review}</p>
                 </div>
               ))}
+            </div>
+          )}
+
+          {listedItems.length > 0 && (
+            <div className="profile-items-grid">
+              <h3>Listed Items</h3>
+              <div className="profile-items-grid-inner">
+                {listedItems.map(item => (
+                  <Link to={`/item/${item.id}`} key={item.id} className="profile-item-thumb">
+                    <img
+                      src={
+                        Array.isArray(item.image_urls) && item.image_urls.length > 0
+                          ? item.image_urls[0]
+                          : 'https://placehold.co/150'
+                      }
+                      alt={item.title}
+                    />
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
