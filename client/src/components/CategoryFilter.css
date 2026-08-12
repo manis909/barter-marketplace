@@ -34,7 +34,7 @@
 }
 
 .category-pill.active {
-  border-color: #3D6E63;
+  border-color: var(--pill-active-color, #3D6E63);
   background: #F7F4EB;
 }
 
