@@ -26,6 +26,7 @@ import MySkillsPage from './pages/MySkillsPage';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
+import SkillChatsLayout from './pages/SkillChatsLayout';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 
@@ -89,7 +90,8 @@ function App() {
             <Route path="/skilter/teaching"  element={<SkilterPlaceholder title="My Teaching" />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
             <Route path="/skilter/wishlist"  element={<SkilterPlaceholder title="Skilter Wishlist" />} />
-            <Route path="/skilter/chat"      element={<SkilterPlaceholder title="Skilter Chat" />} />
+            <Route path="/skilter/chat"      element={<SkillChatsLayout />} />
+            <Route path="/skilter/chat/:bookingId" element={<SkillChatsLayout />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>
