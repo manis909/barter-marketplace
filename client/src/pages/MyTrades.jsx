@@ -239,6 +239,40 @@ const BARTER_CSS = `
   }
 }
 
+.trade-education-banner {
+  background: #ffffff;
+  border: 1px solid rgba(47, 107, 82, 0.2);
+  border-left: 5px solid #2f6b52;
+  border-radius: 16px;
+  margin: 20px 16px 0;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 4px 14px rgba(15, 61, 46, 0.05);
+}
+
+@media (min-width: 768px) {
+  .trade-education-banner {
+    margin: 24px 32px 0;
+  }
+}
+
+.education-close-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #647167;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.education-close-btn:hover {
+  color: #10241c;
+}
+
 .footer-space {
   height: 40px;
 }
@@ -308,6 +342,7 @@ export default function MyTrades() {
   const [acceptedTradeModal,  setAcceptedTradeModal]  = useState(null);
   const [activeTab,           setActiveTab]           = useState('active');
   const [historyFilter,       setHistoryFilter]       = useState('all'); // 'all' | 'completed' | 'declined'
+  const [guideDismissed,      setGuideDismissed]      = useState(() => localStorage.getItem('barter_trade_guide_dismissed') === 'true');
 
   // ── Fetch ────────────────────────────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
@@ -507,6 +542,32 @@ export default function MyTrades() {
             </div>
           </div>
         </div>
+
+        {/* First-time User Education Banner (Point 7) */}
+        {!guideDismissed && (
+          <div className="trade-education-banner">
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 22 }}>🛡️</span>
+              <div>
+                <strong style={{ color: 'var(--dark)', fontSize: 14 }}>Secure Exchange Guarantee</strong>
+                <p style={{ margin: '3px 0 0', fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}>
+                  Proof submission & admin verification protect both sides of every trade. Meet up safely, take handoff photos, and upload them when ready!
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="education-close-btn"
+              onClick={() => {
+                setGuideDismissed(true);
+                localStorage.setItem('barter_trade_guide_dismissed', 'true');
+              }}
+              aria-label="Dismiss guide"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Segmented Tab Control */}
         <div className="segment">
