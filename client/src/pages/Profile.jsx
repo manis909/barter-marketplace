@@ -409,7 +409,7 @@ export default function Profile() {
                     <div className="profile-skill-card-top">
                       <span className="profile-skill-name">{skill.skill_name}</span>
                       <span className={`profile-skill-badge profile-skill-badge-${skill.price_type}`}>
-                        {skill.price_type === 'free' ? 'Free' : skill.price_type === 'coins' ? 'Coins' : 'Negotiable'}
+                        {skill.price_type === 'free' ? 'Free' : skill.price_type === 'paid' ? `Paid (₹${parseFloat(skill.price || 0).toLocaleString('en-IN')})` : 'Negotiable'}
                       </span>
                     </div>
                     {skill.category && <p className="profile-skill-category">{skill.category}</p>}

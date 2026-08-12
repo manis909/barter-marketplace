@@ -149,7 +149,7 @@ router.get('/:id/items', async (req, res) => {
 // Add this anywhere before module.exports = router; in users.js
 router.get('/:id/skills', async (req, res) => {
   const result = await db.query(
-    `SELECT id, skill_name, description, category, price_type, status
+    `SELECT id, skill_name, description, category, price_type, price, status
      FROM skill_listings
      WHERE teacher_id = $1
      ORDER BY created_at DESC`,
