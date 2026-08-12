@@ -144,6 +144,18 @@ router.get('/:id/items', async (req, res) => {
     [req.params.id]
   );
   res.json({ items: result.rows });
+}); 
+// ---- Get all skills a specific user teaches (for their Profile page) ----
+// Add this anywhere before module.exports = router; in users.js
+router.get('/:id/skills', async (req, res) => {
+  const result = await db.query(
+    `SELECT id, skill_name, description, category, price_type, status
+     FROM skill_listings
+     WHERE teacher_id = $1
+     ORDER BY created_at DESC`,
+    [req.params.id]
+  );
+  res.json({ skills: result.rows });
 });
 
 module.exports = router;

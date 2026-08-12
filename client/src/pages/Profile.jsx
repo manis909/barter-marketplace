@@ -68,6 +68,7 @@ export default function Profile() {
   const [ratingSummary, setRatingSummary] = useState(null);
   const [recentReviews, setRecentReviews] = useState([]);
   const [listedItems, setListedItems] = useState([]);
+  const [skillsTaught, setSkillsTaught] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
@@ -109,6 +110,10 @@ export default function Profile() {
       api.get(`/users/${profileData.id}/items`)
         .then(res => setListedItems(res.data.items || []))
         .catch(() => setListedItems([]));
+
+      api.get(`/users/${profileData.id}/skills`)
+        .then(res => setSkillsTaught(res.data.skills || []))
+        .catch(() => setSkillsTaught([]));
     }
   }, [profileData]);
 
@@ -390,6 +395,26 @@ export default function Profile() {
                       alt={item.title}
                     />
                   </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {skillsTaught.length > 0 && (
+            <div className="profile-skills-section">
+              <h3>Skills I Teach</h3>
+              <div className="profile-skills-list">
+                {skillsTaught.map(skill => (
+                  <div key={skill.id} className="profile-skill-card">
+                    <div className="profile-skill-card-top">
+                      <span className="profile-skill-name">{skill.skill_name}</span>
+                      <span className={`profile-skill-badge profile-skill-badge-${skill.price_type}`}>
+                        {skill.price_type === 'free' ? 'Free' : skill.price_type === 'coins' ? 'Coins' : 'Negotiable'}
+                      </span>
+                    </div>
+                    {skill.category && <p className="profile-skill-category">{skill.category}</p>}
+                    {skill.description && <p className="profile-skill-description">{skill.description}</p>}
+                  </div>
                 ))}
               </div>
             </div>
