@@ -414,3 +414,74 @@
   object-fit: cover;
   border-radius: 4px;
 }
+/* ---------- Add this to Profile.css ---------- */
+
+.profile-skills-section {
+  width: 100%;
+  margin-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.profile-skills-section h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.profile-skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-skill-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.profile-skill-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-skill-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.profile-skill-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.profile-skill-badge-free {
+  background: #e8f5ee;
+  color: #2f6b57;
+}
+
+.profile-skill-badge-coins {
+  background: #fff6e2;
+  color: #a56a00;
+}
+
+.profile-skill-badge-negotiable {
+  background: #eef1fd;
+  color: #4f5fc9;
+}
+
+.profile-skill-category {
+  color: #6b7280;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.profile-skill-description {
+  color: #374151;
+  font-size: 13px;
+  margin: 4px 0 0;
+}

@@ -1,17 +1,95 @@
-import Footer from '../components/Footer';
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import CategoryFilter from '../components/CategoryFilter'
+import Footer from '../components/Footer'
+import {
+  SKILTER_CATEGORY_META,
+  normalizeSkilterCategory,
+} from '../data/skilterCategories'
+import './Skilter.css'
 
-export default function Skilter() {
+// ---------------------------------------------------------------------------
+// SkilterExplorePage
+//
+// Mirrors the structure of Barter's Explore.jsx:
+//   - CategoryFilter (reused component, Skilter categories injected via prop)
+//   - URL-synced activeCategory state (?category=)
+//   - Placeholder listing grid (real skill listings wired in when the backend
+//     skill_listings endpoint is ready — just swap the fetch call)
+// ---------------------------------------------------------------------------
+
+export default function SkilterExplorePage() {
+  const location = useLocation()
+  const navigate  = useNavigate()
+
+  const [activeCategory, setActiveCategory] = useState(() =>
+    normalizeSkilterCategory(
+      new URLSearchParams(location.search).get('category')
+    ) || ''
+  )
+
+  // Sync state when URL changes (e.g. browser back/forward)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    setActiveCategory(
+      normalizeSkilterCategory(params.get('category')) || ''
+    )
+  }, [location.search])
+
+  function handleCategorySelect(cat) {
+    setActiveCategory(cat)
+    const params = new URLSearchParams(location.search)
+    if (!cat || cat === 'All') {
+      params.delete('category')
+    } else {
+      params.set('category', cat)
+    }
+    navigate({
+      pathname: location.pathname,
+      search: params.toString() ? `?${params.toString()}` : '',
+    })
+  }
+
+  const isFiltered = Boolean(activeCategory && activeCategory !== 'All')
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 80px)', backgroundColor: '#F8FAFC' }}>
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '80px 24px' }}>
-        <h1 style={{ fontSize: '3rem', fontWeight: 800, color: '#0F172A', marginBottom: '16px', letterSpacing: '-0.02em' }}>
-          Skilter
-        </h1>
-        <p style={{ fontSize: '1.125rem', color: '#64748B', maxWidth: '540px', lineHeight: 1.6, margin: 0 }}>
-          A platform where students can showcase and monetize their skills. Coming Soon.
+    <div className="skilter-page">
+      {/* ── Category filter ──────────────────────────────────────────── */}
+      <CategoryFilter
+        categories={SKILTER_CATEGORY_META}
+        activeCategory={activeCategory}
+        onSelect={handleCategorySelect}
+        heading="Browse skill categories"
+      />
+
+      {/* ── Page header ──────────────────────────────────────────────── */}
+      <div className="skilter-summary">
+        <div>
+          <p className="skilter-section-label">Skilter</p>
+          <h2>Find students with the skills you need</h2>
+        </div>
+        {isFiltered && (
+          <p className="skilter-filter-hint">
+            Showing skills in <strong>{activeCategory}</strong>
+          </p>
+        )}
+      </div>
+
+      {/* ── Skill listing grid ───────────────────────────────────────── */}
+      {/* Replace this placeholder with real skill cards once the        */}
+      {/* skill_listings backend endpoint is wired up.                    */}
+      <div className="skilter-coming-soon">
+        <div className="skilter-coming-soon__icon">🎓</div>
+        <h3>Skill listings coming soon</h3>
+        <p>
+          Students will be able to post and discover skills here.
+          {isFiltered && (
+            <> Category filter is active: <strong>{activeCategory}</strong>.</>
+          )}
         </p>
-      </main>
+      </div>
+
       <Footer />
     </div>
-  );
+  )
 }

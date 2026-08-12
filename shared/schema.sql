@@ -260,14 +260,16 @@ CREATE TABLE verification_logs (
 -- SKILLS FEATURE
 -- ============================================================
 CREATE TABLE skill_listings (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    teacher_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    skill_name    VARCHAR(150) NOT NULL,
-    description   TEXT,
-    category      VARCHAR(100),
-    price_type    VARCHAR(20) DEFAULT 'free' CHECK (price_type IN ('free', 'coins', 'negotiable')),
-    status        VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused')),
-    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    teacher_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    skill_name       VARCHAR(150) NOT NULL,
+    description      TEXT,
+    category         VARCHAR(100),
+    price_type       VARCHAR(20) DEFAULT 'free' CHECK (price_type IN ('free', 'coins', 'negotiable')),
+    session_type     TEXT NOT NULL DEFAULT 'one_on_one' CHECK (session_type IN ('one_on_one', 'group')),
+    max_participants INTEGER NOT NULL DEFAULT 1,
+    status           VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+    created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE skill_bookings (
@@ -278,6 +280,9 @@ CREATE TABLE skill_bookings (
     scheduled_time      TIMESTAMPTZ,
     status              VARCHAR(20) DEFAULT 'pending'
                         CHECK (status IN ('pending', 'accepted', 'declined', 'completed', 'cancelled')),
+    amount_paid         DECIMAL(10,2),
+    commission_amount   DECIMAL(10,2),
+    updated_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 

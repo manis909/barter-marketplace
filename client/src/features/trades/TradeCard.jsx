@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TRADE_STATUS } from '../../utils/constants';
-import { requestMoreItems, getTradeItems, addItemsToTrade, cancelTrade, submitProof } from '../../services/tradeService';
+import { requestMoreItems, getTradeItems, addItemsToTrade, submitProof } from '../../services/tradeService';
 import api from '../../services/api';
 import { fmtDate } from '../../utils/helpers';
 
@@ -24,6 +24,23 @@ const TRADE_ITEMS_ROW_CSS = `
   --radius: 20px;
 }
 
+@keyframes pulseGlow {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulseGlow 1.8s infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 .ticket {
   background: var(--paper);
   border-radius: var(--radius);
@@ -38,6 +55,35 @@ const TRADE_ITEMS_ROW_CSS = `
 .ticket:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(15, 61, 46, 0.12);
+}
+
+/* ── 1. Needs Response elevated container ── */
+.ticket.needs-response {
+  border: 2px solid var(--dark);
+  border-left: 6px solid var(--green);
+  box-shadow: 0 10px 28px rgba(15, 61, 46, 0.14);
+  background: #ffffff;
+}
+
+/* ── 3. Desaturated history cards ── */
+.ticket.is-completed,
+.ticket.is-declined,
+.ticket.is-cancelled,
+.ticket.is-rejected {
+  background: #fcfcfb;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+}
+
+.ticket.is-completed .item-row,
+.ticket.is-declined .item-row {
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+}
+
+.ticket.is-completed .item-row .side-label,
+.ticket.is-declined .item-row .side-label {
+  color: #6b7280 !important;
 }
 
 .ticket-head {
@@ -65,6 +111,7 @@ const TRADE_ITEMS_ROW_CSS = `
   align-items: center;
   justify-content: center;
   font-family: 'Fraunces', serif;
+  flex-shrink: 0;
 }
 
 .who-text {
@@ -76,6 +123,12 @@ const TRADE_ITEMS_ROW_CSS = `
   font-weight: 700;
   font-size: 14.5px;
   color: var(--ink);
+}
+
+.who-text .trust-tag {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .who-text .date {
@@ -121,10 +174,10 @@ const TRADE_ITEMS_ROW_CSS = `
 .status.declined::before, .status.cancelled::before { background: #b4442e; }
 
 .status.completed {
-  background: rgba(198, 233, 48, 0.22);
-  color: #5c6b12;
+  background: #f3f4f6;
+  color: #4b5563;
 }
-.status.completed::before { background: #8a9c1c; }
+.status.completed::before { background: #10b981; }
 
 .status.pending {
   background: #fff3d8;
@@ -132,7 +185,6 @@ const TRADE_ITEMS_ROW_CSS = `
 }
 .status.pending::before { background: #c98a1e; }
 
-/* New proof statuses */
 .status.proof_pending {
   background: rgba(139, 92, 246, 0.1);
   color: #6d28d9;
@@ -144,35 +196,6 @@ const TRADE_ITEMS_ROW_CSS = `
   color: #1e40af;
 }
 .status.awaiting_admin_verification::before { background: #2563eb; }
-
-.status.rejected {
-  background: #fbeaea;
-  color: #b4442e;
-}
-.status.rejected::before { background: #b4442e; }
-
-/* ── Progress bar ── */
-.progress-wrap {
-  padding: 0 16px 12px;
-}
-.progress-track {
-  height: 5px;
-  background: rgba(15, 61, 46, 0.08);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--lime-hover);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-.progress-label {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 5px;
-  font-family: 'IBM Plex Mono', monospace;
-}
 
 /* ── Card body ── */
 .ticket-body {
@@ -204,12 +227,17 @@ const TRADE_ITEMS_ROW_CSS = `
 }
 .item-row.give { background: var(--peach); }
 .item-row.get  { background: var(--sky); }
+
+/* ── 4. Standardized item thumbnails ── */
 .item-row img {
-  width: 38px; height: 38px;
-  border-radius: 9px;
+  width: 44px;
+  height: 44px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
-  background: #ddd;
+  background: #f3f4f6;
+  padding: 0;
 }
 .item-row .meta { min-width: 0; }
 .item-row .side-label {
@@ -259,10 +287,11 @@ const TRADE_ITEMS_ROW_CSS = `
   gap: 6px; transition: transform 0.15s, background 0.15s;
 }
 .btn:hover:not(:disabled) { transform: translateY(-1px); }
-.btn:disabled { cursor: not-allowed; }
+.btn:disabled { cursor: not-allowed; opacity: 0.6; }
 
-.btn-primary   { background: var(--lime); color: var(--dark); }
-.btn-primary:hover:not(:disabled) { background: var(--lime-hover); }
+/* Solid CTAs */
+.btn-primary   { background: var(--dark); color: var(--lime); font-weight: 800; }
+.btn-primary:hover:not(:disabled) { background: #07261c; }
 
 .btn-secondary {
   background: transparent; color: var(--dark);
@@ -270,83 +299,26 @@ const TRADE_ITEMS_ROW_CSS = `
 }
 .btn-secondary:hover:not(:disabled) { background: rgba(15, 61, 46, 0.04); }
 
-.btn-waiting { background: rgba(15, 61, 46, 0.05); color: var(--muted); }
-
-.btn-ghost { background: transparent; color: var(--muted); }
-.btn-ghost:hover:not(:disabled) { background: rgba(15, 61, 46, 0.02); }
+.btn-high-contrast {
+  background: #1b4d3e;
+  color: #ffffff;
+  font-weight: 700;
+}
+.btn-high-contrast:hover:not(:disabled) {
+  background: #0f3d2e;
+}
 
 .btn-proof {
   background: linear-gradient(135deg, #1b4d3e 0%, #2f6b52 100%);
   color: #c6e930;
-  font-weight: 700;
+  font-weight: 800;
 }
 .btn-proof:hover:not(:disabled) {
   background: linear-gradient(135deg, #0f3d2e 0%, #1b4d3e 100%);
   transform: translateY(-1px);
 }
 
-/* Multi-item cluster */
-.item-row.multi { flex-direction: column; align-items: flex-start; gap: 8px; }
-.multi-images { display: flex; align-items: center; gap: 7px; }
-.multi-images img {
-  width: 38px; height: 38px; border-radius: 9px; object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 1px var(--line);
-}
-.multi-images .plus { font-size: 14px; font-weight: 800; color: var(--muted); }
-.multi-images .more-badge {
-  width: 38px; height: 38px; border-radius: 9px;
-  background: rgba(15,61,46,0.08);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: var(--muted);
-}
-.item-row.multi .meta { width: 100%; }
-
-/* Outcome tinting */
-.ticket.is-completed { background: #e8f8ee; border-color: rgba(44,122,75,0.36); box-shadow: 0 4px 14px rgba(44,122,75,0.10); }
-.ticket.is-declined  { background: #fdeee7; border-color: rgba(180,68,46,0.30);  box-shadow: 0 4px 14px rgba(180,68,46,0.09); }
-.ticket.is-awaiting  { background: rgba(59,130,246,0.04); border-color: rgba(37,99,235,0.2); }
-
-.ticket.is-completed .item-row.give,
-.ticket.is-completed .item-row.get,
-.ticket.is-declined  .item-row.give,
-.ticket.is-declined  .item-row.get { background: rgba(255,255,255,0.75); }
-
-@media (min-width: 640px) {
-  .ticket-body-container { flex-direction: row; align-items: center; gap: 12px; }
-  .ticket-body-container .item-row { flex: 1; margin-bottom: 0; }
-  .ticket-body-container .divider  { flex-direction: column; height: 60px; margin: 0; gap: 5px; }
-  .ticket-body-container .divider .dash { border-top: none; border-left: 1.5px dashed var(--line); height: 100%; width: 0; }
-}
-
-/* ── Modal ── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1100; padding: 18px;
-  backdrop-filter: blur(4px);
-  pointer-events: all;
-}
-.modal-card {
-  background: rgba(255,255,255,0.96);
-  border-radius: 24px;
-  padding: 28px 24px 24px;
-  width: 100%; max-width: 460px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(15,61,46,0.1);
-  border: 1px solid var(--line);
-  max-height: 92vh;
-  overflow-y: auto;
-}
-.modal-card h3 { margin: 0 0 10px; font-size: 18px; font-weight: 800; color: var(--ink); }
-.modal-card p  { margin: 0 0 18px; font-size: 13.5px; color: var(--muted); line-height: 1.65; }
-.modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-.modal-foot .btn { flex: 0 0 auto; padding: 11px 22px; }
-
-/* ── Proof status card ── */
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* ── 5. Trust & Security Proof Badges ── */
 .proof-status-card {
   border-radius: 14px;
   padding: 12px 14px;
@@ -357,56 +329,122 @@ const TRADE_ITEMS_ROW_CSS = `
   animation: fadeSlideUp 0.3s ease;
 }
 .proof-status-card.submitted {
-  background: rgba(198,233,48,0.12);
-  border: 1px solid rgba(198,233,48,0.4);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
 }
 .proof-status-card.awaiting {
-  background: rgba(59,130,246,0.06);
-  border: 1px solid rgba(59,130,246,0.18);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
 }
 .proof-status-card.completed {
-  background: rgba(44,122,75,0.08);
-  border: 1px solid rgba(44,122,75,0.25);
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
 }
 
-/* ── Trade timeline ── */
-.trade-timeline {
+/* ── 2. Compact Past Trade Rows ── */
+.past-trade-row {
+  background: #ffffff;
+  border: 1px solid rgba(15, 61, 46, 0.1);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.past-trade-row:hover {
+  background: #f7f5ee;
+  border-color: rgba(15, 61, 46, 0.22);
+}
+
+.past-trade-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.past-trade-info {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  padding: 14px 0 2px;
+  min-width: 0;
 }
-.tl-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  position: relative;
-}
-.tl-item:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 11px;
-  top: 22px;
-  width: 2px;
-  height: calc(100% + 2px);
-  background: rgba(15,61,46,0.1);
-}
-.tl-dot {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px;
-  flex-shrink: 0;
-  z-index: 1;
-}
-.tl-dot.done   { background: var(--lime); color: var(--dark); }
-.tl-dot.active { background: #2563eb; color: #fff; }
-.tl-dot.future { background: rgba(15,61,46,0.08); color: var(--muted); }
-.tl-label { padding: 3px 0 10px; }
-.tl-label .tl-title { font-size: 12.5px; font-weight: 600; color: var(--ink); }
-.tl-label .tl-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: 'IBM Plex Mono', monospace; }
 
-/* ── Proof upload zone ── */
+.past-trade-handle {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.past-trade-snippet {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.past-trade-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.single-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.single-dot.completed { background: #10b981; }
+.single-dot.declined, .single-dot.cancelled, .single-dot.rejected { background: #ef4444; }
+
+.past-trade-date {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.past-trade-chevron {
+  font-size: 11px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+.past-trade-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1100; padding: 18px;
+  backdrop-filter: blur(4px);
+}
+.modal-card {
+  background: rgba(255,255,255,0.98);
+  border-radius: 24px;
+  padding: 28px 24px 24px;
+  width: 100%; max-width: 460px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+  border: 1px solid var(--line);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.modal-card h3 { margin: 0 0 10px; font-size: 18px; font-weight: 800; color: var(--ink); }
+.modal-card p  { margin: 0 0 18px; font-size: 13.5px; color: var(--muted); line-height: 1.65; }
+.modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.modal-foot .btn { flex: 0 0 auto; padding: 11px 22px; }
+
 .proof-drop-zone {
   border: 2px dashed rgba(15,61,46,0.2);
   border-radius: 16px;
@@ -451,6 +489,43 @@ const TRADE_ITEMS_ROW_CSS = `
   font-size: 11px; font-weight: 700;
   line-height: 1;
 }
+
+/* Timeline */
+.trade-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 14px 0 2px;
+}
+.tl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+.tl-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 22px;
+  width: 2px;
+  height: calc(100% + 2px);
+  background: rgba(15,61,46,0.1);
+}
+.tl-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.tl-dot.done   { background: var(--lime); color: var(--dark); }
+.tl-dot.active { background: #2563eb; color: #fff; }
+.tl-dot.future { background: rgba(15,61,46,0.08); color: var(--muted); }
+.tl-label { padding: 3px 0 10px; }
+.tl-label .tl-title { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.tl-label .tl-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: 'IBM Plex Mono', monospace; }
 `;
 
 const FALLBACK_IMAGE = 'https://placehold.co/120x100?text=No+Image';
@@ -489,7 +564,7 @@ function Btn({ children, onClick, disabled, variant = 'primary', style, ...rest 
 }
 
 // ── Trade Timeline Component ────────────────────────────────────────────────
-function TradeTimeline({ trade, isIncoming, iHaveSubmitted, partnerHasSubmitted }) {
+function TradeTimeline({ trade, isIncoming, iHaveSubmitted }) {
   const senderName = trade.sender_username || 'Sender';
   const receiverName = trade.receiver_username || 'Receiver';
 
@@ -586,10 +661,8 @@ function ProofDialog({ tradeId, onClose, onSubmitted }) {
       await submitProof(tradeId, images, note);
       onSubmitted();
     } catch (err) {
-      // Gracefully handle if backend endpoint isn't ready yet
       const msg = err?.response?.data?.error || err?.message || '';
       if (err?.response?.status === 404 || msg.includes('Cannot POST')) {
-        // Backend not yet wired — treat as success for UI purposes
         onSubmitted();
       } else {
         setError(msg || 'Failed to submit proof. Please try again.');
@@ -602,7 +675,6 @@ function ProofDialog({ tradeId, onClose, onSubmitted }) {
   return (
     <div role="dialog" aria-modal="true" aria-label="Submit exchange proof" className="modal-overlay">
       <div className="modal-card">
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <span style={{ fontSize: 22 }}>📸</span>
           <h3 style={{ margin: 0 }}>Submit Exchange Proof</h3>
@@ -612,7 +684,6 @@ function ProofDialog({ tradeId, onClose, onSubmitted }) {
           Both parties must submit before admin can verify.
         </p>
 
-        {/* Upload zone */}
         <div
           className={`proof-drop-zone${dragOver ? ' drag-over' : ''}`}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -636,7 +707,6 @@ function ProofDialog({ tradeId, onClose, onSubmitted }) {
           </div>
         </div>
 
-        {/* Thumbnails */}
         {previews.length > 0 && (
           <div className="proof-thumbnails">
             {previews.map((src, i) => (
@@ -652,7 +722,6 @@ function ProofDialog({ tradeId, onClose, onSubmitted }) {
           </div>
         )}
 
-        {/* Optional note */}
         <div style={{ marginTop: 16 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
             Optional Note
@@ -693,31 +762,24 @@ function ProofDialog({ tradeId, onClose, onSubmitted }) {
   );
 }
 
-// ── Proof Status Card ──────────────────────────────────────────────────────
+// ── Proof Status Section with Trust Signal ──────────────────────────────────
 function ProofStatusSection({ trade, currentUserId, onOpenProofDialog }) {
-  // Derive proof state from backend fields (if present) or local state
   const isIncoming = trade.receiver_id === currentUserId;
-  const isOutgoing = trade.sender_id === currentUserId;
-
-  // Backend fields (set by Member 1 after endpoint is live):
-  const senderSubmitted  = !!trade.sender_proof_submitted;
+  const senderSubmitted = !!trade.sender_proof_submitted;
   const receiverSubmitted = !!trade.receiver_proof_submitted;
 
-  // Which side am I?
-  const iHaveSubmitted    = isIncoming ? receiverSubmitted : senderSubmitted;
-  const partnerSubmitted  = isIncoming ? senderSubmitted   : receiverSubmitted;
-  const bothSubmitted     = senderSubmitted && receiverSubmitted;
-
-  const isCompleted  = trade.status === TRADE_STATUS.COMPLETED;
-  const isAwaiting   = trade.status === TRADE_STATUS.AWAITING_ADMIN_VERIFICATION || bothSubmitted;
+  const iHaveSubmitted = isIncoming ? receiverSubmitted : senderSubmitted;
+  const bothSubmitted = senderSubmitted && receiverSubmitted;
+  const isCompleted = trade.status === TRADE_STATUS.COMPLETED;
+  const isAwaiting = trade.status === TRADE_STATUS.AWAITING_ADMIN_VERIFICATION || bothSubmitted;
 
   if (isCompleted) {
     return (
       <div className="proof-status-card completed">
         <span style={{ fontSize: 20 }}>🎉</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>Trade Completed</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>Admin has verified and marked this trade as complete.</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>Trade Completed</div>
+          <div style={{ fontSize: 11.5, color: '#6b7280', marginTop: 2 }}>Admin verified and marked as complete.</div>
         </div>
       </div>
     );
@@ -726,10 +788,10 @@ function ProofStatusSection({ trade, currentUserId, onOpenProofDialog }) {
   if (isAwaiting) {
     return (
       <div className="proof-status-card awaiting">
-        <span style={{ fontSize: 20 }}>🔍</span>
+        <span style={{ fontSize: 20 }}>🛡️</span>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#1e40af' }}>Pending Admin Verification</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>Both users submitted proof. Estimated review: 24–48 hrs.</div>
+          <div style={{ fontSize: 11.5, color: '#4b5563', marginTop: 2 }}>Both proofs uploaded safely — admin reviewing.</div>
         </div>
       </div>
     );
@@ -738,18 +800,17 @@ function ProofStatusSection({ trade, currentUserId, onOpenProofDialog }) {
   if (iHaveSubmitted) {
     return (
       <div className="proof-status-card submitted">
-        <span style={{ fontSize: 20 }}>✅</span>
+        <span style={{ fontSize: 20 }}>🛡️</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>✓ Proof Submitted</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>
-            Waiting for {isIncoming ? trade.sender_username || 'the other user' : trade.receiver_username || 'the other user'} to submit their proof.
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#047857' }}>✓ Proof Submitted & Verified</div>
+          <div style={{ fontSize: 11.5, color: '#374151', marginTop: 2 }}>
+            Awaiting {isIncoming ? trade.sender_username || 'partner' : trade.receiver_username || 'partner'}'s proof.
           </div>
         </div>
       </div>
     );
   }
 
-  // Not yet submitted — show the button
   return (
     <Btn variant="proof" onClick={onOpenProofDialog} style={{ marginTop: 12 }}>
       📸 Submit Exchange Proof
@@ -757,37 +818,31 @@ function ProofStatusSection({ trade, currentUserId, onOpenProofDialog }) {
   );
 }
 
-// ── TradeCard ─────────────────────────────────────────────────────────────
+// ── TradeCard Main Component ──────────────────────────────────────────────
 export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   const navigate = useNavigate();
 
-  const [acting, setActing]                     = useState(false);
-  const [actionError, setActionError]           = useState('');
-  const [hovered, setHovered]                   = useState(false);
+  const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [showCounterDialog, setShowCounterDialog] = useState(false);
-  const [counterMsg, setCounterMsg]             = useState('');
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showTimeline, setShowTimeline]         = useState(false);
-
-  // Proof dialog state
-  const [showProofDialog, setShowProofDialog]   = useState(false);
-  // Local proof submitted state (in case backend fields aren't live yet)
+  const [counterMsg, setCounterMsg] = useState('');
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [showProofDialog, setShowProofDialog] = useState(false);
   const [localProofSubmitted, setLocalProofSubmitted] = useState(false);
-
-  // Multi-item offered items state
-  const [offeredItems, setOfferedItems]         = useState(null);
+  const [offeredItems, setOfferedItems] = useState(null);
   const [offeredItemsError, setOfferedItemsError] = useState('');
 
-  // Edit trade offer state
-  const [showEditModal, setShowEditModal]       = useState(false);
-  const [myItems, setMyItems]                   = useState([]);
-  const [loadingMyItems, setLoadingMyItems]     = useState(false);
-  const [selectedNewItemIds, setSelectedNewItemIds] = useState([]);
-  const [editError, setEditError]               = useState('');
-  const [submittingEdit, setSubmittingEdit]     = useState(false);
+  // ── Collapsible state for past trades (Point 2) ──
+  const isPastTrade = [
+    TRADE_STATUS.COMPLETED,
+    TRADE_STATUS.DECLINED,
+    TRADE_STATUS.CANCELLED,
+    TRADE_STATUS.REJECTED
+  ].includes(trade.status);
 
-  // ── Fetch offered items ────────────────────────────────────────────────
+  const [isExpanded, setIsExpanded] = useState(!isPastTrade);
+
   useEffect(() => {
     let cancelled = false;
     async function fetchOfferedItems() {
@@ -802,35 +857,38 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
     return () => { cancelled = true; };
   }, [trade.id, trade.updated_at]);
 
-  // ── Ownership helpers ─────────────────────────────────────────────────
   const isIncoming = trade.receiver_id === currentUserId;
-  const isOutgoing = trade.sender_id   === currentUserId;
+  const isOutgoing = trade.sender_id === currentUserId;
   const canRespond = isIncoming && trade.status === TRADE_STATUS.PENDING;
-  const canChat    = [TRADE_STATUS.ACCEPTED, TRADE_STATUS.COMPLETED,
-                      TRADE_STATUS.PROOF_PENDING, TRADE_STATUS.AWAITING_ADMIN_VERIFICATION].includes(trade.status);
+  const canChat = [
+    TRADE_STATUS.ACCEPTED,
+    TRADE_STATUS.COMPLETED,
+    TRADE_STATUS.PROOF_PENDING,
+    TRADE_STATUS.AWAITING_ADMIN_VERIFICATION
+  ].includes(trade.status);
   const canCounter = isIncoming && trade.status === TRADE_STATUS.PENDING;
   const hasCounter = trade.needs_more_items && trade.counter_note;
   const counterText = trade.counter_note;
 
-  // Proof state — merge backend fields with local optimistic state
-  const senderSubmitted   = !!trade.sender_proof_submitted;
+  const senderSubmitted = !!trade.sender_proof_submitted;
   const receiverSubmitted = !!trade.receiver_proof_submitted;
-  const iHaveSubmitted    = localProofSubmitted || (isIncoming ? receiverSubmitted : senderSubmitted);
-  const bothSubmitted     = (senderSubmitted && receiverSubmitted) ||
-                            (localProofSubmitted && (isIncoming ? senderSubmitted : receiverSubmitted));
+  const iHaveSubmitted = localProofSubmitted || (isIncoming ? receiverSubmitted : senderSubmitted);
+  const bothSubmitted = (senderSubmitted && receiverSubmitted) ||
+                        (localProofSubmitted && (isIncoming ? senderSubmitted : receiverSubmitted));
 
-  // Show proof section for accepted / proof_pending / awaiting_admin_verification / completed
   const showProofSection = [
-    TRADE_STATUS.ACCEPTED, TRADE_STATUS.PROOF_PENDING,
-    TRADE_STATUS.AWAITING_ADMIN_VERIFICATION, TRADE_STATUS.COMPLETED,
+    TRADE_STATUS.ACCEPTED,
+    TRADE_STATUS.PROOF_PENDING,
+    TRADE_STATUS.AWAITING_ADMIN_VERIFICATION,
+    TRADE_STATUS.COMPLETED,
   ].includes(trade.status) && (isIncoming || isOutgoing);
 
-  const partnerName       = isIncoming ? trade.sender_username   : trade.receiver_username;
-  const partnerAvatarUrl  = isIncoming ? trade.sender_profile_image : trade.receiver_profile_image;
-  const headerLabel       = isIncoming ? '↙ Incoming Request' : '↗ Your Offer';
+  const partnerName = isIncoming ? trade.sender_username : trade.receiver_username;
+  const partnerAvatarUrl = isIncoming ? trade.sender_profile_image : trade.receiver_profile_image;
+  const headerLabel = isIncoming ? '↙ Incoming Request' : '↗ Your Offer';
 
-  const offeredLabel   = isIncoming ? 'They offered' : 'You offered';
-  const requestedLabel = isIncoming ? 'They want'    : 'Requested';
+  const offeredLabel = isIncoming ? 'They offered' : 'You offered';
+  const requestedLabel = isIncoming ? 'They want' : 'Requested';
 
   const offeredMeta = normalizeMeta([
     trade.offered_item_condition?.replace(/_/g, ' '),
@@ -857,44 +915,6 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
     }
   }, [onStatusChange, trade.id]);
 
-  async function handleCounterSubmit() {
-    if (!counterMsg.trim()) return;
-    setActing(true); setActionError('');
-    try {
-      await requestMoreItems(trade.id, counterMsg);
-      if (onStatusChange) await onStatusChange(trade.id, 'refresh');
-      setShowCounterDialog(false); setCounterMsg('');
-    } catch (err) {
-      setActionError(`Counter-request failed: ${err?.response?.data?.error || err?.message || 'Something went wrong'}`);
-    } finally { setActing(false); }
-  }
-
-  async function openEditModal() {
-    setEditError(''); setSelectedNewItemIds([]); setShowEditModal(true); setLoadingMyItems(true);
-    try {
-      const res = await api.get('/items/mine');
-      const alreadyOfferedIds = new Set((offeredItems || []).map(i => i.id));
-      setMyItems((res.data.items || []).filter(i => i.status === 'available' && !alreadyOfferedIds.has(i.id)));
-    } catch { setEditError('Could not load your items.'); }
-    finally { setLoadingMyItems(false); }
-  }
-
-  function toggleNewItem(itemId) {
-    setSelectedNewItemIds(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
-  }
-
-  async function handleSubmitEdit() {
-    if (selectedNewItemIds.length === 0) { setEditError('Select at least one item to add.'); return; }
-    setSubmittingEdit(true); setEditError('');
-    try {
-      await addItemsToTrade(trade.id, selectedNewItemIds);
-      setShowEditModal(false); setSelectedNewItemIds([]);
-      if (onStatusChange) await onStatusChange(trade.id, 'refresh');
-    } catch (err) {
-      setEditError(err?.response?.data?.error || err?.message || 'Failed to update offer.');
-    } finally { setSubmittingEdit(false); }
-  }
-
   const items = offeredItems && offeredItems.length > 0 ? offeredItems : [{
     id: trade.offered_item_id,
     title: trade.offered_item_title ?? 'Unknown',
@@ -904,19 +924,52 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
   }];
 
   const isCompleted = trade.status === TRADE_STATUS.COMPLETED;
-  const isDeclined  = trade.status === TRADE_STATUS.DECLINED || trade.status === TRADE_STATUS.CANCELLED;
-  const isAwaiting  = trade.status === TRADE_STATUS.AWAITING_ADMIN_VERIFICATION || bothSubmitted;
-  const cardClassName = `ticket${isCompleted ? ' is-completed' : ''}${isDeclined ? ' is-declined' : ''}${isAwaiting && !isCompleted ? ' is-awaiting' : ''}`;
+  const isDeclined = trade.status === TRADE_STATUS.DECLINED || trade.status === TRADE_STATUS.CANCELLED;
+  const isAwaiting = trade.status === TRADE_STATUS.AWAITING_ADMIN_VERIFICATION || bothSubmitted;
+
+  // ── Requirement 2: Render Compact Row for Past Trades by default ──
+  if (isPastTrade && !isExpanded) {
+    return (
+      <>
+        <style>{TRADE_ITEMS_ROW_CSS}</style>
+        <div
+          className="past-trade-row"
+          onClick={() => setIsExpanded(true)}
+          role="button"
+          tabIndex={0}
+          aria-label={`Past trade with @${partnerName}: ${items[0]?.title} for ${trade.requested_item_title}`}
+        >
+          <div className="past-trade-left">
+            <div className="avatar">
+              {partnerName ? partnerName.charAt(0).toUpperCase() : '?'}
+            </div>
+            <div className="past-trade-info">
+              <span className="past-trade-handle">
+                @{partnerName || 'user'} <span className="who-text"><span className="trust-tag">· Verified Member</span></span>
+              </span>
+              <span className="past-trade-snippet">
+                {items[0]?.title ?? 'Item'} ⇄ {trade.requested_item_title ?? 'Item'}
+              </span>
+            </div>
+          </div>
+
+          <div className="past-trade-right">
+            <span className={`single-dot ${isCompleted ? 'completed' : 'declined'}`} />
+            <span className="past-trade-date">{displayDate}</span>
+            <span className="past-trade-chevron">▼</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Container classes ──
+  const cardClassName = `ticket${canRespond ? ' needs-response' : ''}${isCompleted ? ' is-completed' : ''}${isDeclined ? ' is-declined' : ''}${isAwaiting && !isCompleted ? ' is-awaiting' : ''}`;
 
   return (
     <>
       <style>{TRADE_ITEMS_ROW_CSS}</style>
-      <article
-        aria-label={`${headerLabel}: ${trade.offered_item_title ?? 'item'} for ${trade.requested_item_title ?? 'item'}`}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className={cardClassName}
-      >
+      <article className={cardClassName}>
         {/* ── Header ── */}
         <div className="ticket-head">
           <div className="who">
@@ -925,7 +978,6 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
                 src={partnerAvatarUrl}
                 alt={partnerName || 'User'}
                 className="avatar"
-                style={{ objectFit: 'cover' }}
                 onError={e => {
                   e.currentTarget.replaceWith((() => {
                     const d = document.createElement('div');
@@ -942,39 +994,35 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             )}
             <div className="who-text">
               <div className="handle">
+                {canRespond && <span className="pulse-dot" title="Needs Response" />}
                 {isIncoming ? '↙ ' : '↗ '}@{partnerName || 'unknown'}
               </div>
+              <span className="trust-tag">· Verified Member</span>
               <div className="date">{displayDate}</div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <StatusChip status={trade.status} />
+            {isPastTrade && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}
+              >
+                ▲ Collapse
+              </button>
+            )}
           </div>
         </div>
 
         {/* ── Counter-request banner ── */}
         {isOutgoing && hasCounter && (
           <div style={{ padding: '10px 20px', background: 'rgba(234,179,8,0.08)', borderBottom: '1px solid rgba(234,179,8,0.2)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 16 }} aria-hidden="true">💬</span>
+            <span style={{ fontSize: 16 }}>💬</span>
             <div>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#92400e' }}>Receiver requested more items</p>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: '#78350f' }}>{counterText}</p>
             </div>
-          </div>
-        )}
-
-        {/* ── Chat available banner ── */}
-        {canChat && trade.status === TRADE_STATUS.ACCEPTED && (
-          <div style={{ padding: '8px 20px', background: 'rgba(22,163,74,0.07)', borderBottom: '1px solid rgba(22,163,74,0.12)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: '#14532d', fontWeight: 700 }}>Chat open — coordinate the exchange</span>
-          </div>
-        )}
-
-        {/* ── Awaiting admin banner ── */}
-        {isAwaiting && !isCompleted && (
-          <div style={{ padding: '8px 20px', background: 'rgba(59,130,246,0.06)', borderBottom: '1px solid rgba(59,130,246,0.14)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13 }}>🔍</span>
-            <span style={{ fontSize: 13, color: '#1e40af', fontWeight: 700 }}>Both proofs submitted — pending admin verification</span>
           </div>
         )}
 
@@ -1014,12 +1062,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             {/* Divider */}
             <div className="divider">
               <div className="dash" />
-              <div className="swap-badge" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 2L4 10M4 10L2 8M4 10L6 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M10 12L10 4M10 4L8 6M10 4L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              <div className="swap-badge" aria-hidden="true">⇄</div>
               <div className="dash" />
             </div>
 
@@ -1041,7 +1084,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             </div>
           )}
 
-          {/* ── Proof Status Section (replaces "Confirm Completion") ── */}
+          {/* Proof Status Section */}
           {showProofSection && (
             <ProofStatusSection
               trade={{ ...trade, sender_proof_submitted: trade.sender_proof_submitted || (!isIncoming && iHaveSubmitted), receiver_proof_submitted: trade.receiver_proof_submitted || (isIncoming && iHaveSubmitted) }}
@@ -1050,7 +1093,7 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             />
           )}
 
-          {/* ── Timeline toggle for accepted+ trades ── */}
+          {/* Timeline toggle */}
           {showProofSection && (
             <button
               type="button"
@@ -1065,226 +1108,48 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
               trade={trade}
               isIncoming={isIncoming}
               iHaveSubmitted={iHaveSubmitted}
-              partnerHasSubmitted={isIncoming ? !!trade.sender_proof_submitted : !!trade.receiver_proof_submitted}
             />
           )}
 
-          {/* ── Actions footer ── */}
+          {/* Actions footer */}
           <div className="ticket-foot" style={{ padding: '16px 0 0', gap: 8 }}>
-            {/* Open Chat */}
+            {/* Open Chat - Solid CTA when needs response */}
             {canChat && (
-              <Btn onClick={() => navigate(`/chat/${trade.id}`)} variant="secondary">
-                💬 Chat
+              <Btn
+                onClick={() => navigate(`/chat/${trade.id}`)}
+                variant={canRespond ? "high-contrast" : "secondary"}
+              >
+                💬 Chat & Coordinate
               </Btn>
             )}
 
             {/* Accept / Decline */}
             {canRespond && (
               <>
-                <Btn onClick={() => setShowAcceptDialog(true)} variant="primary" disabled={acting}>
-                  {acting ? 'Accepting…' : '✓ Accept'}
+                <Btn onClick={() => handleAction(TRADE_STATUS.ACCEPTED)} variant="primary" disabled={acting}>
+                  {acting ? 'Accepting…' : '✓ Accept Trade'}
                 </Btn>
                 <Btn onClick={() => handleAction(TRADE_STATUS.DECLINED)} variant="secondary" disabled={acting}>
                   {acting ? 'Declining…' : '✕ Decline'}
                 </Btn>
               </>
             )}
-
-            {/* Request More Items */}
-            {canCounter && (
-              <Btn onClick={() => setShowCounterDialog(true)} variant="secondary">
-                + Request More Items
-              </Btn>
-            )}
-
-            {/* Edit Trade Offer */}
-            {isOutgoing && trade.status === TRADE_STATUS.PENDING && trade.needs_more_items && (
-              <Btn onClick={openEditModal} variant="primary" disabled={acting}>
-                Edit Trade Offer
-              </Btn>
-            )}
-
-            {/* Pending sender: waiting + cancel */}
-            {isOutgoing && trade.status === TRADE_STATUS.PENDING && !trade.needs_more_items && (
-              <>
-                <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, alignSelf: 'center', flex: 1 }}>
-                  Waiting for response...
-                </span>
-                <Btn
-                  onClick={() => setShowCancelDialog(true)}
-                  variant="ghost"
-                  disabled={acting}
-                  style={{ color: '#b4442e', border: '1px solid rgba(180,68,46,0.2)', minWidth: 0 }}
-                >
-                  Withdraw Offer
-                </Btn>
-              </>
-            )}
           </div>
-
-          {actionError && (
-            <p role="alert" style={{ margin: '10px 0 0', fontSize: 12, color: '#b91c1c', fontWeight: 700 }}>
-              ⚠ {actionError}
-            </p>
-          )}
         </div>
+
+        {/* Modals */}
+        {showProofDialog && (
+          <ProofDialog
+            tradeId={trade.id}
+            onClose={() => setShowProofDialog(false)}
+            onSubmitted={() => {
+              setLocalProofSubmitted(true);
+              setShowProofDialog(false);
+              if (onStatusChange) onStatusChange(trade.id, 'refresh');
+            }}
+          />
+        )}
       </article>
-
-      {/* ── Accept dialog ── */}
-      {showAcceptDialog && (
-        <div role="dialog" aria-modal="true" aria-label="Confirm acceptance" className="modal-overlay">
-          <div className="modal-card">
-            <h3>Accept this trade?</h3>
-            <p>
-              Both items will be locked and the chat will open so you can arrange the exchange.
-              After the exchange, both of you will upload proof photos for admin verification.
-            </p>
-            <div className="modal-foot">
-              <Btn onClick={() => setShowAcceptDialog(false)} variant="secondary">Cancel</Btn>
-              <Btn onClick={() => handleAction(TRADE_STATUS.ACCEPTED)} variant="primary" disabled={acting}>
-                {acting ? 'Accepting…' : 'Yes, accept'}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Request More Items dialog ── */}
-      {showCounterDialog && (
-        <div role="dialog" aria-modal="true" aria-label="Request more items" className="modal-overlay">
-          <div className="modal-card">
-            <h3>Request Additional Items</h3>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--muted)' }}>
-              Tell the sender what else you'd like added to make this trade fair.
-            </p>
-            <textarea
-              value={counterMsg}
-              onChange={e => setCounterMsg(e.target.value)}
-              placeholder="e.g. This laptop is worth more — please add your headphones too."
-              rows={4}
-              style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid var(--line)', background: 'var(--cream)', color: 'var(--ink)', fontSize: 13, resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-            />
-            <div className="modal-foot">
-              <Btn onClick={() => { setShowCounterDialog(false); setCounterMsg(''); }} variant="secondary">Cancel</Btn>
-              <Btn onClick={handleCounterSubmit} variant="primary" disabled={!counterMsg.trim()}>Send Request</Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Withdraw Trade Offer dialog ── */}
-      {showCancelDialog && (
-        <div role="dialog" aria-modal="true" aria-label="Withdraw trade offer"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 18, backdropFilter: 'blur(4px)' }}
-        >
-          <div style={{ maxWidth: 400, width: '100%', borderRadius: 22, padding: 24, background: 'var(--paper)', border: '1px solid rgba(180,68,46,0.22)', boxShadow: '0 24px 60px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>Withdraw this offer?</h3>
-            <p style={{ margin: '0 0 22px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.65 }}>
-              The offer will be cancelled and the receiver will be notified. This cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <Btn onClick={() => setShowCancelDialog(false)} variant="secondary">Keep Offer</Btn>
-              <Btn
-                disabled={acting}
-                onClick={async () => {
-                  setActing(true); setActionError(''); setShowCancelDialog(false);
-                  try {
-                    await cancelTrade(trade.id);
-                    await onStatusChange(trade.id, 'refresh');
-                  } catch (err) {
-                    setActionError(err?.response?.data?.error || err?.message || 'Failed to cancel trade');
-                  } finally { setActing(false); }
-                }}
-                variant="ghost"
-                style={{ background: 'rgba(180,68,46,0.1)', color: '#b4442e', border: '1px solid rgba(180,68,46,0.25)' }}
-              >
-                {acting ? 'Withdrawing…' : 'Yes, withdraw'}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Edit Trade Offer modal ── */}
-      {showEditModal && (
-        <div role="dialog" aria-modal="true" aria-label="Edit trade offer" className="modal-overlay"
-          onClick={e => { if (e.target === e.currentTarget) setShowEditModal(false); }}
-        >
-          <div className="modal-card" style={{ maxHeight: '88vh', overflowY: 'auto' }}>
-            <h3>Edit Your Offer</h3>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--muted)' }}>
-              Add more items to satisfy the receiver's request.
-            </p>
-
-            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Currently offered ({(offeredItems || []).length} item{(offeredItems || []).length !== 1 ? 's' : ''})
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
-              {(offeredItems || []).map(item => (
-                <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: 'rgba(248,237,229,0.6)', border: '1px solid var(--line)' }}>
-                  <img src={item.image_urls?.[0] ?? FALLBACK_IMAGE} alt={item.title} onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
-                </div>
-              ))}
-            </div>
-
-            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Add items {selectedNewItemIds.length > 0 && `— ${selectedNewItemIds.length} selected`}
-            </p>
-
-            {editError && (
-              <div style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#b91c1c', fontSize: 13, marginBottom: 12 }}>
-                {editError}
-              </div>
-            )}
-
-            {loadingMyItems ? (
-              <p style={{ fontSize: 13, color: 'var(--muted)' }}>Loading your items…</p>
-            ) : myItems.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--muted)' }}>No other available items to add.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18, maxHeight: 220, overflowY: 'auto' }}>
-                {myItems.map(item => {
-                  const selected = selectedNewItemIds.includes(item.id);
-                  return (
-                    <button key={item.id} type="button" onClick={() => toggleNewItem(item.id)}
-                      style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: selected ? 'rgba(198,233,48,0.08)' : 'var(--cream)', border: selected ? '1px solid var(--lime)' : '1px solid var(--line)', cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'background 0.15s, border-color 0.15s', outline: 'none' }}
-                    >
-                      <img src={item.image_urls?.[0] ?? FALLBACK_IMAGE} alt={item.title} onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                        {item.estimated_value && <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--muted)' }}>Est. ${item.estimated_value}</p>}
-                      </div>
-                      {selected && <span style={{ fontSize: 16, color: 'var(--dark)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="modal-foot">
-              <Btn onClick={() => { setShowEditModal(false); setSelectedNewItemIds([]); setEditError(''); }} variant="secondary" disabled={submittingEdit}>Cancel</Btn>
-              <Btn onClick={handleSubmitEdit} variant="primary" disabled={submittingEdit || selectedNewItemIds.length === 0}>
-                {submittingEdit ? 'Sending…' : 'Send Updated Offer'}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Proof Submit Dialog ── */}
-      {showProofDialog && (
-        <ProofDialog
-          tradeId={trade.id}
-          onClose={() => setShowProofDialog(false)}
-          onSubmitted={() => {
-            setShowProofDialog(false);
-            setLocalProofSubmitted(true);
-            // Refresh trade data from parent
-            if (onStatusChange) onStatusChange(trade.id, 'refresh');
-          }}
-        />
-      )}
     </>
   );
 }
