@@ -96,7 +96,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
+  const isExploreActive = location.pathname === '/explore' || location.pathname === '/' || location.pathname === '/skilter/explore' || location.pathname === '/skilter'
   const isSkilterActive = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
   // Show the mobile category row on both Barter Explore and Skilter Explore
   const showCategoryRow = isExploreActive || isSkilterActive
@@ -297,7 +297,11 @@ export default function Navbar() {
 
             {/* Desktop Right: Actions */}
             <div className="navbar-right">
-              <Link to="/explore" className="navbar-link" style={{ position: 'relative' }}>
+              <Link 
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
+                className="navbar-link" 
+                style={{ position: 'relative' }}
+              >
                 Explore
                 {isExploreActive && (
                   <motion.div
@@ -407,7 +411,11 @@ export default function Navbar() {
 
               <div className="mobile-actions-right">
                 {/* Mobile Home Button (🏠) */}
-                <Link to="/explore" className="mobile-home-btn" aria-label="Explore Home">
+                <Link 
+                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
+                  className="mobile-home-btn" 
+                  aria-label="Explore Home"
+                >
                   <Home size={18} className="mobile-home-icon" />
                 </Link>
 

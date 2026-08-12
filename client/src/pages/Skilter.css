@@ -93,3 +93,17 @@
   color: #64748B;
   line-height: 1.65;
 }
+
+/* ── Skill Grid ──────────────────────────────────────────────────── */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+  .skill-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import CategoryFilter from '../components/CategoryFilter'
+import SkillCard from '../components/SkillCard'
 import Footer from '../components/Footer'
+import api from '../services/api'
 import {
   SKILTER_CATEGORY_META,
   normalizeSkilterCategory,
@@ -14,8 +16,8 @@ import './Skilter.css'
 // Mirrors the structure of Barter's Explore.jsx:
 //   - CategoryFilter (reused component, Skilter categories injected via prop)
 //   - URL-synced activeCategory state (?category=)
-//   - Placeholder listing grid (real skill listings wired in when the backend
-//     skill_listings endpoint is ready — just swap the fetch call)
+//   - Fetches and displays skill listings from the backend skill_listings table
+//   - Only shows active skills publicly (status === 'active')
 // ---------------------------------------------------------------------------
 
 export default function SkilterExplorePage() {
@@ -27,6 +29,9 @@ export default function SkilterExplorePage() {
       new URLSearchParams(location.search).get('category')
     ) || ''
   )
+  const [skills, setSkills] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Sync state when URL changes (e.g. browser back/forward)
   useEffect(() => {
@@ -35,6 +40,25 @@ export default function SkilterExplorePage() {
       normalizeSkilterCategory(params.get('category')) || ''
     )
   }, [location.search])
+
+  // Fetch skills from the backend
+  useEffect(() => {
+    async function fetchSkills() {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await api.get('/skills')
+        // Backend already filters for status === 'active'
+        setSkills(response.data.skills || [])
+      } catch (err) {
+        console.error('Error fetching skills:', err)
+        setError(err.response?.data?.error || err.message || 'Failed to fetch skills')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSkills()
+  }, [])
 
   function handleCategorySelect(cat) {
     setActiveCategory(cat)
@@ -51,6 +75,11 @@ export default function SkilterExplorePage() {
   }
 
   const isFiltered = Boolean(activeCategory && activeCategory !== 'All')
+  
+  // Filter skills by category
+  const filteredSkills = isFiltered
+    ? skills.filter((skill) => skill.category === activeCategory)
+    : skills
 
   return (
     <div className="skilter-page">
@@ -76,18 +105,37 @@ export default function SkilterExplorePage() {
       </div>
 
       {/* ── Skill listing grid ───────────────────────────────────────── */}
-      {/* Replace this placeholder with real skill cards once the        */}
-      {/* skill_listings backend endpoint is wired up.                    */}
-      <div className="skilter-coming-soon">
-        <div className="skilter-coming-soon__icon">🎓</div>
-        <h3>Skill listings coming soon</h3>
-        <p>
-          Students will be able to post and discover skills here.
-          {isFiltered && (
-            <> Category filter is active: <strong>{activeCategory}</strong>.</>
-          )}
-        </p>
-      </div>
+      {loading && (
+        <div className="skilter-coming-soon">
+          <p>Loading skills...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="skilter-coming-soon">
+          <p>Error: {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && filteredSkills.length === 0 && (
+        <div className="skilter-coming-soon">
+          <div className="skilter-coming-soon__icon">🎓</div>
+          <h3>No skills found</h3>
+          <p>
+            {isFiltered
+              ? `No skills available in ${activeCategory} category.`
+              : 'Be the first to post a skill!'}
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && filteredSkills.length > 0 && (
+        <div className="skill-grid">
+          {filteredSkills.map((skill) => (
+            <SkillCard key={skill.id} skill={skill} />
+          ))}
+        </div>
+      )}
 
       <Footer />
     </div>
