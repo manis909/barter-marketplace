@@ -19,6 +19,7 @@ const notificationsRoutes = require("./routes/notifications");
 const reportsRoutes = require("./routes/reports");
 const verificationRoutes = require("./routes/verification");
 const skillBookingsRoutes = require("./routes/skillBookings");
+const skillChatRoutes = require("./routes/skillChat");
 const rateLimit = require("express-rate-limit");
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
 
@@ -40,6 +41,7 @@ app.use("/api/notifications", notificationsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/verification", verificationRoutes);
 app.use("/api/skill-bookings", skillBookingsRoutes);
+app.use("/api/skill-chat", skillChatRoutes);
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");
