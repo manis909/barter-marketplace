@@ -92,7 +92,7 @@ export default function SkilterDrawer({ open, onClose }) {
 
   function handleLogout() {
     logout()
-    navigate('/explore', { replace: true })
+    navigate('/skilter/explore', { replace: true })
     onClose()
   }
 

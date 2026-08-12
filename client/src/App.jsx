@@ -20,7 +20,9 @@ import LandingPage from './landing/LandingPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsAndConditionsPage from './pages/TermsAndConditions';
 import SkilterPage from './pages/Skilter';
+import SkillDetailPage from './pages/SkillDetail';
 import MySkillBookingsPage from './pages/MySkillBookings';
+import MySkillsPage from './pages/MySkillsPage';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
@@ -70,6 +72,8 @@ function App() {
             <Route path="/terms" element={<TermsAndConditionsPage />} />
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/skilter" element={<SkilterPage />} />
+            <Route path="/skilter/explore" element={<SkilterPage />} />
+            <Route path="/skilter/skill/:id" element={<SkillDetailPage />} />
             <Route path="/skills" element={<SkilterPage />} />
             <Route path="/skill-bookings" element={<MySkillBookingsPage />} />
             <Route path="/my-bookings" element={<MySkillBookingsPage />} />
@@ -80,8 +84,7 @@ function App() {
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
-            {/* Replace SkilterPlaceholder with the real page when ready    */}
-            <Route path="/skilter/skills"    element={<SkilterPlaceholder title="My Skills" />} />
+            <Route path="/skilter/skills"    element={<MySkillsPage />} />
             <Route path="/skilter/learning"  element={<SkilterPlaceholder title="My Learning" />} />
             <Route path="/skilter/teaching"  element={<SkilterPlaceholder title="My Teaching" />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
