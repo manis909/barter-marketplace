@@ -41,3 +41,12 @@ export async function updateSkillBookingStatus(bookingId, status) {
   return res.data;
 }
 
+/**
+ * Pay for a reserved skill booking.
+ * @param {string} bookingId - UUID of the booking
+ */
+export async function paySkillBooking(bookingId) {
+  const res = await api.patch(`/skill-bookings/${bookingId}/pay`);
+  return res.data;
+}
+

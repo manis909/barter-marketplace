@@ -40,17 +40,8 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "You cannot book your own skill listing" });
     }
 
-    // Capacity check: count ACCEPTED bookings only (not pending)
-    const capacityRes = await db.query(
-      "SELECT COUNT(*) FROM skill_bookings WHERE skill_listing_id = $1 AND status = 'accepted'",
-      [skill_listing_id]
-    );
-    const acceptedCount = parseInt(capacityRes.rows[0].count, 10);
-    if (acceptedCount >= listing.max_participants) {
-      return res.status(400).json({ error: "This session is full — no accepted spots available" });
-    }
-
-    // Duplicate check: pending OR accepted from same learner
+    // Duplicate check: pending OR accepted (now mapping to status in ('pending', 'accepted'))
+    // or specifically, user having an active request that is not cancelled/declined
     const dupCheck = await db.query(
       `SELECT id FROM skill_bookings
        WHERE skill_listing_id = $1 AND requester_id = $2 AND status IN ('pending', 'accepted')`,
@@ -61,8 +52,8 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO skill_bookings (skill_listing_id, requester_id, teacher_id, scheduled_time, status)
-       VALUES ($1, $2, $3, $4, 'pending')
+      `INSERT INTO skill_bookings (skill_listing_id, requester_id, teacher_id, scheduled_time, status, payment_status)
+       VALUES ($1, $2, $3, $4, 'pending', 'unpaid')
        RETURNING *`,
       [skill_listing_id, requester_id, teacher_id, scheduled_time || null]
     );
@@ -72,8 +63,8 @@ router.post("/", requireAuth, async (req, res) => {
     createNotification(
       teacher_id,
       "skill_booking",
-      "New Skill Booking Request",
-      `Someone requested to book a session for "${listing.skill_name}".`
+      "New Skill Reservation",
+      `Someone reserved a spot for "${listing.skill_name}". Once they pay, the booking will be confirmed.`
     ).catch(err => console.error("Notification error (skill_booking):", err));
 
     res.status(201).json({ success: true, booking });
@@ -96,6 +87,7 @@ router.get("/mine", requireAuth, async (req, res) => {
               sl.session_type,
               sl.max_participants,
               sl.image_urls   AS skill_image_urls,
+              COALESCE(sl.max_participants, 0) - COALESCE(paid_counts.paid_count, 0) AS spots_left,
               u_req.username   AS requester_username,
               u_req.full_name  AS requester_name,
               u_req.profile_image AS requester_profile_image,
@@ -104,6 +96,12 @@ router.get("/mine", requireAuth, async (req, res) => {
               u_teach.profile_image AS teacher_profile_image
        FROM skill_bookings b
        JOIN skill_listings sl ON sl.id = b.skill_listing_id
+       LEFT JOIN (
+         SELECT skill_listing_id, COUNT(*) AS paid_count
+         FROM skill_bookings
+         WHERE payment_status = 'paid'
+         GROUP BY skill_listing_id
+       ) paid_counts ON paid_counts.skill_listing_id = b.skill_listing_id
        JOIN users u_req   ON u_req.id  = b.requester_id
        JOIN users u_teach ON u_teach.id = b.teacher_id
        WHERE b.requester_id = $1
@@ -127,12 +125,24 @@ router.get("/teaching", requireAuth, async (req, res) => {
     // Listings with accepted/pending counts
     const listingsRes = await db.query(
       `SELECT s.*,
-              COUNT(*) FILTER (WHERE b.status = 'accepted') AS accepted_count,
-              COUNT(*) FILTER (WHERE b.status = 'pending')  AS pending_count
+              COALESCE(s.max_participants, 0) - COALESCE(paid_counts.paid_count, 0) AS spots_left,
+              COALESCE(paid_counts.paid_count, 0) AS accepted_count,
+              COALESCE(pending_counts.pending_count, 0) AS pending_count
        FROM skill_listings s
-       LEFT JOIN skill_bookings b ON b.skill_listing_id = s.id
+       LEFT JOIN (
+         SELECT skill_listing_id, COUNT(*) AS paid_count
+         FROM skill_bookings
+         WHERE payment_status = 'paid'
+         GROUP BY skill_listing_id
+       ) paid_counts ON paid_counts.skill_listing_id = s.id
+       LEFT JOIN (
+         SELECT skill_listing_id, COUNT(*) AS pending_count
+         FROM skill_bookings
+         WHERE payment_status = 'unpaid' AND status != 'cancelled' AND status != 'declined'
+         GROUP BY skill_listing_id
+       ) pending_counts ON pending_counts.skill_listing_id = s.id
        WHERE s.teacher_id = $1
-       GROUP BY s.id
+       GROUP BY s.id, paid_counts.paid_count, pending_counts.pending_count
        ORDER BY s.created_at DESC`,
       [req.userId]
     );
@@ -177,12 +187,19 @@ router.get("/:id", requireAuth, async (req, res) => {
               sl.price_type   AS skill_price_type,
               sl.session_type,
               sl.max_participants,
+              COALESCE(sl.max_participants, 0) - COALESCE(paid_counts.paid_count, 0) AS spots_left,
               u_req.username  AS requester_username,
               u_req.full_name AS requester_name,
               u_teach.username AS teacher_username,
               u_teach.full_name AS teacher_name
        FROM skill_bookings b
        JOIN skill_listings sl ON sl.id = b.skill_listing_id
+       LEFT JOIN (
+         SELECT skill_listing_id, COUNT(*) AS paid_count
+         FROM skill_bookings
+         WHERE payment_status = 'paid'
+         GROUP BY skill_listing_id
+       ) paid_counts ON paid_counts.skill_listing_id = b.skill_listing_id
        JOIN users u_req   ON u_req.id  = b.requester_id
        JOIN users u_teach ON u_teach.id = b.teacher_id
        WHERE b.id = $1`,
@@ -304,6 +321,100 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
   } catch (err) {
     await pgClient.query("ROLLBACK").catch(() => {});
     console.error("PATCH /skill-bookings/:id/status error:", err);
+    res.status(500).json({ error: "Server error" });
+  } finally {
+    pgClient.release();
+  }
+});
+
+// ── PATCH /api/skill-bookings/:id/pay ─────────────────────────────────────────
+// Complete payment for a reserved booking.
+// Locks the listing and counts existing paid bookings to prevent race condition capacity violations.
+router.patch("/:id/pay", requireAuth, async (req, res) => {
+  const bookingId = req.params.id;
+  if (!isValidUUID(bookingId)) {
+    return res.status(400).json({ error: "Invalid booking id" });
+  }
+
+  const pgClient = await db.getClient();
+  try {
+    await pgClient.query("BEGIN");
+
+    // Lock the booking row and fetch details
+    const bookingRes = await pgClient.query(
+      `SELECT b.*, sl.skill_name, sl.max_participants
+       FROM skill_bookings b
+       JOIN skill_listings sl ON sl.id = b.skill_listing_id
+       WHERE b.id = $1
+       FOR UPDATE`,
+      [bookingId]
+    );
+
+    if (bookingRes.rows.length === 0) {
+      await pgClient.query("ROLLBACK");
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingRes.rows[0];
+
+    // Authorize: Only the requester can pay
+    if (booking.requester_id !== req.userId) {
+      await pgClient.query("ROLLBACK");
+      return res.status(403).json({ error: "Only the reservation owner can pay for this booking" });
+    }
+
+    if (booking.payment_status === "paid") {
+      await pgClient.query("ROLLBACK");
+      return res.status(400).json({ error: "This booking is already paid" });
+    }
+
+    // Capacity Check under Lock: count all bookings with payment_status = 'paid' for this listing
+    const countRes = await pgClient.query(
+      `SELECT COUNT(*) FROM skill_bookings 
+       WHERE skill_listing_id = $1 AND payment_status = 'paid'`,
+      [booking.skill_listing_id]
+    );
+    const paidCount = parseInt(countRes.rows[0].count, 10);
+
+    if (paidCount >= booking.max_participants) {
+      await pgClient.query("ROLLBACK");
+      return res.status(400).json({ 
+        error: "Payment failed: This session is fully booked. Your reservation remains active and unpaid, so if a spot opens up, you can try paying again." 
+      });
+    }
+
+    // Update status to 'accepted' and payment_status to 'paid'
+    const updatedRes = await pgClient.query(
+      `UPDATE skill_bookings
+       SET status = 'accepted', payment_status = 'paid', updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [bookingId]
+    );
+
+    await pgClient.query("COMMIT");
+
+    const updatedBooking = updatedRes.rows[0];
+
+    // Trigger confirmation notifications for both sides
+    createNotification(
+      booking.teacher_id,
+      "skill_booking_paid_teacher",
+      "Booking Confirmed!",
+      `Someone has paid for and confirmed their booking for "${booking.skill_name}".`
+    ).catch(err => console.error("Notification error (teacher confirmation):", err));
+
+    createNotification(
+      booking.requester_id,
+      "skill_booking_paid_learner",
+      "Booking Confirmed!",
+      `Your payment for "${booking.skill_name}" succeeded. Your booking is now confirmed.`
+    ).catch(err => console.error("Notification error (learner confirmation):", err));
+
+    res.json({ success: true, booking: updatedBooking });
+  } catch (err) {
+    await pgClient.query("ROLLBACK").catch(() => {});
+    console.error("PATCH /skill-bookings/:id/pay error:", err);
     res.status(500).json({ error: "Server error" });
   } finally {
     pgClient.release();
