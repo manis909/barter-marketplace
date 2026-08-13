@@ -24,6 +24,14 @@ export async function getMySkillBookings() {
 }
 
 /**
+ * Fetch all skill bookings and listings for the current user as a teacher.
+ */
+export async function getMyTeachingBookings() {
+  const res = await api.get('/skill-bookings/teaching');
+  return res.data;
+}
+
+/**
  * Update status of a skill booking ('accepted', 'declined', 'completed', 'cancelled').
  * @param {string} bookingId - UUID of the booking
  * @param {string} status - New status
@@ -32,3 +40,4 @@ export async function updateSkillBookingStatus(bookingId, status) {
   const res = await api.patch(`/skill-bookings/${bookingId}/status`, { status });
   return res.data;
 }
+

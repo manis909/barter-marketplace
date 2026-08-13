@@ -20,7 +20,7 @@ import LandingPage from './landing/LandingPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsAndConditionsPage from './pages/TermsAndConditions';
 import SkilterPage from './pages/Skilter';
-import MySkillBookingsPage from './pages/MySkillBookings';
+
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
@@ -42,6 +42,9 @@ function SkilterPlaceholder({ title }) {
     </div>
   )
 }
+
+import MyLearningPage from './pages/MyLearning';
+import MyTeachingPage from './pages/MyTeaching';
 
 function App() {
   return (
@@ -71,8 +74,7 @@ function App() {
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/skilter" element={<SkilterPage />} />
             <Route path="/skills" element={<SkilterPage />} />
-            <Route path="/skill-bookings" element={<MySkillBookingsPage />} />
-            <Route path="/my-bookings" element={<MySkillBookingsPage />} />
+
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
@@ -82,8 +84,8 @@ function App() {
             {/* ── Skilter-specific routes ──────────────────────────────── */}
             {/* Replace SkilterPlaceholder with the real page when ready    */}
             <Route path="/skilter/skills"    element={<SkilterPlaceholder title="My Skills" />} />
-            <Route path="/skilter/learning"  element={<SkilterPlaceholder title="My Learning" />} />
-            <Route path="/skilter/teaching"  element={<SkilterPlaceholder title="My Teaching" />} />
+            <Route path="/skilter/learning"  element={<MyLearningPage />} />
+            <Route path="/skilter/teaching"  element={<MyTeachingPage />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
             <Route path="/skilter/wishlist"  element={<SkilterPlaceholder title="Skilter Wishlist" />} />
             <Route path="/skilter/chat"      element={<SkilterPlaceholder title="Skilter Chat" />} />

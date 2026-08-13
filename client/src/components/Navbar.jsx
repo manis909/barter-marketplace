@@ -93,7 +93,7 @@ export default function Navbar() {
 
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
-  const SKILTER_PREFIXES = ['/skilter', '/skills', '/skill-bookings', '/my-bookings']
+  const SKILTER_PREFIXES = ['/skilter', '/skills']
   const RENTER_PREFIXES  = ['/renter', '/rent']
   const BARTER_PREFIXES  = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
                              '/wishlist', '/wallet', '/add-item', '/item/']
