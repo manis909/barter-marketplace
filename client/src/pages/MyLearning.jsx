@@ -268,6 +268,39 @@ const BARTER_CSS = `
   transition: all 0.2s;
 }
 .btn-secondary:hover { background: rgba(15,61,46,0.03); color: var(--dark); }
+
+@keyframes chatPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(198,233,48,0.55); }
+  60%  { box-shadow: 0 0 0 8px rgba(198,233,48,0); }
+  100% { box-shadow: 0 0 0 0 rgba(198,233,48,0); }
+}
+
+.btn-open-chat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 20px;
+  background: var(--lime);
+  color: var(--dark);
+  border: none;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  animation: chatPulse 2.8s ease-out infinite;
+  transition: opacity 0.18s, transform 0.15s;
+}
+.btn-open-chat:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  animation: none;
+  box-shadow: 0 4px 16px rgba(198,233,48,0.45);
+}
 `;
 
 export default function MyLearning() {
@@ -365,48 +398,92 @@ export default function MyLearning() {
         <div className="cards-grid">
           {(activeTab === 'active' ? activeBookings : pastBookings).length === 0 ? (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', background: '#fff', borderRadius: 20, border: '1px dashed var(--line)' }}>
-              <p style={{ color: 'var(--muted)', margin: 0 }}>No sessions found here.</p>
+              <p style={{ color: 'var(--muted)', margin: '0 0 16px' }}>No sessions found here.</p>
+              {activeTab === 'active' && (
+                <Link
+                  to="/skilter/explore"
+                  style={{ padding: '10px 20px', background: 'var(--dark)', color: 'var(--lime)', textDecoration: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14 }}
+                >
+                  Browse Skills
+                </Link>
+              )}
             </div>
           ) : (
-            (activeTab === 'active' ? activeBookings : pastBookings).map(b => (
-              <div key={b.id} className="ticket-card">
-                <div className="ticket-header">
-                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--dark)' }}>
-                    Session with @{b.teacher_username}
-                  </span>
-                  <span className={`badge badge-${b.status}`}>{b.status}</span>
-                </div>
-                <div className="ticket-body">
-                  <h3 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 18, color: 'var(--dark)' }}>
-                    {b.skill_name}
-                  </h3>
-                  {b.skill_category && (
-                    <div>
-                      <span style={{ fontSize: 11, background: 'rgba(15,61,46,0.06)', padding: '2px 8px', borderRadius: 4, fontWeight: 600, color: 'var(--light-green)' }}>
-                        {b.skill_category}
-                      </span>
+            (activeTab === 'active' ? activeBookings : pastBookings).map(b => {
+              const skillImg = Array.isArray(b.skill_image_urls) && b.skill_image_urls[0]
+                ? b.skill_image_urls[0]
+                : 'https://via.placeholder.com/56x56?text=Skill';
+              return (
+                <div key={b.id} className="ticket-card">
+                  <div className="ticket-header">
+                    <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--dark)' }}>
+                      Session with @{b.teacher_username}
+                    </span>
+                    <span className={`badge badge-${b.status}`}>{b.status}</span>
+                  </div>
+                  <div className="ticket-body">
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                      <img
+                        src={skillImg}
+                        alt={b.skill_name}
+                        style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
+                        onError={e => { e.currentTarget.src = 'https://via.placeholder.com/56x56?text=Skill'; }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ margin: '0 0 6px', fontFamily: "'Fraunces', serif", fontSize: 18, color: 'var(--dark)' }}>
+                          {b.skill_name}
+                        </h3>
+                        {b.skill_category && (
+                          <div>
+                            <span style={{ fontSize: 11, background: 'rgba(15,61,46,0.06)', padding: '2px 8px', borderRadius: 4, fontWeight: 600, color: 'var(--light-green)' }}>
+                              {b.skill_category}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {b.scheduled_time && (
+                        <span>📅 <strong>Scheduled:</strong> {new Date(b.scheduled_time).toLocaleString()}</span>
+                      )}
+                      <span>🕒 <strong>Requested:</strong> {new Date(b.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  {activeTab === 'active' && (
+                    <div className="ticket-actions">
+                      {b.status === 'accepted' && (
+                        <>
+                          <p style={{
+                            margin: '0 0 10px',
+                            fontSize: 12,
+                            color: 'var(--light-green)',
+                            fontWeight: 500,
+                            lineHeight: 1.5
+                          }}>
+                            Your session is confirmed — coordinate the details in chat.
+                          </p>
+                          <Link
+                            to={`/skilter/chat/${b.id}`}
+                            className="btn-open-chat"
+                          >
+                            💬 Open Chat
+                          </Link>
+                        </>
+                      )}
+                      {b.status === 'pending' && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => handleCancel(b.id)}
+                          disabled={actionLoading[b.id]}
+                        >
+                          {actionLoading[b.id] ? '...' : 'Cancel Request'}
+                        </button>
+                      )}
                     </div>
                   )}
-                  <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {b.scheduled_time && (
-                      <span>📅 <strong>Scheduled:</strong> {new Date(b.scheduled_time).toLocaleString()}</span>
-                    )}
-                    <span>🕒 <strong>Requested:</strong> {new Date(b.created_at).toLocaleDateString()}</span>
-                  </div>
                 </div>
-                {activeTab === 'active' && (
-                  <div className="ticket-actions">
-                    <button
-                      className="btn-secondary"
-                      onClick={() => handleCancel(b.id)}
-                      disabled={actionLoading[b.id]}
-                    >
-                      {actionLoading[b.id] ? '...' : 'Cancel Request'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

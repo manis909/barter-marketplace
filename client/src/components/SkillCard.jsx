@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import { createSkillBooking } from '../services/skillBookingService'
+import SkillWishlistButton from './SkillWishlistButton'
 import './SkillCard.css'
 
 export default function SkillCard({ skill }) {
@@ -27,6 +28,7 @@ export default function SkillCard({ skill }) {
       <div className="card-media-wrapper">
         <div className="card-media-backdrop" style={{ backgroundImage: `url(${image})` }} />
         <img src={image} alt={skill.skill_name} className="card-image" />
+        <SkillWishlistButton skillId={skill.id} />
       </div>
 
       {/* Compact Content Density */}

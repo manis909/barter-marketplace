@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import { createSkillBooking } from '../services/skillBookingService'
+import SkillWishlistButton from '../components/SkillWishlistButton'
 import './SkillDetail.css'
 
 export default function SkillDetailPage() {
@@ -170,6 +171,7 @@ export default function SkillDetailPage() {
             onTouchEnd={handleTouchEnd}
           >
             <img src={displayImage} alt={normalizedSkill.skill_name} className="detail-main-image" />
+            <SkillWishlistButton skillId={normalizedSkill.id} />
 
             {images.length > 1 && (
               <>

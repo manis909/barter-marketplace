@@ -328,8 +328,8 @@ export default function MyTeaching() {
         {listings.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: 22, margin: '0 16px 24px', border: '1px dashed var(--line)' }}>
             <p style={{ color: 'var(--muted)', margin: '0 0 16px' }}>You haven't posted any skill listings yet.</p>
-            <Link to="/explore" style={{ padding: '10px 20px', background: 'var(--dark)', color: 'var(--lime)', textDecoration: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14 }}>
-              Explore Platform
+            <Link to="/skilter/explore" style={{ padding: '10px 20px', background: 'var(--dark)', color: 'var(--lime)', textDecoration: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14 }}>
+              Browse Skills
             </Link>
           </div>
         ) : (
@@ -339,11 +339,23 @@ export default function MyTeaching() {
             return (
               <div key={listing.id} className="listing-card">
                 <div className="listing-header">
-                  <div>
-                    <h3 className="listing-title">{listing.skill_name}</h3>
-                    <div className="listing-meta">
-                      {listing.category && <span>📁 {listing.category}</span>}
-                      <span>👥 Type: {listing.session_type === 'group' ? 'Group Session' : '1-on-1'}</span>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <img
+                      src={
+                        Array.isArray(listing.image_urls) && listing.image_urls[0]
+                          ? listing.image_urls[0]
+                          : 'https://via.placeholder.com/56x56?text=Skill'
+                      }
+                      alt={listing.skill_name}
+                      style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
+                      onError={e => { e.currentTarget.src = 'https://via.placeholder.com/56x56?text=Skill'; }}
+                    />
+                    <div>
+                      <h3 className="listing-title">{listing.skill_name}</h3>
+                      <div className="listing-meta">
+                        {listing.category && <span>📁 {listing.category}</span>}
+                        <span>👥 Type: {listing.session_type === 'group' ? 'Group Session' : '1-on-1'}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="spots-badge">

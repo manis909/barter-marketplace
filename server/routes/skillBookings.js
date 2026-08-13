@@ -95,6 +95,7 @@ router.get("/mine", requireAuth, async (req, res) => {
               sl.price_type   AS skill_price_type,
               sl.session_type,
               sl.max_participants,
+              sl.image_urls   AS skill_image_urls,
               u_req.username   AS requester_username,
               u_req.full_name  AS requester_name,
               u_req.profile_image AS requester_profile_image,
