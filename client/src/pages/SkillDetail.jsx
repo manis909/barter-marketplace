@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
+import { createSkillBooking } from '../services/skillBookingService'
 import './SkillDetail.css'
 
 export default function SkillDetailPage() {
@@ -15,6 +16,7 @@ export default function SkillDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [touchStartX, setTouchStartX] = useState(null)
+  const [booking, setBooking] = useState({ loading: false, error: '', success: false })
 
   useEffect(() => {
     if (!id) {
@@ -269,16 +271,46 @@ export default function SkillDetailPage() {
             {isOwner ? (
               <p style={{ color: '#57534E', fontWeight: 600 }}>This is your skill listing.</p>
             ) : (
-              <button
-                type="button"
-                className="primary-button detail-action"
-                onClick={() => {
-                  // Future: Navigate to booking page or open booking modal
-                  alert('Booking functionality coming soon!')
-                }}
-              >
-                Book Session
-              </button>
+              <>
+                <button
+                  id="btn-book-session"
+                  type="button"
+                  className="primary-button detail-action"
+                  disabled={booking.loading || booking.success}
+                  onClick={async () => {
+                    setBooking({ loading: true, error: '', success: false })
+                    try {
+                      await createSkillBooking(normalizedSkill.id)
+                      setBooking({ loading: false, error: '', success: true })
+                      setTimeout(() => navigate('/skilter/learning'), 1200)
+                    } catch (err) {
+                      const msg =
+                        err?.response?.data?.error ||
+                        'Something went wrong. Please try again.'
+                      setBooking({ loading: false, error: msg, success: false })
+                    }
+                  }}
+                >
+                  {booking.loading
+                    ? 'Booking…'
+                    : booking.success
+                    ? '✓ Booked! Redirecting…'
+                    : 'Book Session'}
+                </button>
+                {booking.error && (
+                  <p
+                    id="booking-error-msg"
+                    style={{
+                      marginTop: '10px',
+                      color: '#DC2626',
+                      fontSize: '0.875rem',
+                      fontWeight: 500
+                    }}
+                  >
+                    {booking.error}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
