@@ -317,7 +317,7 @@ export default function Navbar() {
                 <Link to="/admin/verification" className="navbar-link">Admin</Link>
               )}
 
-              {currentUser && <NotificationBell />}
+              {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
               {currentUser ? (
                 <motion.button
@@ -419,7 +419,7 @@ export default function Navbar() {
                   <Home size={18} className="mobile-home-icon" />
                 </Link>
 
-                {currentUser && <NotificationBell />}
+                {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
                 {currentUser ? (
                   <motion.button
