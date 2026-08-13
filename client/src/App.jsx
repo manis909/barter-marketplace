@@ -20,10 +20,12 @@ import LandingPage from './landing/LandingPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsAndConditionsPage from './pages/TermsAndConditions';
 import SkilterPage from './pages/Skilter';
-
+import SkillDetailPage from './pages/SkillDetail';
+import MySkillsPage from './pages/MySkillsPage';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
+import SkillChatsLayout from './pages/SkillChatsLayout';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 
@@ -73,6 +75,8 @@ function App() {
             <Route path="/terms" element={<TermsAndConditionsPage />} />
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/skilter" element={<SkilterPage />} />
+            <Route path="/skilter/explore" element={<SkilterPage />} />
+            <Route path="/skilter/skill/:id" element={<SkillDetailPage />} />
             <Route path="/skills" element={<SkilterPage />} />
 
             <Route path="/renter" element={<RenterPage />} />
@@ -82,13 +86,13 @@ function App() {
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
-            {/* Replace SkilterPlaceholder with the real page when ready    */}
-            <Route path="/skilter/skills"    element={<SkilterPlaceholder title="My Skills" />} />
+            <Route path="/skilter/skills"    element={<MySkillsPage />} />
             <Route path="/skilter/learning"  element={<MyLearningPage />} />
             <Route path="/skilter/teaching"  element={<MyTeachingPage />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
             <Route path="/skilter/wishlist"  element={<SkilterPlaceholder title="Skilter Wishlist" />} />
-            <Route path="/skilter/chat"      element={<SkilterPlaceholder title="Skilter Chat" />} />
+            <Route path="/skilter/chat"      element={<SkillChatsLayout />} />
+            <Route path="/skilter/chat/:bookingId" element={<SkillChatsLayout />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>

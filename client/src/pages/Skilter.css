@@ -1,0 +1,109 @@
+/* ================================================================
+   Skilter.css
+   Mirrors the Barter Explore.css layout so both pages feel
+   visually consistent. Breakpoints match App.css / Explore.css.
+   ================================================================ */
+
+.skilter-page {
+  display: grid;
+  gap: 32px;
+}
+
+/* Desktop centering — matches Explore's 1024px+ rule */
+@media (min-width: 1024px) {
+  .skilter-page {
+    max-width: 1260px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+}
+
+/* ── Page header ────────────────────────────────────────────────── */
+.skilter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.skilter-section-label {
+  margin: 0 0 6px;
+  color: #5F5B52;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.78rem;
+}
+
+.skilter-summary h2 {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 1.7rem;
+  color: #0F172A;
+}
+
+.skilter-filter-hint {
+  margin: 0;
+  color: #5F5B52;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .skilter-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .skilter-filter-hint {
+    white-space: normal;
+  }
+}
+
+/* ── Coming soon placeholder ────────────────────────────────────── */
+.skilter-coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 320px;
+  border-radius: 20px;
+  border: 1px dashed #CBD5E1;
+  background: #F8FAFC;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.skilter-coming-soon__icon {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.skilter-coming-soon h3 {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 1.35rem;
+  color: #0F172A;
+}
+
+.skilter-coming-soon p {
+  margin: 0;
+  max-width: 440px;
+  color: #64748B;
+  line-height: 1.65;
+}
+
+/* ── Skill Grid ──────────────────────────────────────────────────── */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+  .skill-grid {
+    grid-template-columns: 1fr;
+  }
+}

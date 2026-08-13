@@ -8,9 +8,11 @@ import NotificationBell from '../features/notifications/NotificationBell'
 import { User, Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
+import { SKILTER_CATEGORY_META, normalizeSkilterCategory } from '../data/skilterCategories'
 import './Navbar.css'
 
-const CATEGORIES = CATEGORY_META
+const CATEGORIES        = CATEGORY_META
+const SKILTER_CATEGORIES = SKILTER_CATEGORY_META
 
 export default function Navbar() {
   const location = useLocation()
@@ -24,6 +26,10 @@ export default function Navbar() {
     const cat = new URLSearchParams(location.search).get('category')
     return cat ? normalizeCategory(cat) : 'All'
   })
+  const [skilterCategory, setSkilterCategory] = useState(() => {
+    const cat = new URLSearchParams(location.search).get('category')
+    return cat ? normalizeSkilterCategory(cat) : 'All'
+  })
   const [scrolled, setScrolled] = useState(false)
   const lastScrollY = useRef(0)
   const { currentUser } = useAuth()
@@ -34,6 +40,7 @@ export default function Navbar() {
     setSearch(params.get('search') || '')
     const cat = params.get('category')
     setActiveCategory(cat ? normalizeCategory(cat) : 'All')
+    setSkilterCategory(cat ? normalizeSkilterCategory(cat) : 'All')
   }, [location.search])
 
   // Close brand dropdown on route change
@@ -89,7 +96,10 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
+  const isExploreActive = location.pathname === '/explore' || location.pathname === '/' || location.pathname === '/skilter/explore' || location.pathname === '/skilter'
+  const isSkilterActive = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
+  // Show the mobile category row on both Barter Explore and Skilter Explore
+  const showCategoryRow = isExploreActive || isSkilterActive
 
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
@@ -172,6 +182,20 @@ export default function Navbar() {
         params.set('category', categoryName)
       }
       navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+    },
+    [location.search, navigate]
+  )
+
+  const handleSkilterCategoryClick = useCallback(
+    (categoryName) => {
+      setSkilterCategory(categoryName)
+      const params = new URLSearchParams(location.search)
+      if (!categoryName || categoryName === 'All') {
+        params.delete('category')
+      } else {
+        params.set('category', categoryName)
+      }
+      navigate({ pathname: '/skilter', search: params.toString() ? `?${params.toString()}` : '' })
     },
     [location.search, navigate]
   )
@@ -273,7 +297,11 @@ export default function Navbar() {
 
             {/* Desktop Right: Actions */}
             <div className="navbar-right">
-              <Link to="/explore" className="navbar-link" style={{ position: 'relative' }}>
+              <Link 
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
+                className="navbar-link" 
+                style={{ position: 'relative' }}
+              >
                 Explore
                 {isExploreActive && (
                   <motion.div
@@ -383,7 +411,11 @@ export default function Navbar() {
 
               <div className="mobile-actions-right">
                 {/* Mobile Home Button (🏠) */}
-                <Link to="/explore" className="mobile-home-btn" aria-label="Explore Home">
+                <Link 
+                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
+                  className="mobile-home-btn" 
+                  aria-label="Explore Home"
+                >
                   <Home size={18} className="mobile-home-icon" />
                 </Link>
 
@@ -421,7 +453,7 @@ export default function Navbar() {
 
             {/* ROW 3: Categories (Render ONLY on Explore page when Profile Drawer is closed and not scrolled down) */}
             <AnimatePresence initial={false}>
-              {isExploreActive && !drawerOpen && !scrolled && (
+              {showCategoryRow && !drawerOpen && !scrolled && (
                 <motion.div
                   key="mobile-category-row-wrapper"
                   className="mobile-row-3-collapse-wrapper"
@@ -433,14 +465,19 @@ export default function Navbar() {
                 >
                   <div className="mobile-row-3-categories-scroll">
                     <div className="categories-track">
-                      {CATEGORIES.map((cat) => {
-                        const isActive = activeCategory === cat.name
+                      {(isSkilterActive ? SKILTER_CATEGORIES : CATEGORIES).map((cat) => {
+                        const activeCat = isSkilterActive ? skilterCategory : activeCategory
+                        const isActive  = activeCat === cat.name
                         return (
                           <button
                             key={cat.id}
                             type="button"
                             className={`category-chip ${isActive ? 'active' : ''}`}
-                            onClick={() => handleCategoryClick(cat.name)}
+                            onClick={() =>
+                              isSkilterActive
+                                ? handleSkilterCategoryClick(cat.name)
+                                : handleCategoryClick(cat.name)
+                            }
                             aria-label={`Category ${cat.name}`}
                             style={{
                               '--chip-color': cat.color,
