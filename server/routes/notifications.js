@@ -27,6 +27,56 @@ router.patch("/read-all", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Skilter-specific notification types ──────────────────────────────────
+// These routes are scoped to only the Skilter notification types so the
+// Skilter bell and notification page never mix in Barter notifications.
+// They must appear BEFORE the /:id wildcard route below.
+
+const SKILTER_TYPES = [
+  "skill_booking",
+  "skill_booking_accepted",
+  "skill_booking_declined",
+  "skill_booking_completed",
+  "skill_booking_cancelled",
+  "new_skill_message",
+];
+
+// GET only Skilter notifications for the logged-in user
+router.get("/skilter", requireAuth, async (req, res) => {
+  const result = await db.query(
+    "SELECT * FROM notifications WHERE user_id = $1 AND type = ANY($2::text[]) ORDER BY created_at DESC",
+    [req.userId, SKILTER_TYPES]
+  );
+  res.json({ notifications: result.rows });
+});
+
+// PATCH mark ALL Skilter notifications as read (does not touch Barter notifications)
+router.patch("/skilter/read-all", requireAuth, async (req, res) => {
+  await db.query(
+    "UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE AND type = ANY($2::text[])",
+    [req.userId, SKILTER_TYPES]
+  );
+  res.json({ success: true });
+});
+
+// DELETE bulk-delete scoped to Skilter notifications only.
+// Body: { ids: ["uuid1", "uuid2", ...] }
+// The extra AND type = ANY(...) guard ensures a caller cannot delete
+// Barter notifications even if they supply Barter notification IDs here.
+router.delete("/skilter/bulk", requireAuth, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "ids must be a non-empty array" });
+  }
+  await db.query(
+    "DELETE FROM notifications WHERE id = ANY($1::uuid[]) AND user_id = $2 AND type = ANY($3::text[])",
+    [ids, req.userId, SKILTER_TYPES]
+  );
+  res.json({ success: true });
+});
+
+// ── End Skilter-specific routes ───────────────────────────────────────────
+
 // PATCH mark one notification as read
 router.patch("/:id/read", requireAuth, async (req, res) => {
   await db.query(

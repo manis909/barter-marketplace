@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { fmtDateAndTime, normalizeToUTC } from '../utils/helpers';
 
 const API_URL = 'http://localhost:5000';
@@ -19,6 +19,7 @@ const T = {
 
 /* ─── Notification type → icon ───────────────────────────────────────────── */
 const ICON_MAP = {
+  // Barter types
   new_message:         '💬',
   trade_offer:         '🔄',
   trade_offer_updated: '✏️',
@@ -27,20 +28,34 @@ const ICON_MAP = {
   wishlist:            '💖',
   item_approved:       '✔️',
   profile_update:      '👤',
+  // Skilter types
+  skill_booking:           '🎓',
+  skill_booking_accepted:  '✅',
+  skill_booking_declined:  '❌',
+  skill_booking_completed: '🏆',
+  skill_booking_cancelled: '🚫',
+  new_skill_message:       '💬',
   default:             '🔔',
 };
 const getIcon = type => ICON_MAP[type] || ICON_MAP.default;
 
 /* ─── Navigation by type ─────────────────────────────────────────────────── */
 function getNavigationPath(n) {
-  const { type, trade_offer_id, item_id, user_id } = n;
+  const { type, trade_offer_id } = n;
+  // Barter paths
   if (trade_offer_id && (type === 'new_message' || type.startsWith('trade_')))
     return `/chat/${trade_offer_id}`;
-  if (item_id) return `/item/${item_id}`;
-  if (user_id && type === 'profile_update') return `/profile/${user_id}`;
+  if (n.item_id) return `/item/${n.item_id}`;
+  if (n.user_id && type === 'profile_update') return `/profile/${n.user_id}`;
   if (type === 'trade_offer') return '/trade-requests';
   if (type === 'trade_completed') return '/my-trades';
   if (type === 'wishlist') return '/wishlist';
+  // Skilter paths — trade_offer_id column stores booking_id for skill notifications
+  if (type === 'new_skill_message' && trade_offer_id)
+    return `/skilter/chat/${trade_offer_id}`;
+  if (type.startsWith('skill_booking') && trade_offer_id)
+    return `/skilter/chat/${trade_offer_id}`;
+  if (type === 'skill_booking') return '/my-bookings';
   return null;
 }
 
@@ -365,11 +380,31 @@ export default function Notifications() {
   const [selectedIds,   setSelectedIds]   = useState(new Set());
   const [deleting,      setDeleting]      = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ── Platform detection ──────────────────────────────────────────────────
+  // The NotificationBell passes { state: { platform } } when it navigates here.
+  // If the user arrives via direct URL or browser back/forward without state,
+  // we fall back to 'barter' (safe default — Barter is the primary platform).
+  const platform = location.state?.platform === 'skilter' ? 'skilter' : 'barter';
+
+  // Derive the correct API endpoints for this platform.
+  const ENDPOINTS = platform === 'skilter'
+    ? {
+        fetch:    `${API_URL}/api/notifications/skilter`,
+        readAll:  `${API_URL}/api/notifications/skilter/read-all`,
+        bulk:     `${API_URL}/api/notifications/skilter/bulk`,
+      }
+    : {
+        fetch:    `${API_URL}/api/notifications`,
+        readAll:  `${API_URL}/api/notifications/read-all`,
+        bulk:     `${API_URL}/api/notifications/bulk`,
+      };
 
   /* ── fetch ── */
   const fetchNotifications = useCallback(() => {
     const token = localStorage.getItem('token');
-    fetch(`${API_URL}/api/notifications`, {
+    fetch(ENDPOINTS.fetch, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -377,17 +412,21 @@ export default function Notifications() {
         setNotifications(data.notifications || []);
         setLoading(false);
       });
-  }, []);
+  // ENDPOINTS.fetch is derived from platform which comes from location.state —
+  // both are stable after mount, so the dependency array is correct.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ENDPOINTS.fetch]);
 
   /* ── mark all read ── */
   const markAllAsRead = useCallback(async () => {
     const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/notifications/read-all`, {
+    await fetch(ENDPOINTS.readAll, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ENDPOINTS.readAll]);
 
   useEffect(() => {
     fetchNotifications();
@@ -397,12 +436,10 @@ export default function Notifications() {
   /* ── selection ── */
   const handleSelect = useCallback((id, enterSelectionMode) => {
     if (enterSelectionMode && !selectionMode) {
-      // Long-press: enter selection mode and select this card
       setSelectionMode(true);
       setSelectedIds(new Set([id]));
       return;
     }
-    // Toggle in existing selection mode
     setSelectedIds(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -422,7 +459,7 @@ export default function Notifications() {
     const token = localStorage.getItem('token');
     try {
       const ids = [...selectedIds];
-      await fetch(`${API_URL}/api/notifications/bulk`, {
+      await fetch(ENDPOINTS.bulk, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -430,7 +467,6 @@ export default function Notifications() {
         },
         body: JSON.stringify({ ids }),
       });
-      // Remove from local state immediately
       setNotifications(prev => prev.filter(n => !selectedIds.has(n.id)));
       exitSelectionMode();
     } catch (err) {
@@ -438,7 +474,8 @@ export default function Notifications() {
     } finally {
       setDeleting(false);
     }
-  }, [selectedIds, exitSelectionMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, exitSelectionMode, ENDPOINTS.bulk]);
 
   /* ── navigate ── */
   const handleCardClick = useCallback(path => navigate(path), [navigate]);
