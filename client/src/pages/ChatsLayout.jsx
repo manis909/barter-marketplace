@@ -5,6 +5,7 @@ import { getHiddenChatIds, deleteChatForMe, deleteChatForEveryone } from '../ser
 import { getErrorMessage, fmtDate } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 import ChatWindow from '../features/chat/ChatWindow';
+import RatingForm from '../features/ratings/RatingForm';
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
 const T = {
@@ -128,6 +129,24 @@ const LAYOUT_CSS = `
   padding: 24px; width: 100%; max-width: 420px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.14);
 }
+
+/* ── Responsive action bar ── */
+.cl-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid ${T.border};
+  background: ${T.surface};
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .cl-action-bar { gap: 6px; padding: 7px 10px; }
+  .cl-action-bar button, .cl-action-bar span { font-size: 11.5px !important; }
+}
 `;
 
 /* ─── Helper components ──────────────────────────────────────────────────── */
@@ -229,12 +248,12 @@ export default function ChatsLayout() {
 
   /* rating, report */
   const [showRating,   setShowRating]   = useState(false);
+  const [iHaveRated,   setIHaveRated]   = useState(false);  // persisted from backend
   const [showReport,   setShowReport]   = useState(false);
   const [reportReason, setReportReason] = useState('');
-  const [otherUserId,  setOtherUserId]  = useState(null);
 
   /* proof submission */
-  const [proofStatus,     setProofStatus]     = useState(null);  // backend response from getTradeProofStatus
+  const [proofStatus,     setProofStatus]     = useState(null);  // backend proofStatus object (unwrapped)
   const [showProofModal,  setShowProofModal]  = useState(false);
   const [proofImages,     setProofImages]     = useState([]);    // File[]
   const [proofPreviews,   setProofPreviews]   = useState([]);    // object URL[]
@@ -266,17 +285,41 @@ export default function ChatsLayout() {
     if (!id) return;
     try {
       const data = await getTradeProofStatus(id);
-      setProofStatus(data);
+      // Backend returns { success, proofStatus: { sender_proof_submitted, receiver_proof_submitted, ... } }
+      // Unwrap the nested proofStatus object so the rest of the component reads fields directly.
+      setProofStatus(data?.proofStatus ?? null);
     } catch {
       setProofStatus(null);
+    }
+  }, []);
+
+  /* ── check whether the current user has already rated this trade (survives refresh) ── */
+  const fetchRatingStatus = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/ratings/check/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIHaveRated(!!data.rated);
+      }
+    } catch {
+      // silently ignore — defaults to false (user can try to rate, backend will 409)
     }
   }, []);
 
   useEffect(() => {
     setProofStatus(null);
     setProofError('');
-    if (tradeId) fetchProofStatus(tradeId);
-  }, [tradeId, fetchProofStatus]);
+    setShowRating(false);
+    setIHaveRated(false);
+    if (tradeId) {
+      fetchProofStatus(tradeId);
+      fetchRatingStatus(tradeId);
+    }
+  }, [tradeId, fetchProofStatus, fetchRatingStatus]);
 
   const visibleTrades = trades.filter(t => !hiddenIds.includes(t.id));
   const selectedTrade = visibleTrades.find(t => String(t.id) === String(tradeId));
@@ -295,21 +338,36 @@ export default function ChatsLayout() {
   const tradeIsAccepted  = selectedTrade?.status === 'accepted';
   const tradeIsAwaitingAdmin = selectedTrade?.status === 'awaiting_admin_verification';
 
-  /* proof state — backend is the source of truth via proofStatus */
+  /* proof state — backend is the source of truth via proofStatus (already unwrapped) */
   const iHaveSubmittedProof = proofStatus
-    ? (isMeSender ? proofStatus.sender_proof_submitted : proofStatus.receiver_proof_submitted)
-    : false;
+    ? (isMeSender ? !!proofStatus.sender_proof_submitted : !!proofStatus.receiver_proof_submitted)
+    : (isMeSender ? !!selectedTrade?.sender_proof_submitted : !!selectedTrade?.receiver_proof_submitted);
   const bothSubmittedProof = proofStatus
-    ? (proofStatus.sender_proof_submitted && proofStatus.receiver_proof_submitted)
-    : false;
+    ? (!!proofStatus.sender_proof_submitted && !!proofStatus.receiver_proof_submitted)
+    : (!!selectedTrade?.sender_proof_submitted && !!selectedTrade?.receiver_proof_submitted);
   const showProofBtn =
     tradeIsAccepted &&
     !iHaveSubmittedProof &&
     !tradeIsCompleted &&
     !tradeIsAwaitingAdmin;
 
+  /* ID of the other user — used by both the report modal and the rating form */
+  const otherUserIdResolved = selectedTrade
+    ? (selectedTrade.sender_id === userId ? selectedTrade.receiver_id : selectedTrade.sender_id)
+    : null;
+
   /* ── handlers ── */
   const handleSelectChat = id => navigate(`/chat/${id}`);
+  const handleSelectChat_log = id => {
+    console.log('NAVIGATE TO CHAT:', id);
+    return navigate(`/chat/${id}`);
+  };
+  const handleOpenOtherProfile = () => {
+    if (!otherUserIdResolved) return;
+    const targetUrl = `/profile/${otherUserIdResolved}`;
+    console.log('CHAT USER CLICK:', otherUserName, otherUserIdResolved, targetUrl);
+    navigate(targetUrl);
+  };
 
   const handleDeleteForMe = async id => {
     setDeleting(true);
@@ -355,10 +413,11 @@ export default function ChatsLayout() {
     setProofError('');
     try {
       await submitProof(tradeId, proofImages, proofNote);
+      // Fetch fresh status BEFORE closing modal so state is ready when modal closes
+      await Promise.all([fetchProofStatus(tradeId), fetchAll()]);
       handleCloseProofModal();
-      // Re-fetch proof status — backend is the source of truth
-      await fetchProofStatus(tradeId);
-      await fetchAll();
+      // Show the rating option immediately after proof is submitted
+      setShowRating(true);
     } catch (err) {
       setProofError(
         err?.response?.data?.error || err?.message || 'Failed to submit proof. Please try again.'
@@ -370,10 +429,23 @@ export default function ChatsLayout() {
 
   const handleSubmitReport = async () => {
     const token = localStorage.getItem('token');
+
+    // Temporary diagnostic log — remove after testing
+    console.log('REPORT DEBUG', {
+      tradeId,
+      reported_user_id: otherUserIdResolved,
+      reason: reportReason,
+      trade_offer_id: tradeId || null,
+    });
+
     await fetch(`${API_URL}/api/reports`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reported_user_id: otherUserId, reason: reportReason }),
+      body: JSON.stringify({
+        reported_user_id: otherUserIdResolved,
+        reason: reportReason,
+        trade_offer_id: tradeId || null,   // link report to this conversation
+      }),
     });
     setShowReport(false); setReportReason('');
   };
@@ -427,9 +499,9 @@ export default function ChatsLayout() {
                   <li key={trade.id} style={{ position: 'relative' }}>
                     <div
                       className={`chatslayout-row${isActive ? ' active' : ''}`}
-                      onClick={() => handleSelectChat(trade.id)}
+                      onClick={() => handleSelectChat_log(trade.id)}
                       role="button" tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && handleSelectChat(trade.id)}
+                      onKeyDown={e => e.key === 'Enter' && handleSelectChat_log(trade.id)}
                     >
                       <Avatar name={name} imageUrl={imgField} size={38} />
                       <span style={{ flex: 1, minWidth: 0 }}>
@@ -479,36 +551,58 @@ export default function ChatsLayout() {
               <button type="button" onClick={() => navigate('/chats')} style={s.iconBtn} aria-label="Back to chats">
                 <BackArrow />
               </button>
-              <Avatar name={otherUserName} imageUrl={otherUserImage} size={36} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
-                {/* Online status is driven by ChatWindow's socket — no hardcoded string here */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleOpenOtherProfile}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenOtherProfile();
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: 'pointer' }}
+              >
+                <Avatar name={otherUserName} imageUrl={otherUserImage} size={36} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
+                  {/* Online status is driven by ChatWindow's socket — no hardcoded string here */}
+                </div>
               </div>
               {/* Report User button in header — mobile */}
-              <button type="button" onClick={() => { setOtherUserId(
-                selectedTrade.sender_id === userId ? selectedTrade.receiver_id : selectedTrade.sender_id
-              ); setShowReport(true); }} style={s.reportHeaderBtn} aria-label="Report user">
+              <button type="button" onClick={() => setShowReport(true)} style={s.reportHeaderBtn} aria-label="Report user">
                 ⚑
               </button>
             </div>
 
             {/* ── Desktop header strip (back bar hidden on desktop; this is shown instead) ── */}
             <div className="cl-desktop-header" style={s.desktopHeader}>
-              <Avatar name={otherUserName} imageUrl={otherUserImage} size={34} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={s.desktopHeaderName}>{otherUserName || 'Chat'}</div>
-                {/* Online status shown only by ChatWindow's socket-aware header */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleOpenOtherProfile}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenOtherProfile();
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: 'pointer' }}
+              >
+                <Avatar name={otherUserName} imageUrl={otherUserImage} size={34} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={s.desktopHeaderName}>{otherUserName || 'Chat'}</div>
+                  {/* Online status shown only by ChatWindow's socket-aware header */}
+                </div>
               </div>
               {/* Report button in desktop header */}
-              <button type="button" onClick={() => { setOtherUserId(
-                selectedTrade.sender_id === userId ? selectedTrade.receiver_id : selectedTrade.sender_id
-              ); setShowReport(true); }} style={s.reportHeaderBtnDesktop}>
+              <button type="button" onClick={() => setShowReport(true)} style={s.reportHeaderBtnDesktop}>
                 Report User
               </button>
             </div>
 
             {/* ── Action bar: View Item + Proof submission ── */}
-            <div style={s.actionBar}>
+            <div className="cl-action-bar">
               {selectedTrade.requested_item_id && (
                 <button type="button"
                   onClick={() => navigate(`/item/${selectedTrade.requested_item_id}`)}
@@ -517,7 +611,7 @@ export default function ChatsLayout() {
                 </button>
               )}
 
-              {/* Proof button — only for accepted trades where user hasn't submitted yet */}
+              {/* Before proof: show Submit button */}
               {showProofBtn && (
                 <button
                   type="button"
@@ -528,23 +622,68 @@ export default function ChatsLayout() {
                 </button>
               )}
 
-              {/* Current user submitted, waiting for other */}
-              {tradeIsAccepted && iHaveSubmittedProof && !bothSubmittedProof && !tradeIsAwaitingAdmin && (
-                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 500 }}>
-                  ✓ Proof Submitted · Waiting for other user.
+              {/* After this user submitted proof */}
+              {iHaveSubmittedProof && (
+                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 600, flexShrink: 0 }}>
+                  ✓ Exchange Proof Submitted
+                </span>
+              )}
+
+              {/* Rate User — shown once proof is submitted AND user hasn't rated yet */}
+              {iHaveSubmittedProof && !iHaveRated && (
+                <button
+                  type="button"
+                  onClick={() => setShowRating(r => !r)}
+                  style={{ ...s.actionBtnFill, flexShrink: 0, background: '#f59e0b' }}
+                >
+                  ⭐ Rate User
+                </button>
+              )}
+
+              {/* Already rated */}
+              {iHaveRated && (
+                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 600, flexShrink: 0 }}>
+                  ✓ Rated
                 </span>
               )}
 
               {/* Both submitted or admin verification in progress */}
               {(bothSubmittedProof || tradeIsAwaitingAdmin) && !tradeIsCompleted && (
-                <span style={{ fontSize: 12.5, color: T.muted, fontFamily: 'Manrope, sans-serif', fontWeight: 500 }}>
-                  👥 Both users submitted proof · Waiting for admin verification.
+                <span style={{ fontSize: 12.5, color: T.muted, fontFamily: 'Manrope, sans-serif', fontWeight: 500, flexShrink: 0 }}>
+                  👥 Waiting for admin verification.
+                </span>
+              )}
+
+              {/* Trade fully completed by admin */}
+              {tradeIsCompleted && (
+                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 600, flexShrink: 0 }}>
+                  ✅ Trade Completed
                 </span>
               )}
             </div>
 
+            {/* Inline rating form — shown after proof submitted, before rating done */}
+            {iHaveSubmittedProof && showRating && !iHaveRated && (
+              <div style={s.ratingWrap}>
+                <RatingForm
+                  tradeOfferId={tradeId}
+                  revieweeId={otherUserIdResolved}
+                  onSubmitted={() => {
+                    setIHaveRated(true);
+                    setShowRating(false);
+                  }}
+                />
+              </div>
+            )}
+
             {/* Info banner — only for accepted trades where user hasn't submitted proof yet */}
             {tradeIsAccepted && !tradeIsCompleted && !tradeIsAwaitingAdmin && !iHaveSubmittedProof && <ProofInfoBanner />}
+
+            {/* Safety notice — always visible above messages */}
+            <div style={s.safetyBanner}>
+              🔒 This conversation is recorded for safety and dispute resolution.
+              It may be reviewed by administrators if necessary.
+            </div>
 
             {/* Messages fill area */}
             <div style={s.chatFill}>
@@ -833,6 +972,14 @@ const s = {
   waitingBanner: {
     padding: '7px 14px', background: '#FFF8E6', borderBottom: `1px solid #F5E4B0`,
     fontSize: 12, color: '#7C6514', fontFamily: 'Manrope, sans-serif', flexShrink: 0,
+  },
+
+  /* ── safety/recording notice ── */
+  safetyBanner: {
+    padding: '7px 14px', flexShrink: 0,
+    background: '#F8F7F4', borderBottom: `1px solid ${T.border}`,
+    fontSize: 11, color: T.muted, fontFamily: 'Manrope, sans-serif',
+    lineHeight: 1.5,
   },
 
   /* ── chat fill area (takes remaining height) ── */

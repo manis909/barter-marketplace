@@ -230,6 +230,7 @@ CREATE TABLE reports (
 
     reported_by        UUID NOT NULL,
     reported_user_id   UUID NOT NULL,
+    trade_offer_id     UUID,
     reason             TEXT,
 
     created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
