@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { useAuth } from '../features/auth/AuthContext';
-import { getMySkillBookings, updateSkillBookingStatus } from '../services/skillBookingService';
+import { getMySkillBookings, updateSkillBookingStatus, submitUpiPayment } from '../services/skillBookingService';
 import Footer from '../components/Footer';
 
 const BARTER_CSS = `
@@ -21,6 +22,9 @@ const BARTER_CSS = `
   --peach-ink: #8a4a2a;
   --sky: #e3eefc;
   --sky-ink: #2a5285;
+  --amber: #fef3c7;
+  --amber-ink: #92400e;
+  --amber-border: #f59e0b;
 }
 
 @keyframes shimmer {
@@ -68,9 +72,7 @@ const BARTER_CSS = `
   text-decoration: none;
 }
 
-.hero-back:hover {
-  background: rgba(255,255,255,0.26);
-}
+.hero-back:hover { background: rgba(255,255,255,0.26); }
 
 .title-card {
   background: var(--paper);
@@ -83,11 +85,7 @@ const BARTER_CSS = `
 }
 
 @media (min-width: 768px) {
-  .title-card {
-    margin: -44px 32px 0;
-    padding: 28px 32px;
-    border-radius: 26px;
-  }
+  .title-card { margin: -44px 32px 0; padding: 28px 32px; border-radius: 26px; }
 }
 
 .title-card h1 {
@@ -106,11 +104,7 @@ const BARTER_CSS = `
   padding: 4px;
 }
 
-@media (min-width: 768px) {
-  .segment {
-    margin: 32px 32px 4px;
-  }
-}
+@media (min-width: 768px) { .segment { margin: 32px 32px 4px; } }
 
 .segment button {
   flex: 1;
@@ -126,10 +120,7 @@ const BARTER_CSS = `
   transition: all 0.2s ease;
 }
 
-.segment button.on {
-  background: var(--dark);
-  color: #fff;
-}
+.segment button.on { background: var(--dark); color: #fff; }
 
 .section-label {
   margin: 20px 16px 10px;
@@ -140,9 +131,7 @@ const BARTER_CSS = `
   font-weight: 600;
 }
 
-@media (min-width: 768px) {
-  .section-label { margin: 24px 32px 12px; }
-}
+@media (min-width: 768px) { .section-label { margin: 24px 32px 12px; } }
 
 .cards-grid {
   padding: 0 16px;
@@ -153,20 +142,13 @@ const BARTER_CSS = `
 }
 
 @media (min-width: 768px) {
-  .cards-grid {
-    padding: 0 32px;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
+  .cards-grid { padding: 0 32px; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 }
 
 @media (min-width: 1400px) {
-  .cards-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .cards-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Ticket/Card style */
 .ticket-card {
   background: var(--paper);
   border-radius: 20px;
@@ -187,7 +169,6 @@ const BARTER_CSS = `
   align-items: center;
 }
 
-/* Circular notches at the ticket perforation line */
 .ticket-header::before,
 .ticket-header::after {
   content: '';
@@ -201,13 +182,8 @@ const BARTER_CSS = `
   z-index: 2;
 }
 
-.ticket-header::before {
-  left: -8px;
-}
-
-.ticket-header::after {
-  right: -8px;
-}
+.ticket-header::before { left: -8px; }
+.ticket-header::after  { right: -8px; }
 
 .ticket-body {
   padding: 20px;
@@ -235,13 +211,20 @@ const BARTER_CSS = `
   border-radius: 12px;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
 }
 
-.badge-pending { background: #fef3c7; color: #92400e; }
-.badge-accepted { background: #d1fae5; color: #065f46; }
-.badge-declined { background: #fee2e2; color: #991b1b; }
-.badge-completed { background: #e0f2fe; color: #075985; }
-.badge-cancelled { background: #f3f4f6; color: #4b5563; }
+.badge-pending            { background: #fef3c7; color: #92400e; }
+.badge-accepted           { background: #d1fae5; color: #065f46; }
+.badge-declined           { background: #fee2e2; color: #991b1b; }
+.badge-completed          { background: #e0f2fe; color: #075985; }
+.badge-cancelled          { background: #f3f4f6; color: #4b5563; }
+/* Amber — deliberately NOT green, NOT success-looking */
+.badge-pending-verification {
+  background: #fef3c7;
+  color: #78350f;
+  border: 1.5px solid #f59e0b;
+}
 
 .btn-primary {
   background: var(--dark);
@@ -255,6 +238,7 @@ const BARTER_CSS = `
   transition: opacity 0.2s;
 }
 .btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-secondary {
   background: transparent;
@@ -268,6 +252,7 @@ const BARTER_CSS = `
   transition: all 0.2s;
 }
 .btn-secondary:hover { background: rgba(15,61,46,0.03); color: var(--dark); }
+.btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 @keyframes chatPulse {
   0%   { box-shadow: 0 0 0 0 rgba(198,233,48,0.55); }
@@ -301,24 +286,298 @@ const BARTER_CSS = `
   animation: none;
   box-shadow: 0 4px 16px rgba(198,233,48,0.45);
 }
+
+/* Payment upload form */
+.pay-panel {
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pay-panel-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--dark);
+  margin: 0;
+}
+
+.pay-qr-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+}
+
+.pay-qr-wrap canvas {
+  border-radius: 6px;
+}
+
+.pay-instructions {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.pay-input-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pay-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'IBM Plex Mono', monospace;
+  background: #fff;
+  color: var(--ink);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.pay-input:focus { border-color: var(--light-green); }
+
+.pay-file-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pay-file-drop {
+  border: 2px dashed var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.18s;
+  position: relative;
+}
+.pay-file-drop:hover { border-color: var(--light-green); }
+.pay-file-drop input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+
+.pay-file-preview {
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: 8px;
+  object-fit: contain;
+  display: block;
+  margin: 8px auto 0;
+}
+
+.pay-error {
+  font-size: 12px;
+  color: #991b1b;
+  background: #fee2e2;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0;
+}
+
+/* Pending verification notice */
+.pending-notice {
+  background: var(--amber);
+  border: 1.5px solid var(--amber-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pending-notice-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #78350f;
+  margin: 0;
+}
+.pending-notice-body {
+  font-size: 12px;
+  color: var(--amber-ink);
+  margin: 0;
+  line-height: 1.5;
+}
+.pending-utr {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #78350f;
+  background: rgba(245,158,11,0.15);
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  word-break: break-all;
+}
 `;
 
+// ── QR canvas component ───────────────────────────────────────────────────────
+function UpiQrCode({ upiId, upiName, amount, bookingId }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !upiId) return;
+    const tn  = `Booking-${bookingId.slice(0, 8)}`;
+    const uri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName || '')}&am=${amount || ''}&tn=${encodeURIComponent(tn)}`;
+
+    QRCode.toCanvas(canvasRef.current, uri, {
+      width: 180,
+      margin: 1,
+      color: { dark: '#0f3d2e', light: '#ffffff' },
+    }).catch(err => console.error('QR generation error:', err));
+  }, [upiId, upiName, amount, bookingId]);
+
+  if (!upiId) {
+    return (
+      <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, padding: 12 }}>
+        UPI ID not configured — contact support.
+      </div>
+    );
+  }
+
+  return <canvas ref={canvasRef} style={{ borderRadius: 6 }} />;
+}
+
+// ── Payment upload panel ──────────────────────────────────────────────────────
+function PaymentUploadPanel({ booking, onSuccess }) {
+  const [utr, setUtr]             = useState('');
+  const [file, setFile]           = useState(null);
+  const [preview, setPreview]     = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
+
+  const UPI_ID   = import.meta.env.VITE_UPI_ID   || '';
+  const UPI_NAME = import.meta.env.VITE_UPI_NAME || '';
+
+  function handleFileChange(e) {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    setFile(selected);
+    setPreview(URL.createObjectURL(selected));
+    setError('');
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+
+    if (!file) { setError('Please attach your payment screenshot.'); return; }
+    if (utr.trim().length < 6) { setError('UTR / transaction reference must be at least 6 characters.'); return; }
+
+    setSubmitting(true);
+    try {
+      await submitUpiPayment(booking.id, file, utr.trim());
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Submission failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="pay-panel">
+      <p className="pay-panel-title">💸 Pay via UPI</p>
+
+      <div className="pay-qr-wrap">
+        <UpiQrCode
+          upiId={UPI_ID}
+          upiName={UPI_NAME}
+          amount={''}
+          bookingId={booking.id}
+        />
+      </div>
+
+      <p className="pay-instructions">
+        Scan the QR code with any UPI app (GPay, PhonePe, Paytm, etc.).
+        After paying, enter the UTR / transaction reference shown in your
+        bank app and upload a screenshot of the success screen.
+      </p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <label className="pay-input-label">
+          UTR / Transaction Reference
+          <input
+            id={`utr-${booking.id}`}
+            className="pay-input"
+            type="text"
+            placeholder="e.g. 426123456789"
+            value={utr}
+            onChange={e => { setUtr(e.target.value); setError(''); }}
+            disabled={submitting}
+            autoComplete="off"
+          />
+        </label>
+
+        <label className="pay-file-label">
+          Payment Screenshot
+          <div className="pay-file-drop">
+            <input
+              id={`screenshot-${booking.id}`}
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={handleFileChange}
+              disabled={submitting}
+            />
+            {!preview ? (
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                📎 Click to attach JPG/PNG (max 5 MB)
+              </span>
+            ) : (
+              <img src={preview} alt="Preview" className="pay-file-preview" />
+            )}
+          </div>
+        </label>
+
+        {error && <p className="pay-error">{error}</p>}
+
+        <button
+          id={`submit-payment-${booking.id}`}
+          type="submit"
+          className="btn-primary"
+          disabled={submitting}
+          style={{ width: '100%', padding: '10px 0' }}
+        >
+          {submitting ? 'Submitting…' : '📤 Submit Payment'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function MyLearning() {
   const { currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('active');
+  const [bookings, setBookings]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState('');
+  const [activeTab, setActiveTab]     = useState('active');
   const [actionLoading, setActionLoading] = useState({});
+  // Track which booking's pay panel is open
+  const [openPayPanel, setOpenPayPanel] = useState(null);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const data = await getMySkillBookings();
-      // Filter where I am learner
       const mySent = (data.bookings || []).filter(b => b.requester_id === currentUser?.id);
       setBookings(mySent);
     } catch (err) {
@@ -346,28 +605,18 @@ export default function MyLearning() {
     }
   };
 
-  const handlePay = async (bookingId) => {
-    setActionLoading(prev => ({ ...prev, [bookingId]: true }));
-    try {
-      const { paySkillBooking } = await import('../services/skillBookingService');
-      await paySkillBooking(bookingId);
-      alert('Payment successful! Your booking is now confirmed.');
-      await fetchBookings();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to complete payment.');
-    } finally {
-      setActionLoading(prev => ({ ...prev, [bookingId]: false }));
-    }
-  };
-
-  const activeBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted');
-  const pastBookings = bookings.filter(b => b.status === 'completed' || b.status === 'declined' || b.status === 'cancelled');
+  const activeBookings = bookings.filter(
+    b => b.status === 'pending' || b.status === 'accepted'
+  );
+  const pastBookings = bookings.filter(
+    b => b.status === 'completed' || b.status === 'declined' || b.status === 'cancelled'
+  );
 
   if (authLoading || loading) {
     return (
       <div style={{ background: '#f7f5ee', minHeight: '100vh', width: '100%', padding: 40, textAlign: 'center' }}>
         <style>{BARTER_CSS}</style>
-        <p>Loading your learning sessions...</p>
+        <p>Loading your learning sessions…</p>
       </div>
     );
   }
@@ -427,18 +676,36 @@ export default function MyLearning() {
               const skillImg = Array.isArray(b.skill_image_urls) && b.skill_image_urls[0]
                 ? b.skill_image_urls[0]
                 : 'https://via.placeholder.com/56x56?text=Skill';
-              
-              const isUnpaid = b.payment_status === 'unpaid';
+
+              const isUnpaid              = b.payment_status === 'unpaid';
+              const isPendingVerification = b.payment_status === 'pending_verification';
+              const isConfirmed           = b.payment_status === 'paid' && b.status === 'accepted';
+
+              // Badge config
+              let badgeClass = `badge-${b.status}`;
+              let badgeLabel = b.status;
+              if (isUnpaid && b.status === 'pending') {
+                badgeClass = 'badge-pending';
+                badgeLabel = 'Reserved (unpaid)';
+              } else if (isPendingVerification) {
+                badgeClass = 'badge-pending-verification';
+                badgeLabel = '⏳ Pending Verification';
+              } else if (isConfirmed) {
+                badgeClass = 'badge-accepted';
+                badgeLabel = 'Confirmed';
+              }
+
+              const payPanelOpen = openPayPanel === b.id;
+
               return (
                 <div key={b.id} className="ticket-card">
                   <div className="ticket-header">
                     <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--dark)' }}>
                       Session with @{b.teacher_username}
                     </span>
-                    <span className={`badge badge-${isUnpaid && b.status === 'pending' ? 'pending' : b.status}`}>
-                      {isUnpaid && b.status === 'pending' ? 'reserved (unpaid)' : b.status}
-                    </span>
+                    <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
                   </div>
+
                   <div className="ticket-body">
                     <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                       <img
@@ -465,83 +732,120 @@ export default function MyLearning() {
                         </div>
                       </div>
                     </div>
+
                     <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {b.scheduled_time && (
                         <span>📅 <strong>Scheduled:</strong> {new Date(b.scheduled_time).toLocaleString()}</span>
                       )}
                       <span>🕒 <strong>Requested:</strong> {new Date(b.created_at).toLocaleDateString()}</span>
                     </div>
+
+                    {/* ── Pending Verification notice ─────────────────────── */}
+                    {isPendingVerification && (
+                      <div className="pending-notice">
+                        <p className="pending-notice-title">⏳ Awaiting Admin Review</p>
+                        {b.payment_utr && (
+                          <p className="pending-notice-body">
+                            Submitted UTR: <span className="pending-utr">{b.payment_utr}</span>
+                          </p>
+                        )}
+                        {b.payment_submitted_at && (
+                          <p className="pending-notice-body">
+                            Submitted: {new Date(b.payment_submitted_at).toLocaleString()}
+                          </p>
+                        )}
+                        <p className="pending-notice-body">
+                          Your screenshot is under review. We'll notify you once it's verified.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ── Rejection notice (re-submission allowed) ─────────── */}
+                    {isUnpaid && b.payment_rejection_reason && (
+                      <div style={{ background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: 10, padding: '10px 14px' }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: 12, color: '#991b1b' }}>
+                          ⚠️ Previous submission was not verified
+                        </p>
+                        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#7f1d1d' }}>
+                          {b.payment_rejection_reason}
+                        </p>
+                        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#991b1b' }}>
+                          You can submit a new screenshot below.
+                        </p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* ── Actions ──────────────────────────────────────────────── */}
                   {activeTab === 'active' && (
                     <div className="ticket-actions" style={{ flexDirection: 'column', gap: 8 }}>
-                      {b.status === 'accepted' && (
+
+                      {/* Confirmed: show chat */}
+                      {isConfirmed && (
                         <>
-                          <p style={{
-                            margin: '0 0 4px',
-                            fontSize: 12,
-                            color: 'var(--light-green)',
-                            fontWeight: 500,
-                            lineHeight: 1.5
-                          }}>
+                          <p style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--light-green)', fontWeight: 500, lineHeight: 1.5 }}>
                             Your session is confirmed — coordinate the details in chat.
                           </p>
-                          <Link
-                            to={`/skilter/chat/${b.id}`}
-                            className="btn-open-chat"
-                          >
+                          <Link to={`/skilter/chat/${b.id}`} className="btn-open-chat">
                             💬 Open Chat
                           </Link>
                         </>
                       )}
-                      {b.status === 'pending' && isUnpaid && (
+
+                      {/* Unpaid: show pay button / upload panel + cancel + message */}
+                      {isUnpaid && b.status === 'pending' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                          <div style={{ display: 'flex', gap: 10, width: '100%' }}>
-                            <button
-                              className="btn-primary"
-                              style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                              onClick={() => handlePay(b.id)}
-                              disabled={actionLoading[b.id]}
-                            >
-                              {actionLoading[b.id] ? 'Processing...' : '💳 Pay Now'}
-                            </button>
+                          {/* Toggle pay panel */}
+                          <button
+                            id={`pay-toggle-${b.id}`}
+                            className="btn-primary"
+                            style={{ width: '100%', padding: '10px 0' }}
+                            onClick={() => setOpenPayPanel(payPanelOpen ? null : b.id)}
+                          >
+                            {payPanelOpen ? '▲ Hide Payment' : '💳 Pay Now'}
+                          </button>
+
+                          {payPanelOpen && (
+                            <PaymentUploadPanel
+                              booking={b}
+                              onSuccess={() => {
+                                setOpenPayPanel(null);
+                                fetchBookings();
+                              }}
+                            />
+                          )}
+
+                          <div style={{ display: 'flex', gap: 8 }}>
                             <button
                               className="btn-secondary"
                               style={{ flex: 1 }}
                               onClick={() => handleCancel(b.id)}
                               disabled={actionLoading[b.id]}
                             >
-                              {actionLoading[b.id] ? '...' : 'Cancel Request'}
+                              {actionLoading[b.id] ? '…' : 'Cancel Request'}
                             </button>
+                            <Link
+                              to={`/skilter/chat/${b.id}`}
+                              className="btn-secondary"
+                              style={{ flex: 1, textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                            >
+                              💬 Message
+                            </Link>
                           </div>
-                          <Link
-                            to={`/skilter/chat/${b.id}`}
-                            className="btn-secondary"
-                            style={{
-                              textDecoration: 'none',
-                              display: 'flex',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              padding: '10px 0',
-                              fontSize: '13.5px',
-                              fontWeight: 600,
-                              background: 'transparent',
-                              border: '1.5px solid var(--line)',
-                              color: 'var(--dark)'
-                            }}
-                          >
-                            💬 Message
-                          </Link>
                         </div>
                       )}
-                      {b.status === 'pending' && !isUnpaid && (
-                        <button
+
+                      {/* Pending verification: message only, no cancel, no pay */}
+                      {isPendingVerification && (
+                        <Link
+                          to={`/skilter/chat/${b.id}`}
                           className="btn-secondary"
-                          onClick={() => handleCancel(b.id)}
-                          disabled={actionLoading[b.id]}
+                          style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '10px 0' }}
                         >
-                          {actionLoading[b.id] ? '...' : 'Cancel Request'}
-                        </button>
+                          💬 Message
+                        </Link>
                       )}
+
                     </div>
                   )}
                 </div>
@@ -549,6 +853,8 @@ export default function MyLearning() {
             })
           )}
         </div>
+
+        <div style={{ height: 32 }} />
       </div>
       <Footer />
     </div>

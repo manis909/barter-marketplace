@@ -1,16 +1,49 @@
-const express = require("express");
-const router = express.Router();
-const db = require("../models/db");
-const requireAuth = require("../middleware/auth");
+const express  = require("express");
+const router   = express.Router();
+const db       = require("../models/db");
+const path     = require("path");
+const fs       = require("fs");
+const multer   = require("multer");
+const requireAuth  = require("../middleware/auth");
+const requireAdmin = require("../middleware/admin");
 const { createNotification } = require("./notifications");
 
 // UUID validator
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUUID(val) { return UUID_RE.test(val); }
 
+// ── Multer config for payment screenshots ────────────────────────────────────
+// Files land in uploads/payment-screenshots/ on disk.
+// The folder is NOT in the Express static mount — served only through the
+// auth-gated GET /:id/payment-screenshot endpoint below.
+const screenshotStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, "../uploads/payment-screenshots");
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `booking-${req.params.id}-${Date.now()}${ext}`);
+  },
+});
+
+const screenshotUpload = multer({
+  storage: screenshotStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png"];
+    const ext     = path.extname(file.originalname).toLowerCase();
+    if (!allowed.includes(ext)) {
+      return cb(new Error("Only JPG and PNG files are allowed"));
+    }
+    cb(null, true);
+  },
+});
+
 // ── POST /api/skill-bookings ─────────────────────────────────────────────────
-// Capacity rule: block only when accepted_count >= max_participants.
-// Unlimited pending requests allowed — provider chooses who gets accepted slots.
+// Capacity rule: any number of unpaid reservations allowed.
+// Capacity is enforced only at admin-confirm time.
 router.post("/", requireAuth, async (req, res) => {
   try {
     const { skill_listing_id, scheduled_time, message } = req.body;
@@ -20,7 +53,6 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Valid skill_listing_id is required" });
     }
 
-    // Lookup skill listing (includes capacity fields added in migration)
     const listingRes = await db.query(
       "SELECT teacher_id, skill_name, status, max_participants FROM skill_listings WHERE id = $1",
       [skill_listing_id]
@@ -40,8 +72,7 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "You cannot book your own skill listing" });
     }
 
-    // Duplicate check: pending OR accepted (now mapping to status in ('pending', 'accepted'))
-    // or specifically, user having an active request that is not cancelled/declined
+    // Duplicate check
     const dupCheck = await db.query(
       `SELECT id FROM skill_bookings
        WHERE skill_listing_id = $1 AND requester_id = $2 AND status IN ('pending', 'accepted')`,
@@ -75,7 +106,6 @@ router.post("/", requireAuth, async (req, res) => {
 });
 
 // ── GET /api/skill-bookings/mine ─────────────────────────────────────────────
-// Learner view: returns flat list of sessions where current user is the requester.
 router.get("/mine", requireAuth, async (req, res) => {
   try {
     const result = await db.query(
@@ -117,12 +147,8 @@ router.get("/mine", requireAuth, async (req, res) => {
 });
 
 // ── GET /api/skill-bookings/teaching ─────────────────────────────────────────
-// Teacher/provider view: returns listings grouped with per-listing booking counts,
-// plus a flat list of all booking rows so frontend can group them by skill_listing_id.
-// Shape: { listings: [...], bookings: [...] }
 router.get("/teaching", requireAuth, async (req, res) => {
   try {
-    // Listings with accepted/pending counts
     const listingsRes = await db.query(
       `SELECT s.*,
               COALESCE(s.max_participants, 0) - COALESCE(paid_counts.paid_count, 0) AS spots_left,
@@ -147,7 +173,6 @@ router.get("/teaching", requireAuth, async (req, res) => {
       [req.userId]
     );
 
-    // All booking rows for this provider with learner details
     const bookingsRes = await db.query(
       `SELECT b.*,
               u.username      AS learner_username,
@@ -163,10 +188,46 @@ router.get("/teaching", requireAuth, async (req, res) => {
     res.json({
       success: true,
       listings: listingsRes.rows,
-      bookings: bookingsRes.rows
+      bookings: bookingsRes.rows,
     });
   } catch (err) {
     console.error("GET /skill-bookings/teaching error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── GET /api/skill-bookings/admin/pending-payments ───────────────────────────
+// Admin-only: list all bookings awaiting payment verification.
+router.get("/admin/pending-payments", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT b.id,
+              b.payment_status,
+              b.payment_utr,
+              b.payment_submitted_at,
+              b.payment_screenshot_url,
+              b.payment_rejection_reason,
+              b.payment_rejected_at,
+              b.created_at,
+              sl.skill_name,
+              sl.price_type,
+              u_req.id         AS learner_id,
+              u_req.username   AS learner_username,
+              u_req.full_name  AS learner_name,
+              u_req.email      AS learner_email,
+              u_teach.username AS teacher_username,
+              u_teach.full_name AS teacher_name
+       FROM skill_bookings b
+       JOIN skill_listings sl ON sl.id = b.skill_listing_id
+       JOIN users u_req   ON u_req.id  = b.requester_id
+       JOIN users u_teach ON u_teach.id = b.teacher_id
+       WHERE b.payment_status = 'pending_verification'
+       ORDER BY b.payment_submitted_at ASC`,
+    );
+
+    res.json({ success: true, bookings: result.rows });
+  } catch (err) {
+    console.error("GET /skill-bookings/admin/pending-payments error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -222,11 +283,56 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/skill-bookings/:id/payment-screenshot ───────────────────────────
+// Auth-gated file stream.
+// Allowed: (a) admin, OR (b) the learner who owns this specific booking.
+// Any other authenticated user → 403 before the file path is read.
+router.get("/:id/payment-screenshot", requireAuth, async (req, res) => {
+  const bookingId = req.params.id;
+  if (!isValidUUID(bookingId)) {
+    return res.status(400).json({ error: "Invalid booking id" });
+  }
+
+  try {
+    const bookingRes = await db.query(
+      "SELECT requester_id, payment_screenshot_url FROM skill_bookings WHERE id = $1",
+      [bookingId]
+    );
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingRes.rows[0];
+
+    // Ownership check: admin OR exact requester_id match on this booking row
+    const adminCheck = await db.query(
+      "SELECT is_admin FROM users WHERE id = $1",
+      [req.userId]
+    );
+    const isAdmin = adminCheck.rows[0]?.is_admin === true;
+    const isOwner = booking.requester_id === req.userId;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: "Not authorised to view this screenshot" });
+    }
+
+    if (!booking.payment_screenshot_url) {
+      return res.status(404).json({ error: "No screenshot on file for this booking" });
+    }
+
+    const filePath = path.join(__dirname, "..", booking.payment_screenshot_url);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Screenshot file not found on disk" });
+    }
+
+    res.sendFile(path.resolve(filePath));
+  } catch (err) {
+    console.error("GET /skill-bookings/:id/payment-screenshot error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // ── PATCH /api/skill-bookings/:id/status ──────────────────────────────────────
-// Accept/decline/complete/cancel a booking.
-// IMPORTANT: When accepting, the capacity check and the status UPDATE run inside
-// a single serializable transaction with a row-level lock (SELECT ... FOR UPDATE)
-// so two near-simultaneous accepts cannot both slip past the capacity check.
 router.patch("/:id/status", requireAuth, async (req, res) => {
   const bookingId = req.params.id;
   const { status } = req.body;
@@ -238,16 +344,14 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
   const ALLOWED_STATUSES = ["accepted", "declined", "completed", "cancelled"];
   if (!status || !ALLOWED_STATUSES.includes(status)) {
     return res.status(400).json({
-      error: `Invalid status. Must be one of: ${ALLOWED_STATUSES.join(", ")}`
+      error: `Invalid status. Must be one of: ${ALLOWED_STATUSES.join(", ")}`,
     });
   }
 
-  // Use a dedicated client so we can manage a transaction manually
   const pgClient = await db.getClient();
   try {
     await pgClient.query("BEGIN");
 
-    // Lock the booking row for update — prevents races on the same booking
     const bookingRes = await pgClient.query(
       `SELECT b.*, sl.skill_name, sl.max_participants
        FROM skill_bookings b
@@ -262,7 +366,7 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    const booking  = bookingRes.rows[0];
+    const booking     = bookingRes.rows[0];
     const isTeacher   = booking.teacher_id   === req.userId;
     const isRequester = booking.requester_id === req.userId;
 
@@ -276,7 +380,6 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Only the teacher can accept or decline a booking request" });
     }
 
-    // Capacity re-check inside the SAME transaction (inside the row lock)
     if (status === "accepted") {
       const countRes = await pgClient.query(
         "SELECT COUNT(*) FROM skill_bookings WHERE skill_listing_id = $1 AND status = 'accepted'",
@@ -300,14 +403,12 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
     await pgClient.query("COMMIT");
 
     const updatedBooking = updatedRes.rows[0];
-
-    // Notify the other participant
-    const recipientId = isTeacher ? booking.requester_id : booking.teacher_id;
-    const statusTitles = {
+    const recipientId    = isTeacher ? booking.requester_id : booking.teacher_id;
+    const statusTitles   = {
       accepted:  "Booking Accepted!",
       declined:  "Booking Declined",
       completed: "Booking Completed",
-      cancelled: "Booking Cancelled"
+      cancelled: "Booking Cancelled",
     };
 
     createNotification(
@@ -327,10 +428,118 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
   }
 });
 
-// ── PATCH /api/skill-bookings/:id/pay ─────────────────────────────────────────
-// Complete payment for a reserved booking.
-// Locks the listing and counts existing paid bookings to prevent race condition capacity violations.
-router.patch("/:id/pay", requireAuth, async (req, res) => {
+// ── POST /api/skill-bookings/:id/upload-payment ──────────────────────────────
+// Learner uploads a UPI payment screenshot + UTR reference.
+// Sets payment_status = 'pending_verification'. Does NOT set 'paid'.
+router.post(
+  "/:id/upload-payment",
+  requireAuth,
+  screenshotUpload.single("screenshot"),
+  async (req, res) => {
+    const bookingId = req.params.id;
+    if (!isValidUUID(bookingId)) {
+      return res.status(400).json({ error: "Invalid booking id" });
+    }
+
+    // Multer file-type error surfaces here
+    if (!req.file) {
+      return res.status(400).json({ error: "A payment screenshot (jpg/png, max 5 MB) is required" });
+    }
+
+    const { utr } = req.body;
+    if (!utr || utr.trim().length < 6) {
+      // Clean up the uploaded file since we're rejecting the request
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: "UTR / transaction reference must be at least 6 characters" });
+    }
+    const cleanUtr = utr.trim().toUpperCase();
+
+    try {
+      const bookingRes = await db.query(
+        `SELECT b.*, sl.skill_name FROM skill_bookings b
+         JOIN skill_listings sl ON sl.id = b.skill_listing_id
+         WHERE b.id = $1`,
+        [bookingId]
+      );
+      if (bookingRes.rows.length === 0) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      const booking = bookingRes.rows[0];
+
+      if (booking.requester_id !== req.userId) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(403).json({ error: "Only the reservation owner can submit payment" });
+      }
+
+      if (booking.payment_status === "paid") {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ error: "This booking is already confirmed" });
+      }
+
+      if (booking.payment_status === "pending_verification") {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ error: "A payment is already pending verification for this booking. Wait for admin review before re-submitting." });
+      }
+
+      // Check for duplicate UTR across all bookings (partial unique index covers this)
+      const dupUtr = await db.query(
+        "SELECT id FROM skill_bookings WHERE payment_utr = $1 AND id != $2",
+        [cleanUtr, bookingId]
+      );
+      if (dupUtr.rows.length > 0) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(409).json({
+          error: "This transaction reference (UTR) has already been used on another booking. Each payment must have a unique UTR.",
+        });
+      }
+
+      // Relative path stored in DB (relative to server root) so it's portable
+      const relPath = path.relative(
+        path.join(__dirname, ".."),
+        req.file.path
+      ).replace(/\\/g, "/");
+
+      await db.query(
+        `UPDATE skill_bookings
+         SET payment_status          = 'pending_verification',
+             payment_screenshot_url  = $1,
+             payment_utr             = $2,
+             payment_submitted_at    = NOW(),
+             payment_rejection_reason = NULL,
+             payment_rejected_at     = NULL,
+             updated_at              = CURRENT_TIMESTAMP
+         WHERE id = $3`,
+        [relPath, cleanUtr, bookingId]
+      );
+
+      // Notify admin (teacher here acts as the review point; a dedicated admin
+      // notification can be wired to a specific admin user id if needed)
+      createNotification(
+        booking.teacher_id,
+        "payment_submitted",
+        "New Payment Submission",
+        `A learner submitted a payment screenshot for "${booking.skill_name}" — review it in the admin dashboard.`
+      ).catch(err => console.error("Notification error (payment_submitted):", err));
+
+      res.json({
+        success: true,
+        message: "Payment submitted — your reservation is pending verification.",
+      });
+    } catch (err) {
+      // Clean up file on unexpected DB error
+      if (req.file) fs.unlink(req.file.path, () => {});
+      console.error("POST /skill-bookings/:id/upload-payment error:", err);
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+);
+
+// ── PATCH /api/skill-bookings/:id/confirm-payment ────────────────────────────
+// Admin-only: verify screenshot, confirm payment, lock capacity.
+// Moves the row-lock capacity guard here (was in old /pay endpoint).
+router.patch("/:id/confirm-payment", requireAuth, requireAdmin, async (req, res) => {
   const bookingId = req.params.id;
   if (!isValidUUID(bookingId)) {
     return res.status(400).json({ error: "Invalid booking id" });
@@ -340,7 +549,7 @@ router.patch("/:id/pay", requireAuth, async (req, res) => {
   try {
     await pgClient.query("BEGIN");
 
-    // Lock the booking row and fetch details
+    // Lock the booking row
     const bookingRes = await pgClient.query(
       `SELECT b.*, sl.skill_name, sl.max_participants
        FROM skill_bookings b
@@ -357,20 +566,16 @@ router.patch("/:id/pay", requireAuth, async (req, res) => {
 
     const booking = bookingRes.rows[0];
 
-    // Authorize: Only the requester can pay
-    if (booking.requester_id !== req.userId) {
+    if (booking.payment_status !== "pending_verification") {
       await pgClient.query("ROLLBACK");
-      return res.status(403).json({ error: "Only the reservation owner can pay for this booking" });
+      return res.status(400).json({
+        error: `Cannot confirm — booking payment_status is '${booking.payment_status}', expected 'pending_verification'.`,
+      });
     }
 
-    if (booking.payment_status === "paid") {
-      await pgClient.query("ROLLBACK");
-      return res.status(400).json({ error: "This booking is already paid" });
-    }
-
-    // Capacity Check under Lock: count all bookings with payment_status = 'paid' for this listing
+    // Capacity check under lock
     const countRes = await pgClient.query(
-      `SELECT COUNT(*) FROM skill_bookings 
+      `SELECT COUNT(*) FROM skill_bookings
        WHERE skill_listing_id = $1 AND payment_status = 'paid'`,
       [booking.skill_listing_id]
     );
@@ -378,46 +583,108 @@ router.patch("/:id/pay", requireAuth, async (req, res) => {
 
     if (paidCount >= booking.max_participants) {
       await pgClient.query("ROLLBACK");
-      return res.status(400).json({ 
-        error: "Payment failed: This session is fully booked. Your reservation remains active and unpaid, so if a spot opens up, you can try paying again." 
+      return res.status(409).json({
+        error: "Session is full. Cannot confirm — refund the learner manually outside the app.",
       });
     }
 
-    // Update status to 'accepted' and payment_status to 'paid'
+    // Confirm: set paid + accepted
     const updatedRes = await pgClient.query(
       `UPDATE skill_bookings
-       SET status = 'accepted', payment_status = 'paid', updated_at = CURRENT_TIMESTAMP
+       SET payment_status = 'paid',
+           status         = 'accepted',
+           updated_at     = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING *`,
       [bookingId]
     );
 
     await pgClient.query("COMMIT");
-
     const updatedBooking = updatedRes.rows[0];
 
-    // Trigger confirmation notifications for both sides
+    // Dual notification: teacher + learner
     createNotification(
       booking.teacher_id,
       "skill_booking_paid_teacher",
       "Booking Confirmed!",
-      `Someone has paid for and confirmed their booking for "${booking.skill_name}".`
-    ).catch(err => console.error("Notification error (teacher confirmation):", err));
+      `Someone's payment for "${booking.skill_name}" has been verified. The booking is now confirmed.`
+    ).catch(err => console.error("Notification error (confirm teacher):", err));
 
     createNotification(
       booking.requester_id,
       "skill_booking_paid_learner",
       "Booking Confirmed!",
-      `Your payment for "${booking.skill_name}" succeeded. Your booking is now confirmed.`
-    ).catch(err => console.error("Notification error (learner confirmation):", err));
+      `Your payment for "${booking.skill_name}" has been verified. Your booking is now confirmed.`
+    ).catch(err => console.error("Notification error (confirm learner):", err));
 
     res.json({ success: true, booking: updatedBooking });
   } catch (err) {
     await pgClient.query("ROLLBACK").catch(() => {});
-    console.error("PATCH /skill-bookings/:id/pay error:", err);
+    console.error("PATCH /skill-bookings/:id/confirm-payment error:", err);
     res.status(500).json({ error: "Server error" });
   } finally {
     pgClient.release();
+  }
+});
+
+// ── PATCH /api/skill-bookings/:id/reject-payment ─────────────────────────────
+// Admin-only: reject a payment submission.
+// Does NOT clear payment_screenshot_url or payment_utr — evidence is preserved.
+// Writes rejection reason + timestamp, resets payment_status to 'unpaid'.
+router.patch("/:id/reject-payment", requireAuth, requireAdmin, async (req, res) => {
+  const bookingId = req.params.id;
+  if (!isValidUUID(bookingId)) {
+    return res.status(400).json({ error: "Invalid booking id" });
+  }
+
+  const reason = (req.body.reason || "").trim() || null;
+
+  try {
+    const bookingRes = await db.query(
+      `SELECT b.*, sl.skill_name
+       FROM skill_bookings b
+       JOIN skill_listings sl ON sl.id = b.skill_listing_id
+       WHERE b.id = $1`,
+      [bookingId]
+    );
+
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingRes.rows[0];
+
+    if (booking.payment_status !== "pending_verification") {
+      return res.status(400).json({
+        error: `Cannot reject — booking payment_status is '${booking.payment_status}', expected 'pending_verification'.`,
+      });
+    }
+
+    // Preserve screenshot_url + utr; only write rejection metadata + reset status
+    const updatedRes = await db.query(
+      `UPDATE skill_bookings
+       SET payment_status          = 'unpaid',
+           payment_rejection_reason = $1,
+           payment_rejected_at     = NOW(),
+           updated_at              = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [reason, bookingId]
+    );
+
+    // Notify learner to re-submit
+    const reasonSuffix = reason ? ` (${reason})` : "";
+    createNotification(
+      booking.requester_id,
+      "payment_rejected",
+      "Payment Not Verified",
+      `Your payment for "${booking.skill_name}" could not be verified${reasonSuffix}. Please re-submit your screenshot.`
+    ).catch(err => console.error("Notification error (payment rejected):", err));
+
+    res.json({ success: true, booking: updatedRes.rows[0] });
+  } catch (err) {
+    console.error("PATCH /skill-bookings/:id/reject-payment error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

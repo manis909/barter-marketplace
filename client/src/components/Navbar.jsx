@@ -19,8 +19,10 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false)
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
   const desktopBrandRef = useRef(null)
   const mobileBrandRef = useRef(null)
+  const desktopAdminRef = useRef(null)
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [activeCategory, setActiveCategory] = useState(() => {
     const cat = new URLSearchParams(location.search).get('category')
@@ -46,9 +48,10 @@ export default function Navbar() {
   // Close brand dropdown on route change
   useEffect(() => {
     setBrandDropdownOpen(false)
+    setAdminDropdownOpen(false)
   }, [location.pathname])
 
-  // Close brand dropdown on outside click
+  // Close brand and admin dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -56,6 +59,11 @@ export default function Navbar() {
         mobileBrandRef.current && !mobileBrandRef.current.contains(event.target)
       ) {
         setBrandDropdownOpen(false)
+      }
+      if (
+        desktopAdminRef.current && !desktopAdminRef.current.contains(event.target)
+      ) {
+        setAdminDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -314,7 +322,57 @@ export default function Navbar() {
               </Link>
 
               {currentUser?.is_admin && (
-                <Link to="/admin/verification" className="navbar-link">Admin</Link>
+                <div
+                  className="navbar-item-dropdown"
+                  ref={desktopAdminRef}
+                  style={{ position: 'relative' }}
+                >
+                  <button
+                    type="button"
+                    className="navbar-link navbar-brand-dropdown-trigger"
+                    onClick={() => setAdminDropdownOpen((prev) => !prev)}
+                    aria-expanded={adminDropdownOpen}
+                    aria-haspopup="true"
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    Admin
+                    <ChevronDown
+                      size={14}
+                      className={`brand-dropdown-chevron ${adminDropdownOpen ? 'open' : ''}`}
+                      style={{ marginLeft: 2 }}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {adminDropdownOpen && (
+                      <motion.div
+                        className="brand-dropdown-menu"
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        style={{ right: 0, left: 'auto', minWidth: '180px' }}
+                      >
+                        <Link
+                          to="/admin/verification"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Trade Verification
+                        </Link>
+                        <Link
+                          to="/admin/payment-review"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Payment Review
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
 
               {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}

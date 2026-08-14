@@ -28,6 +28,7 @@ import ChatsLayout from './pages/ChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
+import AdminPaymentReviewPage from './pages/AdminPaymentReview';
 
 // ── Skilter placeholder ───────────────────────────────────────────────────
 // Rendered for Skilter-specific routes whose full page is being built
@@ -85,6 +86,7 @@ function App() {
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
+            <Route path="/admin/payment-review" element={<AdminPaymentReviewPage />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
             <Route path="/skilter/skills"    element={<MySkillsPage />} />
