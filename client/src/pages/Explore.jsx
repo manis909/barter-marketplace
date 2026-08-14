@@ -306,24 +306,12 @@ export default function ExplorePage() {
         </div>
       )}
 
-      {/* ── Main grid (filtered = full results; unfiltered = deduped remainder) */}
-      {isFiltered ? (
+      {/* ── Main grid (filtered only — shows search/category results) */}
+      {isFiltered && (
         <CategorySection
           title={activeCategory && activeCategory !== 'All' ? activeCategory : 'Search Results'}
           items={normalizedItems}
         />
-      ) : (
-        <div className="explore-all-section">
-          <div className="explore-all-section__header">
-            <CategorySection
-              title="More Listings"
-              items={normalizedItems}
-            />
-            <a href="/explore" className="explore-view-all-link">
-              View all listings →
-            </a>
-          </div>
-        </div>
       )}
 
       <Footer />

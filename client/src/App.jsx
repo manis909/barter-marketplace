@@ -25,7 +25,8 @@ import MySkillsPage from './pages/MySkillsPage';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
-import SkillChatsLayout from './pages/SkillChatsLayout';
+import SkillChatsLayout from './pages/SkillChatsLayout'; 
+import SkillsProfile from './pages/SkillsProfile';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
@@ -80,6 +81,8 @@ function App() {
             <Route path="/skilter/explore" element={<SkilterPage />} />
             <Route path="/skilter/skill/:id" element={<SkillDetailPage />} />
             <Route path="/skills" element={<SkilterPage />} />
+            <Route path="/skilter/profile/:userId" element={<SkillsProfile />} />
+            <Route path="/skilter/profile" element={<SkillsProfile />} />
 
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />

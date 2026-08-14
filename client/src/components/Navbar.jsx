@@ -378,17 +378,21 @@ export default function Navbar() {
               {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
               {currentUser ? (
-                <motion.button
-                  type="button"
-                  className="profile-button"
-                  onClick={() => setDrawerOpen(true)}
-                  aria-label="Open profile drawer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.96 }}
-                >
-                  <User className="profile-icon" size={20} />
-                </motion.button>
-              ) : (
+  <motion.button
+    type="button"
+    className="profile-button"
+    onClick={() => setDrawerOpen(true)}
+    aria-label="Open profile drawer"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.96 }}
+  >
+    {currentUser.profile_image ? (
+      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
+    ) : (
+      <User className="profile-icon" size={20} />
+    )}
+  </motion.button>
+) : (
                 <Link to="/login" className="navbar-link navbar-login-btn">
                   Login
                 </Link>
@@ -479,18 +483,22 @@ export default function Navbar() {
 
                 {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
-                {currentUser ? (
-                  <motion.button
-                    type="button"
-                    className="profile-button mobile-profile-btn"
-                    onClick={() => setDrawerOpen(true)}
-                    aria-label="Open profile drawer"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.96 }}
-                  >
-                    <User className="profile-icon" size={18} />
-                  </motion.button>
-                ) : (
+{currentUser ? (
+  <motion.button
+    type="button"
+    className="profile-button mobile-profile-btn"
+    onClick={() => setDrawerOpen(true)}
+    aria-label="Open profile drawer"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.96 }}
+  >
+    {currentUser.profile_image ? (
+      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
+    ) : (
+      <User className="profile-icon" size={18} />
+    )}
+  </motion.button>
+) : (
                   <Link to="/login" className="navbar-link navbar-login-btn mobile-login-btn">
                     Login
                   </Link>

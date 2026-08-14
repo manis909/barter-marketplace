@@ -36,7 +36,7 @@ import {
 import './ProfileDrawer.css'
 
 const primaryItems = [
-  { label: 'My Profile',   icon: User,          path: '/profile' },
+  { label: 'My Profile',   icon: User,          path: '/skilter/profile' },
   { label: 'My Skills',    icon: Lightbulb,     path: '/skilter/skills' },
   { label: 'My Learning',  icon: BookOpen,      path: '/skilter/learning' },
   { label: 'My Teaching',  icon: GraduationCap, path: '/skilter/teaching' },
