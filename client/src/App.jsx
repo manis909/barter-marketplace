@@ -48,6 +48,7 @@ function SkilterPlaceholder({ title }) {
 
 import MyLearningPage from './pages/MyLearning';
 import MyTeachingPage from './pages/MyTeaching';
+import SkilterWishlistPage from './pages/SkilterWishlist';
 
 function App() {
   return (
@@ -93,7 +94,7 @@ function App() {
             <Route path="/skilter/learning"  element={<MyLearningPage />} />
             <Route path="/skilter/teaching"  element={<MyTeachingPage />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
-            <Route path="/skilter/wishlist"  element={<SkilterPlaceholder title="Skilter Wishlist" />} />
+            <Route path="/skilter/wishlist"  element={<SkilterWishlistPage />} />
             <Route path="/skilter/chat"      element={<SkillChatsLayout />} />
             <Route path="/skilter/chat/:bookingId" element={<SkillChatsLayout />} />
           </Routes>

@@ -3,9 +3,14 @@ import { FaInstagram, FaXTwitter } from 'react-icons/fa6'
 import { Compass, LayoutGrid, Package, LifeBuoy, MessageCircleMore } from 'lucide-react'
 import './Footer.css'
 
-const quickLinks = [
+const barterQuickLinks = [
   { to: '/explore', label: 'Explore', icon: Compass },
   { to: '/my-listings', label: 'My Listings', icon: Package },
+]
+
+const skilterQuickLinks = [
+  { to: '/skilter/explore', label: 'Explore', icon: Compass },
+  { to: '/skilter/skills', label: 'My Skills', icon: Package },
 ]
 
 const supportLinks = [
@@ -22,6 +27,15 @@ export default function Footer() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  // Determine if we're in the Skilter section
+  const isSkilterSection = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
+  
+  // Choose the appropriate navigation links based on current section
+  const quickLinks = isSkilterSection ? skilterQuickLinks : barterQuickLinks
+  
+  // Choose the appropriate explore path
+  const explorePath = isSkilterSection ? '/skilter/explore' : '/explore'
+
   function jumpToExploreTop() {
     window.scrollTo(0, 0)
     document.documentElement.scrollTop = 0
@@ -31,12 +45,14 @@ export default function Footer() {
   function handleExploreClick(e) {
     e.preventDefault()
 
-    if (location.pathname === '/explore') {
+    // Check if we're already on the appropriate explore page
+    if (location.pathname === explorePath || 
+        (isSkilterSection && location.pathname === '/skilter')) {
       jumpToExploreTop()
       return
     }
 
-    navigate('/explore')
+    navigate(explorePath)
     window.setTimeout(() => {
       jumpToExploreTop()
     }, 220)
@@ -45,11 +61,13 @@ export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-mobile-header">
-        <Link to="/explore" className="footer-brand">
+        <Link to={explorePath} className="footer-brand">
           <div className="footer-mark">⇄</div>
           <div className="footer-brand-text">
-            <span className="footer-logo">Barter</span>
-            <p className="footer-copy">Trade smarter. Exchange sustainably.</p>
+            <span className="footer-logo">{isSkilterSection ? 'Skilter' : 'Barter'}</span>
+            <p className="footer-copy">
+              {isSkilterSection ? 'Learn smarter. Share skills.' : 'Trade smarter. Exchange sustainably.'}
+            </p>
           </div>
         </Link>
 
@@ -65,11 +83,13 @@ export default function Footer() {
 
       <div className="footer-widgets">
         <div className="footer-col footer-brand-col">
-          <Link to="/explore" className="footer-brand footer-brand-desktop">
+          <Link to={explorePath} className="footer-brand footer-brand-desktop">
             <div className="footer-mark">⇄</div>
-            <span className="footer-logo">Barter</span>
+            <span className="footer-logo">{isSkilterSection ? 'Skilter' : 'Barter'}</span>
           </Link>
-          <p className="footer-copy footer-copy-desktop">Trade smarter. Exchange sustainably.</p>
+          <p className="footer-copy footer-copy-desktop">
+            {isSkilterSection ? 'Learn smarter. Share skills.' : 'Trade smarter. Exchange sustainably.'}
+          </p>
         </div>
 
         <div className="footer-col">
@@ -125,7 +145,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <p>© 2026 Barter. All Rights Reserved.</p>
+        <p>© 2026 {isSkilterSection ? 'Skilter' : 'Barter'}. All Rights Reserved.</p>
         <div className="footer-socials footer-socials-bottom">
           <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
             <FaInstagram size={15} />

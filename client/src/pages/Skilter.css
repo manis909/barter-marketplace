@@ -97,13 +97,22 @@
 /* ── Skill Grid ──────────────────────────────────────────────────── */
 .skill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   padding-bottom: 40px;
 }
 
-@media (max-width: 768px) {
+/* iPad (768px - 1023px) → 3 columns */
+@media (max-width: 1023px) {
   .skill-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Mobile (up to 767px) → 2 columns with reduced gap */
+@media (max-width: 767px) {
+  .skill-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 }

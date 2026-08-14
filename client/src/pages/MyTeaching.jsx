@@ -328,8 +328,8 @@ export default function MyTeaching() {
         {listings.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: 22, margin: '0 16px 24px', border: '1px dashed var(--line)' }}>
             <p style={{ color: 'var(--muted)', margin: '0 0 16px' }}>You haven't posted any skill listings yet.</p>
-            <Link to="/explore" style={{ padding: '10px 20px', background: 'var(--dark)', color: 'var(--lime)', textDecoration: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14 }}>
-              Explore Platform
+            <Link to="/skilter/skills" style={{ padding: '10px 20px', background: 'var(--dark)', color: 'var(--lime)', textDecoration: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14 }}>
+              My Skills
             </Link>
           </div>
         ) : (
@@ -339,30 +339,43 @@ export default function MyTeaching() {
             return (
               <div key={listing.id} className="listing-card">
                 <div className="listing-header">
-                  <div>
-                    <h3 className="listing-title">{listing.skill_name}</h3>
-                    <div className="listing-meta">
-                      {listing.category && <span>📁 {listing.category}</span>}
-                      <span>👥 Type: {listing.session_type === 'group' ? 'Group Session' : '1-on-1'}</span>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <img
+                      src={
+                        Array.isArray(listing.image_urls) && listing.image_urls[0]
+                          ? listing.image_urls[0]
+                          : 'https://via.placeholder.com/56x56?text=Skill'
+                      }
+                      alt={listing.skill_name}
+                      style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
+                      onError={e => { e.currentTarget.src = 'https://via.placeholder.com/56x56?text=Skill'; }}
+                    />
+                    <div>
+                      <h3 className="listing-title">{listing.skill_name}</h3>
+                      <div className="listing-meta">
+                        {listing.category && <span>📁 {listing.category}</span>}
+                        <span>👥 Type: {listing.session_type === 'group' ? 'Group Session' : '1-on-1'}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="spots-badge">
-                    {listing.accepted_count} / {listing.max_participants} Spots Filled
+                  <div className="spots-badge" style={{ background: 'var(--peach)', color: 'var(--peach-ink)' }}>
+                    {listing.accepted_count} / {listing.max_participants} Spots Paid ({listing.spots_left > 0 ? `${listing.spots_left} left` : 'Full'})
                   </div>
                 </div>
 
                 <div className="learner-requests">
                   <h4 style={{ margin: '0 0 10px 0', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)' }}>
-                    Learner Requests ({listingBookings.length})
+                    Learner Bookings & Reservations ({listingBookings.length})
                   </h4>
 
                   {listingBookings.length === 0 ? (
-                    <p style={{ color: 'var(--muted)', fontSize: 13, margin: '4px 0 0 0', italic: 'true' }}>
+                    <p style={{ color: 'var(--muted)', fontSize: 13, margin: '4px 0 0 0', fontStyle: 'italic' }}>
                       No requests received for this listing yet.
                     </p>
                   ) : (
                     listingBookings.map(b => {
                       const isBusy = actionLoading[b.id];
+                      const isUnpaid = b.payment_status === 'unpaid';
                       return (
                         <div key={b.id} className="learner-row">
                           <div className="learner-info">
@@ -385,29 +398,34 @@ export default function MyTeaching() {
                           </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span className={`badge badge-${b.status}`}>{b.status}</span>
+                            <span className={`badge badge-${isUnpaid && b.status === 'pending' ? 'pending' : b.status}`}>
+                              {isUnpaid && b.status === 'pending' ? 'reserved (unpaid)' : b.status}
+                            </span>
                             
-                            {b.status === 'pending' && (
-                              <div className="actions-row">
-                                <button
-                                  className="btn-accept"
-                                  onClick={() => handleStatusUpdate(b.id, 'accepted')}
-                                  disabled={isBusy || (listing.accepted_count >= listing.max_participants)}
-                                >
-                                  {isBusy ? '...' : 'Accept'}
-                                </button>
-                                <button
-                                  className="btn-decline"
-                                  onClick={() => handleStatusUpdate(b.id, 'declined')}
-                                  disabled={isBusy}
-                                >
-                                  Decline
-                                </button>
-                              </div>
+                            {b.status === 'pending' && isUnpaid && (
+                              <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
+                                Waiting for learner payment
+                              </span>
                             )}
 
                             {b.status === 'accepted' && (
                               <div className="actions-row">
+                                <Link
+                                  to={`/skilter/chat/${b.id}`}
+                                  style={{
+                                    padding: '8px 16px',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    borderRadius: '10px',
+                                    textDecoration: 'none',
+                                    background: 'var(--dark)',
+                                    color: 'var(--lime)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center'
+                                  }}
+                                >
+                                  💬 Chat
+                                </Link>
                                 <button
                                   className="btn-complete"
                                   onClick={() => handleStatusUpdate(b.id, 'completed')}

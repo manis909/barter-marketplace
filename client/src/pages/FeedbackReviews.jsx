@@ -21,39 +21,6 @@ const CATEGORIES = [
   'General Feedback',
 ]
 
-const IMPROVEMENTS = [
-  {
-    id: 1,
-    title: 'Improved mobile experience',
-    desc: 'Responsive layouts rebuilt across all key pages.',
-    date: 'Jul 2026',
-  },
-  {
-    id: 2,
-    title: 'Faster image uploads',
-    desc: 'Supabase storage pipeline optimised — uploads are now 2× faster.',
-    date: 'Jun 2026',
-  },
-  {
-    id: 3,
-    title: 'Better search performance',
-    desc: 'Full-text search now returns results in under 100 ms.',
-    date: 'Jun 2026',
-  },
-  {
-    id: 4,
-    title: 'Enhanced listing management',
-    desc: 'Crop, reorder, and bulk-manage your listing images in one place.',
-    date: 'May 2026',
-  },
-  {
-    id: 5,
-    title: 'UI refinements across the app',
-    desc: 'Consistent spacing, typography, and colour system rolled out site-wide.',
-    date: 'Apr 2026',
-  },
-]
-
 // ── Sub-components ──────────────────────────────────────────────────────────
 function StarRating({ value, onChange, readonly = false, size = 22 }) {
   const [hovered, setHovered] = useState(0)
@@ -542,35 +509,6 @@ export default function FeedbackReviews() {
           </section>
         </div>
 
-        {/* ── Recent Improvements ──────────────────────────────────── */}
-        <section className="fr-improvements">
-          <div className="fr-improvements__header">
-            <h2>Recent Improvements Inspired by User Feedback</h2>
-            <p>
-              Every suggestion counts. Here's what we've shipped recently based
-              on what users told us.
-            </p>
-          </div>
-          <div className="fr-timeline">
-            {IMPROVEMENTS.map((item, idx) => (
-              <div key={item.id} className="fr-timeline__item">
-                <div className="fr-timeline__connector">
-                  <div className="fr-timeline__dot" />
-                  {idx < IMPROVEMENTS.length - 1 && (
-                    <div className="fr-timeline__line" />
-                  )}
-                </div>
-                <div className="fr-timeline__card">
-                  <div className="fr-timeline__card-top">
-                    <h3>{item.title}</h3>
-                    <span className="fr-timeline__date">{item.date}</span>
-                  </div>
-                  <p>{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )
