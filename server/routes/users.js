@@ -145,11 +145,12 @@ router.get('/:id/items', async (req, res) => {
   );
   res.json({ items: result.rows });
 }); 
-// ---- Get all skills a specific user teaches (for their Profile page) ----
-// Add this anywhere before module.exports = router; in users.js
+// ---- Get all skills a specific user teaches (for their Skills Profile page) ----
+// Replace your existing '/:id/skills' route in users.js with this one —
+// now includes image_urls.
 router.get('/:id/skills', async (req, res) => {
   const result = await db.query(
-    `SELECT id, skill_name, description, category, price_type, price, status
+    `SELECT id, skill_name, description, category, price_type, status, image_urls
      FROM skill_listings
      WHERE teacher_id = $1
      ORDER BY created_at DESC`,
