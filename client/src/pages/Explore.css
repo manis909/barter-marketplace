@@ -66,32 +66,3 @@
   min-width: 0;     /* prevent flex/grid item from overflowing its track on mobile */
   overflow: hidden; /* contain internal scroll tracks within this block */
 }
-
-/* Thin visual divider between the smart block and the main All Listings grid */
-.explore-all-section {
-  border-top: 1px solid #E7E3DA;
-  padding-top: 8px;
-}
-
-/* "View all listings" link below More Listings section */
-.explore-all-section__header {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.explore-view-all-link {
-  align-self: flex-start;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #2F6B57;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease, color 0.15s ease;
-  padding-bottom: 1px;
-}
-
-.explore-view-all-link:hover {
-  color: #1b4d3e;
-  border-bottom-color: #2F6B57;
-}

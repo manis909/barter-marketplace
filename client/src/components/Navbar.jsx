@@ -19,8 +19,10 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false)
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
   const desktopBrandRef = useRef(null)
   const mobileBrandRef = useRef(null)
+  const desktopAdminRef = useRef(null)
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [activeCategory, setActiveCategory] = useState(() => {
     const cat = new URLSearchParams(location.search).get('category')
@@ -46,9 +48,10 @@ export default function Navbar() {
   // Close brand dropdown on route change
   useEffect(() => {
     setBrandDropdownOpen(false)
+    setAdminDropdownOpen(false)
   }, [location.pathname])
 
-  // Close brand dropdown on outside click
+  // Close brand and admin dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -56,6 +59,11 @@ export default function Navbar() {
         mobileBrandRef.current && !mobileBrandRef.current.contains(event.target)
       ) {
         setBrandDropdownOpen(false)
+      }
+      if (
+        desktopAdminRef.current && !desktopAdminRef.current.contains(event.target)
+      ) {
+        setAdminDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -103,7 +111,7 @@ export default function Navbar() {
 
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
-  const SKILTER_PREFIXES = ['/skilter', '/skills', '/skill-bookings', '/my-bookings']
+  const SKILTER_PREFIXES = ['/skilter', '/skills']
   const RENTER_PREFIXES  = ['/renter', '/rent']
   const BARTER_PREFIXES  = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
                              '/wishlist', '/wallet', '/add-item', '/item/']
@@ -314,23 +322,77 @@ export default function Navbar() {
               </Link>
 
               {currentUser?.is_admin && (
-                <Link to="/admin/verification" className="navbar-link">Admin</Link>
+                <div
+                  className="navbar-item-dropdown"
+                  ref={desktopAdminRef}
+                  style={{ position: 'relative' }}
+                >
+                  <button
+                    type="button"
+                    className="navbar-link navbar-brand-dropdown-trigger"
+                    onClick={() => setAdminDropdownOpen((prev) => !prev)}
+                    aria-expanded={adminDropdownOpen}
+                    aria-haspopup="true"
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    Admin
+                    <ChevronDown
+                      size={14}
+                      className={`brand-dropdown-chevron ${adminDropdownOpen ? 'open' : ''}`}
+                      style={{ marginLeft: 2 }}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {adminDropdownOpen && (
+                      <motion.div
+                        className="brand-dropdown-menu"
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        style={{ right: 0, left: 'auto', minWidth: '180px' }}
+                      >
+                        <Link
+                          to="/admin/verification"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Trade Verification
+                        </Link>
+                        <Link
+                          to="/admin/payment-review"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Payment Review
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
 
-              {currentUser && <NotificationBell />}
+              {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
               {currentUser ? (
-                <motion.button
-                  type="button"
-                  className="profile-button"
-                  onClick={() => setDrawerOpen(true)}
-                  aria-label="Open profile drawer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.96 }}
-                >
-                  <User className="profile-icon" size={20} />
-                </motion.button>
-              ) : (
+  <motion.button
+    type="button"
+    className="profile-button"
+    onClick={() => setDrawerOpen(true)}
+    aria-label="Open profile drawer"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.96 }}
+  >
+    {currentUser.profile_image ? (
+      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
+    ) : (
+      <User className="profile-icon" size={20} />
+    )}
+  </motion.button>
+) : (
                 <Link to="/login" className="navbar-link navbar-login-btn">
                   Login
                 </Link>
@@ -419,20 +481,24 @@ export default function Navbar() {
                   <Home size={18} className="mobile-home-icon" />
                 </Link>
 
-                {currentUser && <NotificationBell />}
+                {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
-                {currentUser ? (
-                  <motion.button
-                    type="button"
-                    className="profile-button mobile-profile-btn"
-                    onClick={() => setDrawerOpen(true)}
-                    aria-label="Open profile drawer"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.96 }}
-                  >
-                    <User className="profile-icon" size={18} />
-                  </motion.button>
-                ) : (
+{currentUser ? (
+  <motion.button
+    type="button"
+    className="profile-button mobile-profile-btn"
+    onClick={() => setDrawerOpen(true)}
+    aria-label="Open profile drawer"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.96 }}
+  >
+    {currentUser.profile_image ? (
+      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
+    ) : (
+      <User className="profile-icon" size={18} />
+    )}
+  </motion.button>
+) : (
                   <Link to="/login" className="navbar-link navbar-login-btn mobile-login-btn">
                     Login
                   </Link>

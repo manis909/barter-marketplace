@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
+import { createSkillBooking } from '../services/skillBookingService'
+import SkillWishlistButton from '../components/SkillWishlistButton'
 import './SkillDetail.css'
 
 export default function SkillDetailPage() {
@@ -15,6 +17,7 @@ export default function SkillDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [touchStartX, setTouchStartX] = useState(null)
+  const [booking, setBooking] = useState({ loading: false, error: '', success: false })
 
   useEffect(() => {
     if (!id) {
@@ -168,6 +171,7 @@ export default function SkillDetailPage() {
             onTouchEnd={handleTouchEnd}
           >
             <img src={displayImage} alt={normalizedSkill.skill_name} className="detail-main-image" />
+            <SkillWishlistButton skillId={normalizedSkill.id} />
 
             {images.length > 1 && (
               <>
@@ -210,7 +214,24 @@ export default function SkillDetailPage() {
         </div>
 
         <div className="detail-copy">
-          <h1>{normalizedSkill.skill_name}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <h1 style={{ margin: 0 }}>{normalizedSkill.skill_name}</h1>
+            {isOwner && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '6px 14px',
+                background: '#F3F4F6',
+                color: '#6B7280',
+                border: '1px dashed #D1D5DB',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: '600'
+              }}>
+                Mine
+              </span>
+            )}
+          </div>
           <p className="detail-description">{normalizedSkill.description}</p>
           <div className="detail-info-grid">
             <div>
@@ -252,16 +273,46 @@ export default function SkillDetailPage() {
             {isOwner ? (
               <p style={{ color: '#57534E', fontWeight: 600 }}>This is your skill listing.</p>
             ) : (
-              <button
-                type="button"
-                className="primary-button detail-action"
-                onClick={() => {
-                  // Future: Navigate to booking page or open booking modal
-                  alert('Booking functionality coming soon!')
-                }}
-              >
-                Book Session
-              </button>
+              <>
+                <button
+                  id="btn-book-session"
+                  type="button"
+                  className="primary-button detail-action"
+                  disabled={booking.loading || booking.success}
+                  onClick={async () => {
+                    setBooking({ loading: true, error: '', success: false })
+                    try {
+                      await createSkillBooking(normalizedSkill.id)
+                      setBooking({ loading: false, error: '', success: true })
+                      setTimeout(() => navigate('/skilter/learning'), 1200)
+                    } catch (err) {
+                      const msg =
+                        err?.response?.data?.error ||
+                        'Something went wrong. Please try again.'
+                      setBooking({ loading: false, error: msg, success: false })
+                    }
+                  }}
+                >
+                  {booking.loading
+                    ? 'Booking…'
+                    : booking.success
+                    ? '✓ Booked! Redirecting…'
+                    : 'Book Session'}
+                </button>
+                {booking.error && (
+                  <p
+                    id="booking-error-msg"
+                    style={{
+                      marginTop: '10px',
+                      color: '#DC2626',
+                      fontSize: '0.875rem',
+                      fontWeight: 500
+                    }}
+                  >
+                    {booking.error}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

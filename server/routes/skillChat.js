@@ -66,7 +66,7 @@ router.post("/", requireAuth, async (req, res) => {
     const recipientId = sender_id === b.requester_id ? b.teacher_id : b.requester_id;
     await createNotification(
       recipientId,
-      "new_message",
+      "new_skill_message",
       "New Message",
       "You have a new message in your skill booking chat.",
       booking_id

@@ -30,12 +30,13 @@ import {
   MessageCircle,
   Star,
   LogOut,
+  Shield,
 } from 'lucide-react'
 // Reuse ProfileDrawer's CSS — no new stylesheet needed
 import './ProfileDrawer.css'
 
 const primaryItems = [
-  { label: 'My Profile',   icon: User,          path: '/profile' },
+  { label: 'My Profile',   icon: User,          path: '/skilter/profile' },
   { label: 'My Skills',    icon: Lightbulb,     path: '/skilter/skills' },
   { label: 'My Learning',  icon: BookOpen,      path: '/skilter/learning' },
   { label: 'My Teaching',  icon: GraduationCap, path: '/skilter/teaching' },
@@ -146,6 +147,43 @@ export default function SkilterDrawer({ open, onClose }) {
               )
             })}
           </div>
+
+          {currentUser?.is_admin && (
+            <>
+              <div className="drawer-divider" />
+              <div className="drawer-group">
+                <p className="drawer-group-title" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 14px 4px', margin: 0 }}>
+                  Admin Controls
+                </p>
+                <button
+                  type="button"
+                  className={location.pathname === '/admin/verification' ? 'drawer-item active' : 'drawer-item'}
+                  onClick={() => {
+                    navigate('/admin/verification')
+                    onClose()
+                  }}
+                >
+                  <span className="drawer-icon" aria-hidden="true">
+                    <Shield size={18} />
+                  </span>
+                  <span>Trade Verification</span>
+                </button>
+                <button
+                  type="button"
+                  className={location.pathname === '/admin/payment-review' ? 'drawer-item active' : 'drawer-item'}
+                  onClick={() => {
+                    navigate('/admin/payment-review')
+                    onClose()
+                  }}
+                >
+                  <span className="drawer-icon" aria-hidden="true">
+                    <Shield size={18} />
+                  </span>
+                  <span>Payment Review</span>
+                </button>
+              </div>
+            </>
+          )}
 
           <div className="drawer-divider" />
 

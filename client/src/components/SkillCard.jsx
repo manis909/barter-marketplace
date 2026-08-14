@@ -1,11 +1,16 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
+import { createSkillBooking } from '../services/skillBookingService'
+import SkillWishlistButton from './SkillWishlistButton'
 import './SkillCard.css'
 
 export default function SkillCard({ skill }) {
   const { currentUser } = useAuth()
+  const navigate = useNavigate()
+  const [cardBooking, setCardBooking] = useState({ loading: false, error: '', success: false })
 
   const image = skill.image_urls?.[0] || 'https://via.placeholder.com/300x220?text=Skill'
   const category = skill.category || 'General'
@@ -23,6 +28,7 @@ export default function SkillCard({ skill }) {
       <div className="card-media-wrapper">
         <div className="card-media-backdrop" style={{ backgroundImage: `url(${image})` }} />
         <img src={image} alt={skill.skill_name} className="card-image" />
+        <SkillWishlistButton skillId={skill.id} />
       </div>
 
       {/* Compact Content Density */}
@@ -69,25 +75,46 @@ export default function SkillCard({ skill }) {
 
         {/* Row 5: Clean Equal-Width Buttons */}
         <div className="card-actions-row">
-          {isOwner ? (
-            <span className="card-status-pill owner-pill full-width">Mine</span>
-          ) : (
-            <>
-              <Link to={`/skilter/skill/${skill.id}`} className="btn-compact btn-compact-secondary">
-                View Details
-              </Link>
+          {isOwner && (
+            <span className="card-status-pill owner-pill">Mine</span>
+          )}
+          <Link to={`/skilter/skill/${skill.id}`} className="btn-compact btn-compact-secondary">
+            View Details
+          </Link>
+          {!isOwner && (
+            <span style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <button
+                id={`btn-card-book-${skill.id}`}
                 type="button"
                 className="btn-compact btn-compact-primary"
-                onClick={(e) => {
+                disabled={cardBooking.loading || cardBooking.success}
+                onClick={async (e) => {
                   e.stopPropagation()
-                  // TODO: Member 3 will wire this to their booking flow
-                  alert('Booking functionality will be connected by Member 3')
+                  setCardBooking({ loading: true, error: '', success: false })
+                  try {
+                    await createSkillBooking(skill.id)
+                    setCardBooking({ loading: false, error: '', success: true })
+                    setTimeout(() => navigate('/skilter/learning'), 1200)
+                  } catch (err) {
+                    const msg =
+                      err?.response?.data?.error ||
+                      'Something went wrong. Please try again.'
+                    setCardBooking({ loading: false, error: msg, success: false })
+                  }
                 }}
               >
-                Book Session
+                {cardBooking.loading
+                  ? 'Booking…'
+                  : cardBooking.success
+                  ? '✓ Booked!'
+                  : 'Book Session'}
               </button>
-            </>
+              {cardBooking.error && (
+                <span style={{ color: '#DC2626', fontSize: '0.75rem', fontWeight: 500 }}>
+                  {cardBooking.error}
+                </span>
+              )}
+            </span>
           )}
         </div>
       </div>

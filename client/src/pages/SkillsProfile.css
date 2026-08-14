@@ -1,0 +1,75 @@
+.skills-profile-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  position: relative;
+}
+
+.skills-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+
+.skills-profile-header-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.skills-profile-rating {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 4px 0 2px;
+}
+
+.skills-profile-header-info .profile-joined {
+  margin: 0 0 8px;
+}
+
+.skills-teach-grid {
+  width: 100%;
+  margin-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.skills-teach-grid h3 {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.skills-teach-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.skills-teach-card {
+  display: block;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+
+.skills-teach-card-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+
+.skills-teach-card-body {
+  padding: 10px 12px;
+}
+
+.skills-teach-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}

@@ -13,6 +13,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  Shield,
 } from 'lucide-react'
 import './ProfileDrawer.css'
 
@@ -164,6 +165,43 @@ export default function ProfileDrawer({ open, onClose, onLogout }) {
               )
             })}
           </div>
+
+          {currentUser?.is_admin && (
+            <>
+              <div className="drawer-divider" />
+              <div className="drawer-group">
+                <p className="drawer-group-title" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 14px 4px', margin: 0 }}>
+                  Admin Controls
+                </p>
+                <button
+                  type="button"
+                  className={location.pathname === '/admin/verification' ? 'drawer-item active' : 'drawer-item'}
+                  onClick={() => {
+                    navigate('/admin/verification')
+                    onClose()
+                  }}
+                >
+                  <span className="drawer-icon" aria-hidden="true">
+                    <Shield size={18} />
+                  </span>
+                  <span>Trade Verification</span>
+                </button>
+                <button
+                  type="button"
+                  className={location.pathname === '/admin/payment-review' ? 'drawer-item active' : 'drawer-item'}
+                  onClick={() => {
+                    navigate('/admin/payment-review')
+                    onClose()
+                  }}
+                >
+                  <span className="drawer-icon" aria-hidden="true">
+                    <Shield size={18} />
+                  </span>
+                  <span>Payment Review</span>
+                </button>
+              </div>
+            </>
+          )}
 
           <div className="drawer-divider" />
 

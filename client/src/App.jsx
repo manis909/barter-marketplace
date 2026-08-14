@@ -21,14 +21,15 @@ import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsAndConditionsPage from './pages/TermsAndConditions';
 import SkilterPage from './pages/Skilter';
 import SkillDetailPage from './pages/SkillDetail';
-import MySkillBookingsPage from './pages/MySkillBookings';
 import MySkillsPage from './pages/MySkillsPage';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
-import SkillChatsLayout from './pages/SkillChatsLayout';
+import SkillChatsLayout from './pages/SkillChatsLayout'; 
+import SkillsProfile from './pages/SkillsProfile';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
+import AdminPaymentReviewPage from './pages/AdminPaymentReview';
 
 // ── Skilter placeholder ───────────────────────────────────────────────────
 // Rendered for Skilter-specific routes whose full page is being built
@@ -45,6 +46,10 @@ function SkilterPlaceholder({ title }) {
     </div>
   )
 }
+
+import MyLearningPage from './pages/MyLearning';
+import MyTeachingPage from './pages/MyTeaching';
+import SkilterWishlistPage from './pages/SkilterWishlist';
 
 function App() {
   return (
@@ -76,20 +81,22 @@ function App() {
             <Route path="/skilter/explore" element={<SkilterPage />} />
             <Route path="/skilter/skill/:id" element={<SkillDetailPage />} />
             <Route path="/skills" element={<SkilterPage />} />
-            <Route path="/skill-bookings" element={<MySkillBookingsPage />} />
-            <Route path="/my-bookings" element={<MySkillBookingsPage />} />
+            <Route path="/skilter/profile/:userId" element={<SkillsProfile />} />
+            <Route path="/skilter/profile" element={<SkillsProfile />} />
+
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
+            <Route path="/admin/payment-review" element={<AdminPaymentReviewPage />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
             <Route path="/skilter/skills"    element={<MySkillsPage />} />
-            <Route path="/skilter/learning"  element={<SkilterPlaceholder title="My Learning" />} />
-            <Route path="/skilter/teaching"  element={<SkilterPlaceholder title="My Teaching" />} />
+            <Route path="/skilter/learning"  element={<MyLearningPage />} />
+            <Route path="/skilter/teaching"  element={<MyTeachingPage />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
-            <Route path="/skilter/wishlist"  element={<SkilterPlaceholder title="Skilter Wishlist" />} />
+            <Route path="/skilter/wishlist"  element={<SkilterWishlistPage />} />
             <Route path="/skilter/chat"      element={<SkillChatsLayout />} />
             <Route path="/skilter/chat/:bookingId" element={<SkillChatsLayout />} />
           </Routes>
