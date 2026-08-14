@@ -73,13 +73,13 @@ export default function Navbar() {
           const prevY = lastScrollY.current
           const diff = currentY - prevY
 
-          // Ignore tiny scroll jitter (< 8px)
-          if (Math.abs(diff) >= 8) {
+          // Ignore tiny scroll jitter (< 6px)
+          if (Math.abs(diff) >= 6) {
             setScrolled((prevScrolled) => {
-              if (!prevScrolled && currentY > 110 && diff > 0) {
+              if (!prevScrolled && currentY > 60 && diff > 0) {
                 return true
               }
-              if (prevScrolled && (currentY < 30 || diff < -15)) {
+              if (prevScrolled && (currentY < 20 || diff < -12)) {
                 return false
               }
               return prevScrolled
