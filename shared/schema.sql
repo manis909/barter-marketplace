@@ -295,6 +295,143 @@ CREATE TABLE skill_messages (
     message       TEXT NOT NULL,
     created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- RENTAL FEATURE — Safe MVP
+-- Barter records listings, bookings, and condition proof only.
+-- No coins, no commission, no payment processing or holding —
+-- rate/agreed_amount are informational records only. Actual
+-- payment happens directly between owner and renter, outside
+-- the app.
+-- ============================================================
+
+CREATE EXTENSION IF NOT EXISTS btree_gist; -- needed for the overlap-prevention constraint below
+
+-- ------------------------------------------------------------
+-- rental_listings
+-- One row per item a verified user has listed for rent.
+-- ------------------------------------------------------------
+CREATE TABLE rental_listings (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_name      VARCHAR(150) NOT NULL,
+    description    TEXT,
+    category       VARCHAR(100),
+    image_urls     TEXT[],
+
+    rate_type      VARCHAR(10) NOT NULL CHECK (rate_type IN ('hourly', 'daily')),
+    rate_amount    NUMERIC(10,2) NOT NULL, -- informational only, in rupees
+
+    status         VARCHAR(20) NOT NULL DEFAULT 'available'
+                   CHECK (status IN ('available', 'rented', 'paused')),
+
+    created_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_rental_listings_owner ON rental_listings(owner_id);
+CREATE INDEX idx_rental_listings_status ON rental_listings(status);
+
+-- ------------------------------------------------------------
+-- rental_bookings
+-- One row per rental request/agreement between a borrower and
+-- the listing's owner, for a specific date/time range.
+-- ------------------------------------------------------------
+CREATE TABLE rental_bookings (
+    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rental_listing_id     UUID NOT NULL REFERENCES rental_listings(id) ON DELETE CASCADE,
+    borrower_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    owner_id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    start_datetime        TIMESTAMPTZ NOT NULL,
+    end_datetime          TIMESTAMPTZ NOT NULL,
+
+    agreed_total_amount   NUMERIC(10,2), -- informational record of what was agreed, never processed by the app
+
+    status                VARCHAR(30) NOT NULL DEFAULT 'pending'
+                          CHECK (status IN (
+                              'pending', 'accepted', 'declined',
+                              'active', 'return_pending', 'completed',
+                              'disputed', 'cancelled'
+                          )),
+
+    created_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    CHECK (end_datetime > start_datetime),
+
+    -- Prevents two ACTIVE bookings for the same item from overlapping
+    -- in time. Only enforced against bookings that are pending, accepted,
+    -- or active — declined/cancelled/completed bookings don't block new ones.
+    EXCLUDE USING gist (
+        rental_listing_id WITH =,
+        tstzrange(start_datetime, end_datetime) WITH &&
+    ) WHERE (status IN ('pending', 'accepted', 'active'))
+);
+
+CREATE INDEX idx_rental_bookings_listing ON rental_bookings(rental_listing_id);
+CREATE INDEX idx_rental_bookings_borrower ON rental_bookings(borrower_id);
+CREATE INDEX idx_rental_bookings_owner ON rental_bookings(owner_id);
+CREATE INDEX idx_rental_bookings_status ON rental_bookings(status);
+
+-- ------------------------------------------------------------
+-- rental_condition_proofs
+-- Photo evidence of item condition, captured twice per booking:
+-- once at handover (start), once at return (end). Either party
+-- can upload their own proof at each stage.
+-- ------------------------------------------------------------
+CREATE TABLE rental_condition_proofs (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id    UUID NOT NULL REFERENCES rental_bookings(id) ON DELETE CASCADE,
+    user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    proof_stage   VARCHAR(20) NOT NULL CHECK (proof_stage IN ('handover', 'return')),
+    image_path    TEXT NOT NULL,
+    note          TEXT,
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_rental_condition_proofs_booking ON rental_condition_proofs(booking_id);
+
+-- ------------------------------------------------------------
+-- rental_messages
+-- Chat between borrower and owner, scoped to one booking.
+-- ------------------------------------------------------------
+CREATE TABLE rental_messages (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id    UUID NOT NULL REFERENCES rental_bookings(id) ON DELETE CASCADE,
+    sender_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message       TEXT NOT NULL,
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_rental_messages_booking ON rental_messages(booking_id);
+
+-- ------------------------------------------------------------
+-- rental_disputes
+-- Formal record when something goes wrong — damage, non-return,
+-- disagreement over condition. Separate from the generic `reports`
+-- table since disputes here need to reference a specific booking
+-- and get resolved with a decision, not just filed and left open.
+-- ------------------------------------------------------------
+CREATE TABLE rental_disputes (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id        UUID NOT NULL REFERENCES rental_bookings(id) ON DELETE CASCADE,
+    raised_by         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    dispute_type      VARCHAR(30) NOT NULL
+                      CHECK (dispute_type IN ('damage', 'non_return', 'late_return', 'other')),
+    description       TEXT NOT NULL,
+
+    status            VARCHAR(20) NOT NULL DEFAULT 'open'
+                      CHECK (status IN ('open', 'under_review', 'resolved', 'dismissed')),
+    resolution_notes  TEXT, -- filled in by admin once reviewed
+    resolved_by       UUID REFERENCES users(id) ON DELETE SET NULL, -- admin who resolved it
+    resolved_at       TIMESTAMPTZ,
+
+    created_at        TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_rental_disputes_booking ON rental_disputes(booking_id);
+CREATE INDEX idx_rental_disputes_status ON rental_disputes(status);
 -- ============================================================
 -- INDEXES
 -- ============================================================
