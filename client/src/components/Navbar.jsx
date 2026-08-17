@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from './SearchBar'
 import ProfileDrawer from './ProfileDrawer'
 import SkilterDrawer from './SkilterDrawer'
+import RentalDrawer from './RentalDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
 import { User, Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
@@ -569,11 +570,14 @@ export default function Navbar() {
         </div>
       </header>
 
-      {currentUser && currentPlatform !== 'Skilter' && (
+      {currentUser && currentPlatform === 'Barter' && (
         <ProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       )}
       {currentUser && currentPlatform === 'Skilter' && (
         <SkilterDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
+      {currentUser && currentPlatform === 'Renter' && (
+        <RentalDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       )}
     </>
   )
