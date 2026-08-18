@@ -102,27 +102,32 @@ router.post(
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-  const user = result.rows[0];
-  if (!user) return res.status(400).json({ error: 'Please sign up first.' });
+  try {
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+    if (!user) return res.status(400).json({ error: 'Please sign up first.' });
 
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) return res.status(400).json({ error: 'Incorrect password. Please try again.' });
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(400).json({ error: 'Incorrect password. Please try again.' });
 
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-  res.json({
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      full_name: user.full_name,
-      college: user.college,
-      is_verified: user.is_verified,
-      verification_status: user.verification_status
-    },
-    token
-  });
+    res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name,
+        college: user.college,
+        is_verified: user.is_verified,
+        verification_status: user.verification_status
+      },
+      token
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Unable to connect to the server or database error.' });
+  }
 });
 
 module.exports = router;

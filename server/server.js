@@ -23,7 +23,11 @@ const skillChatRoutes = require("./routes/skillChat");
 const skillsRoutes = require("./routes/skills");
 const skillWishlistRoutes = require("./routes/skillWishlist");
 const rateLimit = require("express-rate-limit");
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+const authLimiter = rateLimit({ 
+  windowMs: 15 * 60 * 1000, 
+  max: 30,
+  message: { error: 'Too many login attempts. Please try again later.' } 
+});
 
 const app = express();
 app.use(cors());
