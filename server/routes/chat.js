@@ -92,6 +92,12 @@ router.post("/", requireAuth, upload.single("attachment"), async (req, res) => {
     if (!t) {
       return res.status(404).json({ message: "Trade not found" });
     }
+
+    // Always persist the canonical trade UUID from the actual trade record.
+    // This avoids mismatches where a report or message could be linked to a
+    // stale/derived value instead of the real trade_offers.id for the chat.
+    const canonicalTradeOfferId = t.id;
+
     if (sender_id !== t.sender_id && sender_id !== t.receiver_id) {
       return res.status(403).json({ message: "Not part of this trade" });
     }
@@ -119,14 +125,14 @@ router.post("/", requireAuth, upload.single("attachment"), async (req, res) => {
     const result = await db.query(
       `INSERT INTO messages (trade_offer_id, sender_id, message, reply_to_message_id, attachment_url, attachment_type)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [trade_offer_id, sender_id, message || null, reply_to_message_id || null, attachment_url, attachment_type]
+      [canonicalTradeOfferId, sender_id, message || null, reply_to_message_id || null, attachment_url, attachment_type]
     );
 
     const newMessage = result.rows[0];
 
     const io = req.app.get("io");
     if (io) {
-      io.to(String(trade_offer_id)).emit("newMessage", newMessage);
+      io.to(String(canonicalTradeOfferId)).emit("newMessage", newMessage);
     }
 
     const recipientId = sender_id === t.sender_id ? t.receiver_id : t.sender_id;
@@ -135,7 +141,7 @@ router.post("/", requireAuth, upload.single("attachment"), async (req, res) => {
       "new_message",
       "New Message",
       "You have a new message in your trade chat.",
-      trade_offer_id
+      canonicalTradeOfferId
     );
 
     res.status(201).json(newMessage);

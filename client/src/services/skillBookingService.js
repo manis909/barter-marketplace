@@ -96,3 +96,22 @@ export async function adminRejectPayment(bookingId, reason = '') {
   const res = await api.patch(`/skill-bookings/${bookingId}/reject-payment`, { reason });
   return res.data;
 }
+
+/**
+ * Fetch hidden skill booking chat IDs for the current user.
+ * Returns an array of booking IDs that have been hidden.
+ */
+export async function getHiddenSkillBookingIds() {
+  const res = await api.get('/skill-bookings/hidden/mine');
+  return res.data;
+}
+
+/**
+ * Hide a skill booking chat from the current user's chat list.
+ * The booking is not deleted; it's just hidden from view.
+ * @param {string} bookingId
+ */
+export async function hideSkillBookingChat(bookingId) {
+  const res = await api.delete(`/skill-bookings/${bookingId}/for-me`);
+  return res.data;
+}

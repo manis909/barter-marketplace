@@ -232,6 +232,53 @@ router.get("/admin/pending-payments", requireAuth, requireAdmin, async (req, res
   }
 });
 
+// ── GET /api/skill-bookings/hidden/mine ──────────────────────────────────
+// Fetch all skill booking IDs that the current user has hidden from their chat list
+router.get("/hidden/mine", requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT booking_id FROM skill_booking_deletions WHERE user_id = $1`,
+      [req.userId]
+    );
+    res.json(result.rows.map(r => r.booking_id));
+  } catch (error) {
+    console.error("GET /skill-bookings/hidden/mine error:", error);
+    res.status(500).json({ error: "Failed to fetch hidden chats" });
+  }
+});
+
+// ── DELETE /api/skill-bookings/:bookingId/for-me ──────────────────────────────
+// Hide this skill booking chat from the current user's list only
+router.delete("/:bookingId/for-me", requireAuth, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.userId;
+
+    // Verify booking exists and user is part of it
+    const bookingRes = await db.query(
+      `SELECT id FROM skill_bookings WHERE id = $1 AND (requester_id = $2 OR teacher_id = $2)`,
+      [bookingId, userId]
+    );
+
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found or you're not part of this chat" });
+    }
+
+    // Insert into hidden bookings (ignore if already exists)
+    await db.query(
+      `INSERT INTO skill_booking_deletions (booking_id, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (booking_id, user_id) DO NOTHING`,
+      [bookingId, userId]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /skill-bookings/:bookingId/for-me error:", error);
+    res.status(500).json({ error: "Failed to hide chat" });
+  }
+});
+
 // ── GET /api/skill-bookings/:id ───────────────────────────────────────────────
 router.get("/:id", requireAuth, async (req, res) => {
   try {
