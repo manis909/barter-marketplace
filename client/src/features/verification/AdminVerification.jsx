@@ -54,9 +54,30 @@ function TradeProofPanel() {
       setApproving(a => ({ ...a, [tradeId]: false }));
     }
   }
+  async function handleExportCsv() {
+  try {
+    const res = await api.get('/trades/admin/proofs/export', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'trade_proofs_log.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch {
+    setError('Could not export log.');
+  }
+}
+
 
   return (
     <div className="admin-proof-panel">
+      <div className="admin-id-panel-toolbar">
+  <button type="button" className="admin-export-btn" onClick={handleExportCsv}>
+    Export Log to CSV
+  </button>
+</div>
       {error && <p className="verification-error">{error}</p>}
       {successMessage && <p className="verification-success">{successMessage}</p>}
 
@@ -367,6 +388,7 @@ function ReportsPanel({ type = 'barter' }) {
 
   async function takeAction(actionType) {
     if (!selectedReport) return;
+   
 
     // Check if confirmation is needed
     if (['suspend', 'ban'].includes(actionType)) {
@@ -377,6 +399,21 @@ function ReportsPanel({ type = 'barter' }) {
     // Proceed with action
     await executeAction(actionType);
   }
+  async function handleExportCsv() {
+  try {
+    const res = await api.get('/reports/export', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'reports_log.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch {
+    setError('Could not export log.');
+  }
+}
 
   async function executeAction(actionType) {
     if (!selectedReport) return;
@@ -476,6 +513,11 @@ function ReportsPanel({ type = 'barter' }) {
   return (
       <div>
         {error && <p className="verification-error">{error}</p>}
+        <div className="admin-id-panel-toolbar">
+  <button type="button" className="admin-export-btn" onClick={handleExportCsv}>
+    Export Log to CSV
+  </button>
+</div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
           {['barter', 'skilter'].map(option => (

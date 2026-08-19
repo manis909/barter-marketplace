@@ -923,5 +923,41 @@ router.patch("/:id", requireAuth, requireVerified, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+// ── GET /api/trades/admin/proofs/export ────────────────────────────────────
+// Admin: export the full history of trades that went through proof
+// verification (either party submitted proof) as CSV.
+// Add this anywhere before module.exports = router; in trades.js
+router.get('/admin/proofs/export', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT t.updated_at, u_s.username AS sender_username, u_r.username AS receiver_username,
+              oi.title AS offered_item_title, ri.title AS requested_item_title,
+              t.status, t.proof_status
+       FROM trade_offers t
+       JOIN users u_s ON u_s.id = t.sender_id
+       JOIN users u_r ON u_r.id = t.receiver_id
+       JOIN items oi ON oi.id = t.offered_item_id
+       JOIN items ri ON ri.id = t.requested_item_id
+       WHERE t.sender_proof_submitted = TRUE OR t.receiver_proof_submitted = TRUE
+       ORDER BY t.updated_at DESC`
+    );
+
+    const header = 'Date,Sender,Receiver,Offered Item,Requested Item,Status,Proof Status\n';
+    const rows = result.rows.map(r => {
+      const escape = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+      return [
+        r.updated_at, r.sender_username, r.receiver_username,
+        r.offered_item_title, r.requested_item_title, r.status, r.proof_status
+      ].map(escape).join(',');
+    }).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="trade_proofs_log.csv"');
+    res.send(header + rows);
+  } catch (err) {
+    console.error('GET /trades/admin/proofs/export error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;
