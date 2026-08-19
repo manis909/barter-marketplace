@@ -269,9 +269,7 @@ router.get('/mine', requireAuth, async (req, res) => {
 
 // ── GET /api/skills ───────────────────────────────────────────────
 // Get all available skills (for Skilter Explore)
-// Includes both:
-//   1. Active skills from skill_listings table
-//   2. Approved skill provider applications (new)
+// Only actual skill listings are public; provider applications remain private.
 // Supports ?category=Dance and ?search=keyword
 router.get('/', async (req, res) => {
   try {
@@ -339,71 +337,9 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // ── PART 2: Approved applications (new) ──────────────────────────────
-    // Transform approved applications into skill_listings-like format
-    let query2 = `
-      SELECT
-        spa.id,
-        spa.user_id AS teacher_id,
-        spa.skill_name,
-        spa.skill_description AS description,
-        spa.category,
-        CAST(NULL AS text[]) AS image_urls,
-        CAST(NULL AS text) AS price_type,
-        CAST(NULL AS numeric) AS price,
-        CAST(NULL AS text) AS price_unit,
-        CAST(NULL AS text) AS session_type,
-        spa.experience_level,
-        spa.session_duration,
-        spa.teaching_mode,
-        spa.teaching_language,
-        spa.availability,
-        CAST(NULL AS integer) AS max_participants,
-        spa.status,
-        spa.created_at,
-        spa.updated_at,
-        u.username AS teacher_name,
-        'application' AS source
-      FROM skill_provider_applications spa
-      JOIN users u ON u.id = spa.user_id
-      WHERE spa.status = 'approved'
-    `;
+    const query = `${query1} ORDER BY updated_at DESC`;
 
-    // Category filter for applications
-    if (category) {
-      const normalizedCategory = normalizeCategory(category);
-      query2 += ` AND spa.category = $${values.length + 1}`;
-      values.push(normalizedCategory);
-    }
-
-    // Search filter for applications (searches skill_name, skill_description, category)
-    const searchClauses2 = [];
-    if (normalizedSearch) {
-      const searchTerms = normalizedSearch
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((term) => term.replace(/[%_]/g, '\\$&'));
-
-      if (searchTerms.length > 0) {
-        for (const term of searchTerms) {
-          const baseIndex = values.length + 1;
-          const pattern = `%${term}%`;
-          searchClauses2.push(`(
-            LOWER(spa.skill_name) LIKE LOWER($${baseIndex}) OR
-            LOWER(spa.skill_description) LIKE LOWER($${baseIndex + 1}) OR
-            LOWER(spa.category) LIKE LOWER($${baseIndex + 2})
-          )`);
-          values.push(pattern, pattern, pattern);
-        }
-
-        query2 += ` AND (${searchClauses2.join(' OR ')})`;
-      }
-    }
-
-    // ── Combine both queries and sort ─────────────────────────────────────
-    const query = `(${query1}) UNION ALL (${query2}) ORDER BY updated_at DESC`;
-
-    console.log('📊 UNION Query:', query);
+    console.log('📊 Skills Query:', query);
     console.log('📊 Values:', values);
 
     const result = await db.query(query, values);
