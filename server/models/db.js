@@ -21,6 +21,9 @@ types.setTypeParser(1114, (val) => {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }, // required for Supabase's hosted Postgres
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 5,
 });
 
 // Fails loudly on startup if the connection string is bad, instead of

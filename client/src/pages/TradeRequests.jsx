@@ -7,7 +7,8 @@ import { getErrorMessage } from '../utils/helpers';
 import { TRADE_STATUS } from '../utils/constants';
 import { useAuth } from '../features/auth/AuthContext';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const rawApiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').trim().replace(/\/+$/, '');
+const SOCKET_URL = rawApiUrl.replace(/\/api$/, '');
 
 // ── Shared design system — identical to MyTrades ──────────────────────────
 const BARTER_CSS = `

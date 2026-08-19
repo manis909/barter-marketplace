@@ -1,11 +1,12 @@
 .category-filter {
-  margin-bottom: 32px;
+  margin-bottom: 0px;
 }
 
 .category-filter h2 {
   margin: 0 0 14px;
   font-family: 'Fraunces', serif;
   font-size: 1.25rem;
+  color: #005C66;
 }
 
 .category-grid {
@@ -15,9 +16,9 @@
 }
 
 .category-pill {
-  border: 1px solid #E4E2D9;
+  border: 1px solid #D0ECE9;
   background: #FFFFFF;
-  color: #24231F;
+  color: #005C66;
   border-radius: 20px;
   padding: 12px 14px;
   text-align: left;
@@ -30,12 +31,14 @@
 
 .category-pill:hover {
   transform: translateY(-2px);
-  border-color: #3D6E63;
+  border-color: #008C99;
+  background: #F0FAF9;
 }
 
 .category-pill.active {
-  border-color: var(--pill-active-color, #3D6E63);
-  background: #F7F4EB;
+  border-color: var(--pill-active-color, #007885);
+  background: #E6F7F6;
+  color: #005C66;
 }
 
 .category-icon {
@@ -44,8 +47,8 @@
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: #EAF2EE;
-  color: #3D6E63;
+  background: #E6F7F6;
+  color: #008C99;
 }
 
 .category-icon svg {
@@ -53,14 +56,36 @@
   height: 18px;
 }
 
-@media (max-width: 760px) {
-  .category-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 767px) {
+  .category-filter {
+    margin-bottom: 0px;
   }
-}
 
-@media (max-width: 520px) {
+  .category-filter h2 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+
   .category-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+    padding: 4px 0 8px;
+  }
+
+  .category-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 0.85rem;
   }
 }

@@ -209,6 +209,20 @@ export default function Navbar() {
     [location.search, navigate]
   )
 
+  const handlePlatformSelect = useCallback(
+    (platform) => {
+      setBrandDropdownOpen(false)
+      if (platform === 'Barter') {
+        navigate('/explore')
+      } else if (platform === 'Skilter') {
+        navigate('/skilter')
+      } else if (platform === 'Renter') {
+        navigate('/renter')
+      }
+    },
+    [navigate]
+  )
+
   const activeCategoryObj = useMemo(
     () => CATEGORIES.find((c) => c.name === activeCategory) || CATEGORIES[0],
     [activeCategory]
@@ -218,10 +232,6 @@ export default function Navbar() {
     <>
       <header
         className={`navbar-wrapper ${scrolled ? 'is-scrolled' : ''}`}
-        style={{
-          '--active-accent-color': activeCategoryObj.color,
-          '--active-accent-bg': activeCategoryObj.lightBg,
-        }}
       >
         <div className="navbar-container">
           {/* DESKTOP LAYOUT (768px and above) */}
@@ -403,69 +413,53 @@ export default function Navbar() {
 
           {/* MOBILE LAYOUT (Below 768px) */}
           <div className={`navbar-mobile-wrapper ${scrolled ? 'mobile-scrolled' : ''}`}>
-            {/* ROW 1: Logo Dropdown (Left) & Home + Notifications + Profile (Right) */}
-            <div className={`mobile-row-1 ${brandDropdownOpen ? 'dropdown-open' : ''}`}>
-              <div ref={mobileBrandRef} style={{ position: 'relative' }}>
+            {/* ROW 1: Brand Logo (Left) | Profile Avatar / Login (Right) */}
+            <div className="mobile-row-1">
+              <div className="mobile-brand-wrapper" ref={mobileBrandRef}>
                 <button
                   type="button"
-                  className="navbar-brand navbar-brand-dropdown-trigger"
-                  onClick={() => setBrandDropdownOpen((prev) => !prev)}
+                  className="navbar-brand-dropdown-trigger"
+                  onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
                   aria-expanded={brandDropdownOpen}
-                  aria-label="Select Platform"
+                  aria-label="Select platform"
                 >
-                  <motion.div
-                    className="navbar-mark mobile-mark"
-                    whileHover={{ rotate: 180, scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  >
-                    ⇄
-                  </motion.div>
+                  <span className="navbar-mark mobile-mark">B</span>
                   <span className="navbar-logo mobile-logo">{currentPlatform}</span>
-                  <ChevronDown
-                    size={16}
-                    className={`brand-dropdown-chevron ${brandDropdownOpen ? 'open' : ''}`}
-                  />
+                  <ChevronDown size={14} className={`brand-dropdown-chevron ${brandDropdownOpen ? 'open' : ''}`} />
                 </button>
 
                 <AnimatePresence>
                   {brandDropdownOpen && (
                     <motion.div
                       className="brand-dropdown-menu mobile-brand-dropdown-menu"
-                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      initial={{ opacity: 0, y: -6, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
                     >
                       <button
                         type="button"
                         className={`brand-dropdown-item ${currentPlatform === 'Barter' ? 'active' : ''}`}
-                        onClick={() => {
-                          setBrandDropdownOpen(false)
-                          navigate('/explore')
-                        }}
+                        onClick={() => handlePlatformSelect('Barter')}
                       >
-                        Barter
+                        <span>Barter (Items)</span>
+                        {currentPlatform === 'Barter' && <span className="brand-dropdown-dot" />}
                       </button>
                       <button
                         type="button"
                         className={`brand-dropdown-item ${currentPlatform === 'Skilter' ? 'active' : ''}`}
-                        onClick={() => {
-                          setBrandDropdownOpen(false)
-                          navigate('/skilter')
-                        }}
+                        onClick={() => handlePlatformSelect('Skilter')}
                       >
-                        Skilter
+                        <span>Skilter (Skills)</span>
+                        {currentPlatform === 'Skilter' && <span className="brand-dropdown-dot" />}
                       </button>
                       <button
                         type="button"
                         className={`brand-dropdown-item ${currentPlatform === 'Renter' ? 'active' : ''}`}
-                        onClick={() => {
-                          setBrandDropdownOpen(false)
-                          navigate('/renter')
-                        }}
+                        onClick={() => handlePlatformSelect('Renter')}
                       >
-                        Renter
+                        <span>Renter (Rentals)</span>
+                        {currentPlatform === 'Renter' && <span className="brand-dropdown-dot" />}
                       </button>
                     </motion.div>
                   )}
@@ -473,33 +467,35 @@ export default function Navbar() {
               </div>
 
               <div className="mobile-actions-right">
-                {/* Mobile Home Button (🏠) */}
-                <Link 
-                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
-                  className="mobile-home-btn" 
+                {/* 1. Home Button */}
+                <Link
+                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'}
+                  className="mobile-home-btn"
                   aria-label="Explore Home"
                 >
                   <Home size={18} className="mobile-home-icon" />
                 </Link>
 
+                {/* 2. Notification Bell */}
                 {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
 
-{currentUser ? (
-  <motion.button
-    type="button"
-    className="profile-button mobile-profile-btn"
-    onClick={() => setDrawerOpen(true)}
-    aria-label="Open profile drawer"
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.96 }}
-  >
-    {currentUser.profile_image ? (
-      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
-    ) : (
-      <User className="profile-icon" size={18} />
-    )}
-  </motion.button>
-) : (
+                {/* 3. Mobile Profile Avatar Button / Login */}
+                {currentUser ? (
+                  <motion.button
+                    type="button"
+                    className="profile-button mobile-profile-btn"
+                    onClick={() => setDrawerOpen(true)}
+                    aria-label="Open profile drawer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.96 }}
+                  >
+                    {currentUser.profile_image ? (
+                      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
+                    ) : (
+                      <User className="profile-icon" size={18} />
+                    )}
+                  </motion.button>
+                ) : (
                   <Link to="/login" className="navbar-link navbar-login-btn mobile-login-btn">
                     Login
                   </Link>
@@ -518,54 +514,38 @@ export default function Navbar() {
               />
             </div>
 
-            {/* ROW 3: Categories (Render ONLY on Explore page when Profile Drawer is closed and not scrolled down) */}
-            <AnimatePresence initial={false}>
-              {showCategoryRow && !drawerOpen && !scrolled && (
-                <motion.div
-                  key="mobile-category-row-wrapper"
-                  className="mobile-row-3-collapse-wrapper"
-                  initial={{ opacity: 0, y: -10, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto', marginTop: 4 }}
-                  exit={{ opacity: 0, y: -10, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  style={{ overflow: 'hidden', willChange: 'transform, opacity' }}
-                >
-                  <div className="mobile-row-3-categories-scroll">
-                    <div className="categories-track">
-                      {(isSkilterActive ? SKILTER_CATEGORIES : CATEGORIES).map((cat) => {
-                        const activeCat = isSkilterActive ? skilterCategory : activeCategory
-                        const isActive  = activeCat === cat.name
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            className={`category-chip ${isActive ? 'active' : ''}`}
-                            onClick={() =>
-                              isSkilterActive
-                                ? handleSkilterCategoryClick(cat.name)
-                                : handleCategoryClick(cat.name)
-                            }
-                            aria-label={`Category ${cat.name}`}
-                            style={{
-                              '--chip-color': cat.color,
-                              '--chip-bg': cat.lightBg,
-                            }}
-                          >
-                            {isActive && (
-                              <span
-                                className="active-chip-bg"
-                                style={{ backgroundColor: cat.color }}
-                              />
-                            )}
-                            <span className="chip-label">{cat.name}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
+            {/* ROW 3: Large Category Tiles (Lucide Icon on top, Name below; hides when scrolling down) */}
+            {showCategoryRow && !drawerOpen && (
+              <div className={`mobile-row-3-categories-wrapper ${scrolled ? 'collapsed' : ''}`}>
+                <div className="mobile-row-3-categories-scroll">
+                  <div className="categories-track">
+                    {(isSkilterActive ? SKILTER_CATEGORIES : CATEGORIES).map((cat) => {
+                      const activeCat = isSkilterActive ? skilterCategory : activeCategory
+                      const isActive  = activeCat === cat.name
+                      const IconComp  = cat.icon
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          className={`category-tile ${isActive ? 'active' : ''}`}
+                          onClick={() =>
+                            isSkilterActive
+                              ? handleSkilterCategoryClick(cat.name)
+                              : handleCategoryClick(cat.name)
+                          }
+                          aria-label={`Category ${cat.name}`}
+                        >
+                          <div className="category-tile-icon-box">
+                            {IconComp && <IconComp size={20} className="category-tile-icon" />}
+                          </div>
+                          <span className="category-tile-label">{cat.name}</span>
+                        </button>
+                      )
+                    })}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>

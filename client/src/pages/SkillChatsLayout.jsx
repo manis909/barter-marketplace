@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMySkillBookings } from '../services/skillBookingService';
+import { getMySkillBookings, getHiddenSkillBookingIds, hideSkillBookingChat } from '../services/skillBookingService';
 import { useAuth } from '../features/auth/AuthContext';
 import SkillBookingChatWindow from '../features/chat/SkillBookingChatWindow';
 
@@ -39,6 +39,7 @@ const LAYOUT_CSS = `
 }
 .skillchatslayout-row:hover { background: ${T.bg}; border-left-color: ${T.accent}; transform: translateY(-1px); }
 .skillchatslayout-row.active { background: #EBF2F0; border-left-color: ${T.accent}; }
+.skillchatslayout-del-opt:hover { background: ${T.bg}; }
 
 @media (max-width: 767px) {
   .skillchatslayout-root {
@@ -74,6 +75,12 @@ const LAYOUT_CSS = `
 }
 @media (max-width: 767px) {
   .skc-desktop-header { display: none !important; }
+}
+
+/* Prevent horizontal overflow on mobile */
+.skillchatslayout-sidebar.mobile-show *,
+.skillchatslayout-mainpane.mobile-show * {
+  max-width: 100% !important; box-sizing: border-box !important;
 }
 
 .skc-report-overlay {
@@ -118,6 +125,17 @@ function BackArrow() {
   );
 }
 
+function TrashIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" />
+      <path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 export default function SkillChatsLayout() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
@@ -130,12 +148,19 @@ export default function SkillChatsLayout() {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [otherUserId, setOtherUserId] = useState(null);
+  const [deleteMenuFor, setDeleteMenuFor] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState([]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await getMySkillBookings();
-      setBookings(data.bookings ?? []);
+      const [bookingData, hidden] = await Promise.all([
+        getMySkillBookings(),
+        getHiddenSkillBookingIds().catch(() => []),
+      ]);
+      setBookings(bookingData.bookings ?? []);
+      setHiddenIds(hidden ?? []);
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Failed to load chats');
     } finally { setLoading(false); }
@@ -147,7 +172,8 @@ export default function SkillChatsLayout() {
     fetchAll();
   }, [authLoading, currentUser, fetchAll]);
 
-  const selectedBooking = bookings.find(b => String(b.id) === String(bookingId));
+  const visibleBookings = bookings.filter(b => !hiddenIds.includes(b.id));
+  const selectedBooking = visibleBookings.find(b => String(b.id) === String(bookingId));
   // NOTE: inferred toggle — ChatsLayout.jsx uses an equivalent `showChatOnMobile`
   // flag but I didn't see its exact derivation in the pasted output. This assumes
   // "a booking is selected" = "show chat pane on mobile", matching the visible
@@ -164,12 +190,22 @@ export default function SkillChatsLayout() {
 
   const handleSelectChat = id => navigate(`/skilter/chat/${id}`);
 
+  const handleDeleteForMe = async id => {
+    setDeleting(true);
+    try {
+      await hideSkillBookingChat(id);
+      setHiddenIds(p => [...p, id]);
+      if (String(id) === String(bookingId)) navigate('/skilter/chat');
+    } catch (err) { setError(err?.response?.data?.error || err?.message || 'Failed to delete chat'); }
+    finally { setDeleting(false); setDeleteMenuFor(null); }
+  };
+
   const handleSubmitReport = async () => {
     const token = localStorage.getItem('token');
     await fetch(`${API_URL}/api/reports`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reported_user_id: otherUserId, reason: reportReason }),
+      body: JSON.stringify({ reported_user_id: otherUserId, reason: reportReason, skill_booking_id: bookingId }),
     });
     setShowReport(false); setReportReason('');
   };
@@ -196,18 +232,19 @@ export default function SkillChatsLayout() {
             <p style={s.sidebarMuted}>Loading…</p>
           ) : error ? (
             <p style={{ ...s.sidebarMuted, color: T.danger }}>{error}</p>
-          ) : bookings.length === 0 ? (
+          ) : visibleBookings.length === 0 ? (
             <div style={s.emptyList}>
               <span style={{ fontSize: 32 }}>🎓</span>
               <p style={{ margin: '8px 0 0', fontSize: 13, color: T.muted }}>No skill chats yet</p>
             </div>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {bookings.map(booking => {
+              {visibleBookings.map(booking => {
                 const isReq = booking.requester_id === userId;
                 const name = isReq ? booking.teacher_name : booking.requester_name;
                 const imgField = isReq ? booking.teacher_profile_image : booking.requester_profile_image;
                 const isActive = String(booking.id) === String(bookingId);
+                const menuOpen = deleteMenuFor === booking.id;
                 return (
                   <li key={booking.id} style={{ position: 'relative' }}>
                     <div
@@ -221,7 +258,20 @@ export default function SkillChatsLayout() {
                         <span style={s.rowName}>{name || 'Unknown user'}</span>
                         <span style={s.rowSub}>{booking.skill_name}</span>
                       </span>
+                      <button type="button" aria-label="Delete chat"
+                        onClick={e => { e.stopPropagation(); setDeleteMenuFor(menuOpen ? null : booking.id); }}
+                        style={s.trashBtn}>
+                        <TrashIcon size={15} />
+                      </button>
                     </div>
+                    {menuOpen && (
+                      <div style={s.deleteMenu}>
+                        <button className="skillchatslayout-del-opt" disabled={deleting}
+                          onClick={() => handleDeleteForMe(booking.id)} style={s.deleteOpt}>Delete for me</button>
+                        <button className="skillchatslayout-del-opt"
+                          onClick={() => setDeleteMenuFor(null)} style={s.deleteOpt}>Cancel</button>
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -243,10 +293,17 @@ export default function SkillChatsLayout() {
               <button type="button" onClick={() => navigate('/skilter/chat')} style={s.iconBtn} aria-label="Back to chats">
                 <BackArrow />
               </button>
-              <Avatar name={otherUserName} imageUrl={otherUserImage} size={36} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
-              </div>
+              <button
+                type="button"
+                onClick={() => otherUserIdForReport && navigate(`/profile/${otherUserIdForReport}`)}
+                style={s.headerProfileBtn}
+                aria-label="View profile"
+              >
+                <Avatar name={otherUserName} imageUrl={otherUserImage} size={36} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
+                </div>
+              </button>
               <button type="button"
                 onClick={() => { setOtherUserId(otherUserIdForReport); setShowReport(true); }}
                 style={s.reportHeaderBtn} aria-label="Report user">
@@ -255,10 +312,17 @@ export default function SkillChatsLayout() {
             </div>
 
             <div className="skc-desktop-header" style={s.desktopHeader}>
-              <Avatar name={otherUserName} imageUrl={otherUserImage} size={34} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={s.desktopHeaderName}>{otherUserName || 'Chat'}</div>
-              </div>
+              <button
+                type="button"
+                onClick={() => otherUserIdForReport && navigate(`/profile/${otherUserIdForReport}`)}
+                style={s.headerProfileBtn}
+                aria-label="View profile"
+              >
+                <Avatar name={otherUserName} imageUrl={otherUserImage} size={34} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={s.desktopHeaderName}>{otherUserName || 'Chat'}</div>
+                </div>
+              </button>
               <button type="button"
                 onClick={() => { setOtherUserId(otherUserIdForReport); setShowReport(true); }}
                 style={s.reportHeaderBtnDesktop}>
@@ -272,6 +336,7 @@ export default function SkillChatsLayout() {
                 currentUserId={userId}
                 otherUserName={otherUserName}
                 otherUserImage={otherUserImage}
+                otherUserId={otherUserIdForReport}
                 skillTitle={selectedBooking.skill_name}
               />
             </div>
@@ -337,6 +402,21 @@ const s = {
     display: 'block', fontSize: 11.5, color: T.muted, overflow: 'hidden',
     textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
   },
+  trashBtn: {
+    border: 'none', background: 'transparent', color: T.muted, cursor: 'pointer',
+    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 4, borderRadius: 6, transition: 'color 0.15s',
+  },
+  deleteMenu: {
+    position: 'absolute', right: 8, top: '90%', zIndex: 10, background: T.surface,
+    border: `1px solid ${T.border}`, borderRadius: T.radiusCard,
+    display: 'flex', flexDirection: 'column', minWidth: 165, overflow: 'hidden',
+  },
+  deleteOpt: {
+    padding: '10px 14px', border: 'none', background: 'transparent', textAlign: 'left',
+    cursor: 'pointer', fontSize: 13, fontWeight: 500, color: T.text,
+    fontFamily: 'Manrope, sans-serif', transition: 'background 0.15s',
+  },
   iconBtn: {
     width: 32, height: 32, minWidth: 32, borderRadius: '50%',
     border: `1px solid ${T.border}`, background: T.surface, color: T.text,
@@ -373,6 +453,12 @@ const s = {
     width: 32, height: 32, borderRadius: '50%', border: `1px solid ${T.border}`,
     background: 'transparent', color: T.muted, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
+  },
+  /* Clickable avatar+name wrapper in both desktop and mobile headers */
+  headerProfileBtn: {
+    display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0,
+    border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
+    textAlign: 'left',
   },
   chatFill: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   emptyMain: {

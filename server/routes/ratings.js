@@ -3,6 +3,21 @@ const router = express.Router();
 const requireAuth = require("../middleware/auth");
 const db = require("../models/db");
 
+// GET /api/ratings/check/:tradeOfferId — has the current user already rated this trade?
+// Returns { rated: true/false }
+router.get("/check/:tradeOfferId", requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT id FROM ratings WHERE trade_offer_id = $1 AND reviewer_id = $2",
+      [req.params.tradeOfferId, req.userId]
+    );
+    res.json({ rated: result.rows.length > 0 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to check rating status" });
+  }
+});
+
 // POST a new rating
 router.post("/", requireAuth, async (req, res) => {
   try {

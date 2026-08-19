@@ -23,6 +23,10 @@ function belongsToPlatform(notification, platform) {
   return !SKILTER_TYPES.has(notification.type);
 }
 
+function filterNotificationsByPlatform(notifications, platform) {
+  return notifications.filter(notification => belongsToPlatform(notification, platform));
+}
+
 /**
  * NotificationBell
  *
@@ -55,13 +59,8 @@ export default function NotificationBell({ platform = 'barter' }) {
     })
       .then(res => res.json())
       .then(data => {
-        // The Skilter endpoint already returns only Skilter notifications.
-        // The Barter endpoint returns ALL notifications, so we filter client-side
-        // to exclude Skilter types — keeping the two counts independent.
-        const notifications = data.notifications || [];
-        const count = notifications.filter(
-          n => !n.is_read && belongsToPlatform(n, platform)
-        ).length;
+        const notifications = filterNotificationsByPlatform(data.notifications || [], platform);
+        const count = notifications.filter(n => !n.is_read).length;
         setUnreadCount(count);
       });
   };

@@ -608,15 +608,6 @@ export default function ChatWindow({
     <div className="cw-wrap">
       <style>{CHAT_CSS}</style>
 
-      {/* ── Desktop header: avatar + name + online status (hidden on mobile) ── */}
-      <div className="cw-header">
-        <Avatar name={headerName} imageUrl={otherUserImage} size={36} />
-        <div className="cw-header-info">
-          <div className="cw-header-name">{headerName}</div>
-          {isOtherOnline && <div className="cw-header-status">Online</div>}
-        </div>
-      </div>
-
       {/* ── Item context strip ── */}
       {tradeItemTitle && (
         <div className="cw-item-strip">

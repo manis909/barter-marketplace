@@ -3,21 +3,24 @@ import { io } from 'socket.io-client';
 import { fmtTime, formatChatDateHeader, getDateKey } from '../../utils/helpers';
 
 const API_URL = 'http://localhost:5000';
+const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-/* ─── Design tokens (duplicated from ChatWindow.jsx — kept self-contained since Avatar/tokens aren't exported there) ─── */
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
 const T = {
-  bg:            '#F6F5F0',
-  surface:       '#FFFFFF',
-  text:          '#24231F',
-  muted:         '#5F5B52',
-  border:        '#E4E2D9',
-  accent:        '#3D6E63',
-  accentStrong:  '#2F5B4D',
-  mine:          '#3D6E63',
-  theirs:        '#EDF2F0',
-  radiusCard:    '14px',
+  bg:           '#F6F5F0',
+  surface:      '#FFFFFF',
+  text:         '#24231F',
+  muted:        '#5F5B52',
+  border:       '#E4E2D9',
+  accent:       '#3D6E63',
+  accentStrong: '#2F5B4D',
+  danger:       '#dc2626',
+  mine:         '#3D6E63',
+  theirs:       '#EDF2F0',
+  radiusCard:   '14px',
 };
 
+/* ─── Avatar ─────────────────────────────────────────────────────────────── */
 function Avatar({ name, imageUrl, size = 34 }) {
   const [err, setErr] = useState(false);
   const src = imageUrl && !err
@@ -35,12 +38,12 @@ function Avatar({ name, imageUrl, size = 34 }) {
       {src
         ? <img src={src} alt={name} onError={() => setErr(true)}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        : (name || '?').trim().charAt(0).toUpperCase()
-      }
+        : (name || '?').trim().charAt(0).toUpperCase()}
     </span>
   );
 }
 
+/* ─── CSS ────────────────────────────────────────────────────────────────── */
 const SKC_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
 
@@ -49,26 +52,33 @@ const SKC_CSS = `
   display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;
   font-family: Manrope, sans-serif; overflow: hidden;
 }
+
+/* Desktop header — hidden on mobile (mobile header in SkillChatsLayout) */
 .skc-header {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px; border-bottom: 1px solid ${T.border};
   background: ${T.surface}; flex-shrink: 0; z-index: 2;
 }
+.skc-header-info { flex: 1; min-width: 0; }
 .skc-header-name {
   font-size: 15px; font-weight: 600; color: ${T.text};
   font-family: Fraunces, serif;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.skc-header-status { font-size: 11px; color: ${T.accent}; margin-top: 1px; }
 @media (max-width: 767px) { .skc-header { display: none !important; } }
 
+/* Skill context strip */
 .skc-item-strip {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 14px; background: ${T.bg};
   border-bottom: 1px solid ${T.border}; flex-shrink: 0;
   font-size: 12.5px; color: ${T.muted};
 }
-.skc-item-strip-title { flex: 1; min-width: 0; font-weight: 500; color: ${T.text};
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skc-item-strip-title {
+  flex: 1; min-width: 0; font-weight: 500; color: ${T.text};
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .skc-item-strip-btn {
   padding: 4px 10px; border-radius: 6px; border: 1px solid ${T.accent};
   background: transparent; color: ${T.accent}; font-size: 11.5px;
@@ -76,6 +86,7 @@ const SKC_CSS = `
   font-family: Manrope, sans-serif;
 }
 
+/* Outer border */
 .skc-container {
   display: flex; flex-direction: column;
   flex: 1; min-height: 0;
@@ -87,82 +98,264 @@ const SKC_CSS = `
   .skc-container { border-radius: 0; border-left: none; border-right: none; border-top: none; margin: 0; width: 100%; }
 }
 
+/* Message scroll area */
 .skc-messages {
   flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
   padding: 14px 12px 8px; display: flex; flex-direction: column; gap: 8px;
   width: 100%; box-sizing: border-box; background: ${T.bg};
-  scroll-behavior: smooth;
+  scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
 }
+.skc-messages::-webkit-scrollbar { width: 3px; }
+.skc-messages::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
+
+/* Date separators */
 .skc-date-separator { display: flex; align-items: center; justify-content: center; margin: 10px 0 4px; }
 .skc-date-pill {
   background: ${T.surface}; color: ${T.muted}; border: 1px solid ${T.border};
   font-size: 11px; font-weight: 600; padding: 3px 12px; border-radius: 12px;
 }
 
-.skc-row { display: flex; flex-direction: column; max-width: 72%; }
+/* Message row */
+.skc-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
 .skc-row.mine   { align-self: flex-end;  align-items: flex-end;  }
 .skc-row.theirs { align-self: flex-start; align-items: flex-start; }
+@media (max-width: 767px) { .skc-row { max-width: 75%; } }
+
 .skc-sender { font-size: 11px; font-weight: 500; color: ${T.muted}; margin-bottom: 2px; margin-left: 4px; }
 
+/* Bubble */
 .skc-bubble {
   padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.5;
-  word-break: break-word; overflow-wrap: break-word; border: 1px solid transparent;
+  word-break: break-word; overflow-wrap: break-word;
+  cursor: pointer; position: relative; border: 1px solid transparent;
+  transition: filter 0.12s;
 }
 .skc-bubble.mine   { background: ${T.mine}; color: #fff; border-bottom-right-radius: 3px; }
 .skc-bubble.theirs { background: ${T.theirs}; color: ${T.text}; border-bottom-left-radius: 3px; border-color: ${T.border}; }
+.skc-bubble.mine:hover   { filter: brightness(0.92); }
+.skc-bubble.theirs:hover { border-color: ${T.accent}; }
+@media (max-width: 767px) { .skc-bubble { font-size: 14.5px; } }
 
-.skc-bubble-footer { display: flex; justify-content: flex-end; margin-top: 3px; }
-.skc-ts { font-size: 10px; opacity: 0.65; }
+/* Timestamp + read receipt */
+.skc-bubble-footer { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 3px; }
+.skc-ts     { font-size: 10px; opacity: 0.65; }
+.skc-status { font-size: 11px; opacity: 0.7; letter-spacing: -1px; }
 
+/* Quote strip */
+.skc-quote {
+  border-left: 3px solid rgba(61,110,99,0.4); padding: 4px 8px;
+  margin-bottom: 5px; font-size: 12px; opacity: 0.8;
+  border-radius: 4px; background: rgba(61,110,99,0.07);
+}
+
+/* Attachments */
+.skc-attachment {
+  max-width: 220px; width: 100%; border-radius: 10px; margin-bottom: 5px;
+  display: block; cursor: pointer;
+}
+@media (max-width: 767px) { .skc-attachment { max-width: 200px; } }
+
+/* Reactions */
+.skc-reactions { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
+.skc-reaction-badge {
+  font-size: 12px; background: ${T.surface}; border-radius: 999px;
+  padding: 1px 7px; border: 1px solid ${T.border};
+}
+
+/* Emoji picker */
+.skc-picker {
+  display: flex; align-items: center; gap: 3px; padding: 5px 8px;
+  background: ${T.surface}; border: 1px solid ${T.border};
+  border-radius: 999px; position: absolute; top: -44px;
+  width: max-content; max-width: 88vw; z-index: 20;
+}
+.skc-row.mine   .skc-picker { right: 0; left: auto; }
+.skc-row.theirs .skc-picker { left: 0;  right: auto; }
+.skc-picker button { background: none; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; padding: 2px; }
+
+/* Action buttons */
+.skc-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.skc-actions button {
+  font-size: 11px; padding: 3px 8px; border: 1px solid ${T.border};
+  background: ${T.surface}; cursor: pointer; color: ${T.muted};
+  border-radius: 6px; transition: border-color 0.12s; font-family: Manrope, sans-serif;
+}
+.skc-actions button:hover { border-color: ${T.accent}; color: ${T.accent}; }
+
+/* Delete sub-menu */
+.skc-del-menu {
+  position: absolute; bottom: 26px; right: 0;
+  background: ${T.surface}; border: 1px solid ${T.border};
+  border-radius: ${T.radiusCard}; z-index: 8;
+  display: flex; flex-direction: column; min-width: 155px; max-width: 90vw; overflow: hidden;
+}
+.skc-del-menu button {
+  padding: 9px 13px; text-align: left; border: none; background: none;
+  cursor: pointer; font-size: 12.5px; color: ${T.text};
+  font-family: Manrope, sans-serif; transition: background 0.12s;
+}
+.skc-del-menu button:hover { background: ${T.bg}; }
+.skc-del-menu button.danger { color: ${T.danger}; }
+
+/* Edit row */
+.skc-edit-row { display: flex; gap: 6px; align-items: center; }
+.skc-edit-row input {
+  flex: 1; min-width: 0; border-radius: 6px;
+  border: 1px solid ${T.border}; padding: 4px 8px; font-size: 13.5px;
+  background: #fff; color: ${T.text};
+}
+.skc-edit-row button { border: none; background: none; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+
+/* Reply preview strip */
+.skc-reply-preview {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 12px; background: #EDF2F0;
+  border-left: 3px solid ${T.accent}; font-size: 12.5px;
+  margin: 0; border-top: 1px solid ${T.border};
+  flex-shrink: 0; color: ${T.muted};
+}
+.skc-reply-preview button { background: none; border: none; cursor: pointer; font-size: 14px; color: ${T.muted}; }
+
+/* Attachment preview strip */
+.skc-attach-preview {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: #EDF2F0; border-top: 1px solid ${T.border}; flex-shrink: 0;
+}
+.skc-attach-preview img, .skc-attach-preview video {
+  width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
+}
+.skc-attach-preview span { font-size: 12px; color: ${T.muted}; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skc-attach-preview button { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 16px; color: ${T.muted}; }
+
+/* Input row */
 .skc-input-row {
   display: flex; gap: 8px; padding: 10px 12px;
   border-top: 1px solid ${T.border}; box-sizing: border-box;
-  align-items: center; background: ${T.surface}; flex-shrink: 0; width: 100%;
+  align-items: center; background: ${T.surface};
+  flex-shrink: 0; width: 100%; position: relative;
 }
-@media (max-width: 767px) { .skc-input-row { padding-bottom: max(10px, env(safe-area-inset-bottom)); } }
+@media (max-width: 767px) {
+  .skc-input-row { padding: 8px 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
 
+/* "+" attach button */
+.skc-plus-btn {
+  width: 38px; height: 38px; min-width: 38px; border-radius: 50%;
+  border: 1px solid ${T.border}; background: ${T.surface}; color: ${T.accent};
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 300; flex-shrink: 0; line-height: 1;
+  transition: border-color 0.12s, background 0.12s;
+}
+.skc-plus-btn:hover { border-color: ${T.accent}; background: rgba(61,110,99,0.06); }
+
+/* Desktop attach dropdown */
+.skc-attach-menu-desktop {
+  position: absolute; bottom: 56px; left: 12px;
+  background: ${T.surface}; border: 1px solid ${T.border};
+  border-radius: ${T.radiusCard}; z-index: 30;
+  display: flex; flex-direction: column; min-width: 170px; overflow: hidden;
+}
+.skc-attach-menu-desktop button {
+  padding: 11px 14px; text-align: left; border: none; background: none;
+  cursor: pointer; font-size: 13.5px; color: ${T.text};
+  display: flex; align-items: center; gap: 9px;
+  font-family: Manrope, sans-serif; transition: background 0.12s;
+}
+.skc-attach-menu-desktop button:hover { background: ${T.bg}; }
+
+/* Mobile bottom sheet */
+.skc-bottom-sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+}
+.skc-bottom-sheet {
+  width: 100%; max-width: 480px;
+  background: ${T.surface}; border-radius: 20px 20px 0 0;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); box-sizing: border-box;
+}
+.skc-bottom-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: ${T.border}; margin: 0 auto 16px; }
+.skc-bottom-sheet button {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 20px; border: none; background: none;
+  cursor: pointer; font-size: 15px; color: ${T.text};
+  font-family: Manrope, sans-serif; transition: background 0.12s;
+}
+.skc-bottom-sheet button:hover, .skc-bottom-sheet button:active { background: ${T.bg}; }
+.skc-bottom-sheet-icon { font-size: 22px; width: 28px; text-align: center; }
+
+/* Text input */
 .skc-text-input {
   flex: 1; min-width: 0; padding: 9px 14px; border-radius: 22px; border: 1px solid ${T.border};
   outline: none; font-size: 14px; font-family: Manrope, sans-serif;
-  background: ${T.bg}; color: ${T.text};
+  background: ${T.bg}; color: ${T.text}; transition: border-color 0.18s; line-height: 1.4;
 }
 .skc-text-input:focus { border-color: ${T.accent}; background: ${T.surface}; }
 @media (max-width: 767px) { .skc-text-input { font-size: 16px; } }
 
+/* Send button */
 .skc-send-btn {
   width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none;
-  background: ${T.accent}; color: #fff; cursor: pointer; font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
+  background: ${T.accent}; color: #fff; cursor: pointer; font-weight: 700;
+  font-size: 16px; flex-shrink: 0; display: flex; align-items: center;
+  justify-content: center; transition: background 0.12s, transform 0.12s;
 }
-.skc-send-btn:hover { background: ${T.accentStrong}; }
-.skc-send-btn:disabled { background: ${T.border}; cursor: default; }
+.skc-send-btn:hover { background: ${T.accentStrong}; transform: scale(1.06); }
+.skc-send-btn:disabled { background: ${T.border}; cursor: default; transform: none; }
 `;
 
-/* ─── Component ───────────────────────────────────────────────── */
+/* ─── Component ──────────────────────────────────────────────────────────── */
 export default function SkillBookingChatWindow({
   bookingId,
   currentUserId,
   otherUserName,
   otherUserImage,
-  skillTitle,       // skill listing title for context strip (optional)
-  skillListingId,   // for "View Skill" navigation (optional)
-  onViewSkill,       // callback → navigate to skill listing page (optional)
+  otherUserId,       // for presence checks
+  skillTitle,
+  skillListingId,
+  onViewSkill,
 }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+  const [messages,       setMessages]       = useState([]);
+  const [input,          setInput]          = useState('');
+  const [replyingTo,     setReplyingTo]     = useState(null);
+  const [pickerForId,    setPickerForId]    = useState(null);
+  const [editingId,      setEditingId]      = useState(null);
+  const [editText,       setEditText]       = useState('');
+  const [deleteMenuId,   setDeleteMenuId]   = useState(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isMobile,       setIsMobile]       = useState(() => window.innerWidth < 768);
+  const [pendingFile,    setPendingFile]    = useState(null);
+  const [pendingUrl,     setPendingUrl]     = useState(null);
+  const [isOtherOnline,  setIsOtherOnline]  = useState(false);
+  const [chatIsRead,     setChatIsRead]     = useState(false);
 
-  const socketRef = useRef(null);
-  const bottomRef = useRef(null);
-  const msgContRef = useRef(null);
+  const socketRef         = useRef(null);
+  const bottomRef         = useRef(null);
+  const msgContRef        = useRef(null);
+  const galleryRef        = useRef(null);
+  const cameraRef         = useRef(null);
   const initialScrollDone = useRef(false);
-  const prevMsgCount = useRef(0);
+  const prevMsgCount      = useRef(0);
 
+  /* mobile/desktop detection */
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+
+  /* reset on booking switch */
   useEffect(() => {
     initialScrollDone.current = false;
     prevMsgCount.current = 0;
     setMessages([]);
+    setChatIsRead(false);
   }, [bookingId]);
 
+  /* cleanup pending object URL */
+  useEffect(() => () => { if (pendingUrl) URL.revokeObjectURL(pendingUrl); }, [pendingUrl]);
+
+  /* socket + polling */
   useEffect(() => {
     if (!bookingId) return;
     const token = localStorage.getItem('token');
@@ -175,15 +368,40 @@ export default function SkillBookingChatWindow({
 
     const socket = io(API_URL, { auth: { token } });
     socketRef.current = socket;
-    socket.emit('joinSkillBooking', String(bookingId));
-    socket.on('newSkillMessage', m => {
-      if (String(m.booking_id) === String(bookingId)) {
-        setMessages(prev => [...prev, m]);
-      }
-    });
-    socket.on('connect_error', e => console.log('Socket:', e.message));
 
-    // Polling fallback, same interval as trade chat
+    socket.emit('joinSkillBooking', String(bookingId));
+
+    /* new message */
+    socket.on('newSkillMessage', m => {
+      if (String(m.booking_id) === String(bookingId))
+        setMessages(p => [...p, m]);
+    });
+    /* reaction update */
+    socket.on('skillMessageReactionUpdated', m =>
+      setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    /* edit */
+    socket.on('skillMessageEdited', m =>
+      setMessages(p => p.map(x => x.id === m.id ? m : x)));
+    /* delete for everyone */
+    socket.on('skillMessageDeleted', m =>
+      setMessages(p => p.map(x => x.id === m.id ? m : x)));
+
+    /* presence */
+    socket.on('userOnline',  ({ userId: uid }) => {
+      if (String(uid) === String(otherUserId)) setIsOtherOnline(true);
+    });
+    socket.on('userOffline', ({ userId: uid }) => {
+      if (String(uid) === String(otherUserId)) setIsOtherOnline(false);
+    });
+
+    /* read receipts */
+    socket.on('skillMessagesRead', ({ bookingId: bid }) => {
+      if (String(bid) === String(bookingId)) setChatIsRead(true);
+    });
+    socket.emit('markSkillRead', { bookingId: String(bookingId) });
+
+    socket.on('connect_error', e => console.log('SKC socket:', e.message));
+
     const poll = setInterval(() => {
       fetch(`${API_URL}/api/skill-chat/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -195,6 +413,7 @@ export default function SkillBookingChatWindow({
     return () => { socket.disconnect(); clearInterval(poll); };
   }, [bookingId]);
 
+  /* scroll to bottom on first load */
   useEffect(() => {
     if (messages.length > 0 && !initialScrollDone.current) {
       initialScrollDone.current = true;
@@ -202,6 +421,7 @@ export default function SkillBookingChatWindow({
     }
   }, [messages]);
 
+  /* scroll to bottom on new messages */
   useEffect(() => {
     const c = msgContRef.current;
     if (!c) return;
@@ -212,31 +432,119 @@ export default function SkillBookingChatWindow({
     if (dist < 220) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim()) return;
-    const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/skill-chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ booking_id: bookingId, message: input }),
-    });
-    setInput('');
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
-  }, [input, bookingId]);
+  /* mobile keyboard-aware scroll */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const h = () => {
+      const c = msgContRef.current;
+      if (!c) return;
+      if (c.scrollHeight - c.scrollTop - c.clientHeight < 300)
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    vv.addEventListener('resize', h);
+    return () => vv.removeEventListener('resize', h);
+  }, []);
 
+  /* ── send ── */
+  const sendMessage = useCallback(async () => {
+    if (!input.trim() && !pendingFile) return;
+    const token = localStorage.getItem('token');
+
+    if (pendingFile) {
+      const fd = new FormData();
+      fd.append('booking_id', bookingId);
+      if (input.trim()) fd.append('message', input.trim());
+      if (replyingTo?.id) fd.append('reply_to_message_id', replyingTo.id);
+      fd.append('attachment', pendingFile);
+      await fetch(`${API_URL}/api/skill-chat`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
+      });
+    } else {
+      await fetch(`${API_URL}/api/skill-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          booking_id: bookingId,
+          message: input.trim(),
+          reply_to_message_id: replyingTo?.id || null,
+        }),
+      });
+    }
+
+    setInput('');
+    setReplyingTo(null);
+    // Inline clear so we always act on the latest pendingUrl/pendingFile state
+    setPendingFile(null);
+    setPendingUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+  }, [input, pendingFile, bookingId, replyingTo]);
+
+  const clearPending = () => {
+    if (pendingUrl) URL.revokeObjectURL(pendingUrl);
+    setPendingFile(null); setPendingUrl(null);
+  };
+
+  const handleFileChosen = file => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('File must be under 5 MB'); return; }
+    setPendingFile(file);
+    setPendingUrl(URL.createObjectURL(file));
+    setShowAttachMenu(false);
+  };
+
+  /* ── reactions ── */
+  const toggleReaction = async (msgId, emoji) => {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/api/skill-chat/${msgId}/react`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ emoji }),
+    });
+    setPickerForId(null);
+  };
+
+  /* ── edit ── */
+  const saveEdit = async msgId => {
+    if (!editText.trim()) return;
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/api/skill-chat/${msgId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ message: editText }),
+    });
+    setEditingId(null); setEditText('');
+  };
+
+  /* ── delete ── */
+  const deleteForEveryone = async msgId => {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/api/skill-chat/message/${msgId}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    });
+    setDeleteMenuId(null);
+  };
+
+  const deleteForMe = async msgId => {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/api/skill-chat/message/${msgId}/hide`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+    });
+    setMessages(p => p.filter(m => m.id !== msgId));
+    setDeleteMenuId(null);
+  };
+
+  const findMsg = id => messages.find(m => m.id === id);
   const headerName = otherUserName
     || messages.find(m => String(m.sender_id) !== String(currentUserId))?.sender_name
     || 'Chat';
 
+  /* ─── render ────────────────────────────────────────────────────────────── */
   return (
     <div className="skc-wrap">
       <style>{SKC_CSS}</style>
 
-      <div className="skc-header">
-        <Avatar name={headerName} imageUrl={otherUserImage} size={36} />
-        <div className="skc-header-name">{headerName}</div>
-      </div>
-
+      {/* Skill context strip */}
       {skillTitle && (
         <div className="skc-item-strip">
           <span>🎓</span>
@@ -250,28 +558,145 @@ export default function SkillBookingChatWindow({
       )}
 
       <div className="skc-container">
+
+        {/* Message list */}
         <div className="skc-messages" ref={msgContRef}>
           {messages.map((m, idx) => {
-            const isMine = String(m.sender_id) === String(currentUserId);
-            const prevMsg = idx > 0 ? messages[idx - 1] : null;
-            const showDateSeparator = !prevMsg || getDateKey(m.created_at) !== getDateKey(prevMsg.created_at);
-            const dateLabel = showDateSeparator ? formatChatDateHeader(m.created_at) : null;
+            const isMine     = String(m.sender_id) === String(currentUserId);
+            const quoted     = m.reply_to_message_id ? findMsg(m.reply_to_message_id) : null;
+            const reactions  = Object.entries(m.reactions || {});
+            const isEditing  = editingId === m.id;
+            const isSelected = pickerForId === m.id;
+            const prevMsg    = idx > 0 ? messages[idx - 1] : null;
+            const showDate   = !prevMsg || getDateKey(m.created_at) !== getDateKey(prevMsg.created_at);
+            const dateLabel  = showDate ? formatChatDateHeader(m.created_at) : null;
+
+            const attachSrc = m.attachment_url
+              ? (m.attachment_url.startsWith('http') ? m.attachment_url : `${API_URL}${m.attachment_url}`)
+              : null;
+            const isImg = attachSrc && (m.attachment_type === 'image' || String(m.attachment_type).startsWith('image/'));
+            const isVid = attachSrc && (m.attachment_type === 'video' || String(m.attachment_type).startsWith('video/'));
 
             return (
               <Fragment key={m.id || idx}>
-                {showDateSeparator && dateLabel && (
+                {showDate && dateLabel && (
                   <div className="skc-date-separator">
                     <span className="skc-date-pill">{dateLabel}</span>
                   </div>
                 )}
+
                 <div className={`skc-row ${isMine ? 'mine' : 'theirs'}`}>
                   {!isMine && m.sender_name && <span className="skc-sender">{m.sender_name}</span>}
-                  <div className={`skc-bubble ${isMine ? 'mine' : 'theirs'}`}>
-                    <p style={{ margin: 0 }}>{m.message}</p>
-                    <div className="skc-bubble-footer">
-                      <span className="skc-ts">{fmtTime(m.created_at)}</span>
-                    </div>
+
+                  <div
+                    className={`skc-bubble ${isMine ? 'mine' : 'theirs'}`}
+                    onClick={() => {
+                      if (m.deleted || isEditing) return;
+                      setPickerForId(isSelected ? null : m.id);
+                      setDeleteMenuId(null);
+                    }}
+                  >
+                    {/* Emoji picker */}
+                    {isSelected && !m.deleted && (
+                      <div className="skc-picker" onClick={e => e.stopPropagation()}>
+                        {EMOJI_OPTIONS.map(e => (
+                          <button key={e} onClick={() => toggleReaction(m.id, e)}>{e}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Quote */}
+                    {quoted && !m.deleted && (
+                      <div className="skc-quote">
+                        {quoted.message
+                          ? `${quoted.message.slice(0, 60)}${quoted.message.length > 60 ? '…' : ''}`
+                          : quoted.attachment_url ? '📎 Attachment' : ''}
+                      </div>
+                    )}
+
+                    {/* Body */}
+                    {m.deleted ? (
+                      <p style={{ margin: 0, fontStyle: 'italic', opacity: 0.55 }}>
+                        This message was deleted
+                      </p>
+                    ) : isEditing ? (
+                      <div className="skc-edit-row" onClick={e => e.stopPropagation()}>
+                        <input
+                          value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') saveEdit(m.id);
+                            if (e.key === 'Escape') { setEditingId(null); setEditText(''); }
+                          }}
+                          autoFocus
+                        />
+                        <button onClick={() => saveEdit(m.id)}>✓</button>
+                        <button onClick={() => { setEditingId(null); setEditText(''); }}>✕</button>
+                      </div>
+                    ) : (
+                      <>
+                        {isImg && <img src={attachSrc} alt="" className="skc-attachment" />}
+                        {isVid && <video src={attachSrc} controls className="skc-attachment" />}
+                        {m.message && (
+                          <p style={{ margin: 0 }}>
+                            {m.message}
+                            {m.edited && <span style={{ fontSize: 10, opacity: 0.6 }}> (edited)</span>}
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    {/* Timestamp + read receipt tick */}
+                    {!m.deleted && (
+                      <div className="skc-bubble-footer">
+                        <span className="skc-ts">{fmtTime(m.created_at)}</span>
+                        {isMine && (
+                          <span
+                            className="skc-status"
+                            style={{ color: chatIsRead ? '#53bdeb' : 'rgba(255,255,255,0.7)' }}
+                          >
+                            ✓✓
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Reactions */}
+                  {reactions.length > 0 && !m.deleted && (
+                    <div className="skc-reactions">
+                      {reactions.map(([emoji, userIds]) => (
+                        <span key={emoji} className="skc-reaction-badge">
+                          {emoji}{userIds.length > 1 ? ` ${userIds.length}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action buttons (shown when bubble is selected) */}
+                  {!m.deleted && !isEditing && isSelected && (
+                    <div className="skc-actions" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => setReplyingTo(m)}>↩ Reply</button>
+                      {isMine && (
+                        <button onClick={() => { setEditingId(m.id); setEditText(m.message); }}>
+                          ✎ Edit
+                        </button>
+                      )}
+                      <button onClick={() => setDeleteMenuId(deleteMenuId === m.id ? null : m.id)}>
+                        🗑 Delete
+                      </button>
+                      {deleteMenuId === m.id && (
+                        <div className="skc-del-menu" onClick={e => e.stopPropagation()}>
+                          {isMine && (
+                            <button className="danger" onClick={() => deleteForEveryone(m.id)}>
+                              Delete for everyone
+                            </button>
+                          )}
+                          <button onClick={() => deleteForMe(m.id)}>Delete for me</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Fragment>
             );
@@ -279,7 +704,53 @@ export default function SkillBookingChatWindow({
           <div ref={bottomRef} />
         </div>
 
+        {/* Reply preview */}
+        {replyingTo && (
+          <div className="skc-reply-preview">
+            <span>Replying to: {replyingTo.message?.slice(0, 50)}{replyingTo.message?.length > 50 ? '…' : ''}</span>
+            <button onClick={() => setReplyingTo(null)}>✕</button>
+          </div>
+        )}
+
+        {/* Attachment preview */}
+        {pendingFile && (
+          <div className="skc-attach-preview">
+            {pendingFile.type.startsWith('video')
+              ? <video src={pendingUrl} muted />
+              : <img src={pendingUrl} alt="preview" />}
+            <span>{pendingFile.name}</span>
+            <button onClick={clearPending}>✕</button>
+          </div>
+        )}
+
+        {/* Input row */}
         <div className="skc-input-row">
+          {/* Hidden file inputs */}
+          <input type="file" accept="image/*,video/*" capture="environment"
+            ref={cameraRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+          <input type="file" accept="image/*,video/*"
+            ref={galleryRef} style={{ display: 'none' }}
+            onChange={e => handleFileChosen(e.target.files?.[0])} />
+
+          <button type="button" className="skc-plus-btn"
+            onClick={() => setShowAttachMenu(p => !p)}
+            aria-label="Attach media">
+            +
+          </button>
+
+          {/* Desktop dropdown */}
+          {showAttachMenu && !isMobile && (
+            <div className="skc-attach-menu-desktop" onClick={e => e.stopPropagation()}>
+              <button onClick={() => { cameraRef.current?.click(); setShowAttachMenu(false); }}>
+                <span>📷</span> Take Photo
+              </button>
+              <button onClick={() => { galleryRef.current?.click(); setShowAttachMenu(false); }}>
+                <span>🖼️</span> Choose from Gallery
+              </button>
+            </div>
+          )}
+
           <input
             type="text"
             className="skc-text-input"
@@ -288,11 +759,31 @@ export default function SkillBookingChatWindow({
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
             placeholder="Message…"
           />
-          <button className="skc-send-btn" onClick={sendMessage} disabled={!input.trim()} aria-label="Send message">
+          <button
+            className="skc-send-btn"
+            onClick={sendMessage}
+            disabled={!input.trim() && !pendingFile}
+            aria-label="Send message"
+          >
             ➤
           </button>
         </div>
       </div>
+
+      {/* Mobile bottom sheet */}
+      {showAttachMenu && isMobile && (
+        <div className="skc-bottom-sheet-overlay" onClick={() => setShowAttachMenu(false)}>
+          <div className="skc-bottom-sheet" onClick={e => e.stopPropagation()}>
+            <div className="skc-bottom-sheet-handle" />
+            <button onClick={() => { cameraRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="skc-bottom-sheet-icon">📷</span> Take Photo
+            </button>
+            <button onClick={() => { galleryRef.current?.click(); setShowAttachMenu(false); }}>
+              <span className="skc-bottom-sheet-icon">🖼️</span> Choose from Gallery
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

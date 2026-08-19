@@ -42,20 +42,35 @@ const getIcon = type => ICON_MAP[type] || ICON_MAP.default;
 /* ─── Navigation by type ─────────────────────────────────────────────────── */
 function getNavigationPath(n) {
   const { type, trade_offer_id } = n;
+  const isSkilterNotification = [
+    'skill_booking',
+    'skill_booking_accepted',
+    'skill_booking_declined',
+    'skill_booking_completed',
+    'skill_booking_cancelled',
+    'new_skill_message',
+  ].includes(type);
+
   // Barter paths
-  if (trade_offer_id && (type === 'new_message' || type.startsWith('trade_')))
-    return `/chat/${trade_offer_id}`;
-  if (n.item_id) return `/item/${n.item_id}`;
-  if (n.user_id && type === 'profile_update') return `/profile/${n.user_id}`;
-  if (type === 'trade_offer') return '/trade-requests';
-  if (type === 'trade_completed') return '/my-trades';
-  if (type === 'wishlist') return '/wishlist';
+  if (!isSkilterNotification) {
+    if (trade_offer_id && (type === 'new_message' || type.startsWith('trade_')))
+      return `/chat/${trade_offer_id}`;
+    if (n.item_id) return `/item/${n.item_id}`;
+    if (n.user_id && type === 'profile_update') return `/profile/${n.user_id}`;
+    if (type === 'trade_offer') return '/trade-requests';
+    if (type === 'trade_completed') return '/my-trades';
+    if (type === 'wishlist') return '/wishlist';
+  }
+
   // Skilter paths — trade_offer_id column stores booking_id for skill notifications
-  if (type === 'new_skill_message' && trade_offer_id)
-    return `/skilter/chat/${trade_offer_id}`;
-  if (type.startsWith('skill_booking') && trade_offer_id)
-    return `/skilter/chat/${trade_offer_id}`;
-  if (type === 'skill_booking') return '/my-bookings';
+  if (isSkilterNotification) {
+    if (type === 'new_skill_message' && trade_offer_id)
+      return `/skilter/chat/${trade_offer_id}`;
+    if (type.startsWith('skill_booking') && trade_offer_id)
+      return `/skilter/chat/${trade_offer_id}`;
+    if (type === 'skill_booking') return '/skilter/skills';
+  }
+
   return null;
 }
 
@@ -401,21 +416,62 @@ export default function Notifications() {
         bulk:     `${API_URL}/api/notifications/bulk`,
       };
 
+  const recordsForPlatform = useCallback((items) => {
+    if (!Array.isArray(items)) return [];
+
+    const skilterTypes = new Set([
+      'skill_booking',
+      'skill_booking_accepted',
+      'skill_booking_declined',
+      'skill_booking_completed',
+      'skill_booking_cancelled',
+      'new_skill_message',
+    ]);
+
+    return items.filter(item => (
+      platform === 'skilter' ? skilterTypes.has(item.type) : !skilterTypes.has(item.type)
+    ));
+  }, [platform]);
+
   /* ── fetch ── */
-  const fetchNotifications = useCallback(() => {
-    const token = localStorage.getItem('token');
-    fetch(ENDPOINTS.fetch, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => {
-        setNotifications(data.notifications || []);
-        setLoading(false);
-      });
-  // ENDPOINTS.fetch is derived from platform which comes from location.state —
-  // both are stable after mount, so the dependency array is correct.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ENDPOINTS.fetch]);
+  const fetchNotifications = useCallback(async () => {
+  const token = localStorage.getItem('token');
+
+  console.log('NOTIFICATION DEBUG:', {
+    platform,
+    endpoint: ENDPOINTS.fetch,
+    hasToken: !!token,
+  });
+
+  try {
+    const response = await fetch(ENDPOINTS.fetch, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log('NOTIFICATION RESPONSE STATUS:', response.status);
+
+    const data = await response.json();
+
+    console.log('NOTIFICATION RESPONSE DATA:', data);
+
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `HTTP ${response.status}`);
+    }
+
+    const filtered = recordsForPlatform(data.notifications || []);
+
+    console.log('NOTIFICATIONS AFTER FILTER:', filtered);
+
+    setNotifications(filtered);
+  } catch (error) {
+    console.error('NOTIFICATION FETCH ERROR:', error);
+    setNotifications([]);
+  } finally {
+    setLoading(false);
+  }
+}, [ENDPOINTS.fetch, recordsForPlatform, platform]);
 
   /* ── mark all read ── */
   const markAllAsRead = useCallback(async () => {

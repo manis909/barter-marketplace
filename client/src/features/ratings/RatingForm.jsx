@@ -2,15 +2,28 @@ import { useState } from 'react';
 
 const API_URL = 'http://localhost:5000';
 
+const T = {
+  bg:        '#F6F5F0',
+  surface:   '#FFFFFF',
+  text:      '#24231F',
+  muted:     '#5F5B52',
+  border:    '#E4E2D9',
+  accent:    '#3D6E63',
+  accentStrong: '#2F5B4D',
+  danger:    '#dc2626',
+  radiusCard: '14px',
+  radiusCtrl: '9px',
+};
+
 export default function RatingForm({ tradeOfferId, revieweeId, onSubmitted }) {
-  const [rating, setRating] = useState(0);
-  const [review, setReview] = useState('');
+  const [rating,     setRating]     = useState(0);
+  const [review,     setReview]     = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error,      setError]      = useState('');
 
   const handleSubmit = async () => {
     if (rating < 1 || rating > 5) {
-      setError('Please select 1 to 5 stars');
+      setError('Please select a star rating before submitting.');
       return;
     }
     setSubmitting(true);
@@ -19,56 +32,96 @@ export default function RatingForm({ tradeOfferId, revieweeId, onSubmitted }) {
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_URL}/api/ratings`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        trade_offer_id: tradeOfferId,
-        reviewee_id: revieweeId,
-        rating,
-        review
-      })
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ trade_offer_id: tradeOfferId, reviewee_id: revieweeId, rating, review }),
     });
 
     setSubmitting(false);
 
     if (res.status === 409) {
-      setError('You already rated this trade');
+      // Already rated — treat as success so the UI moves forward
+      if (onSubmitted) onSubmitted();
       return;
     }
     if (!res.ok) {
-      setError('Something went wrong, try again');
+      setError('Something went wrong. Please try again.');
       return;
     }
-
     if (onSubmitted) onSubmitted();
   };
 
   return (
-    <div style={{ padding: 12, border: '1px solid #ccc', borderRadius: 8, maxWidth: 300 }}>
-      <p>Rate this trade</p>
-      <div>
+    <div style={{
+      padding: '14px 16px',
+      background: T.surface,
+      borderRadius: T.radiusCtrl,
+      border: `1px solid ${T.border}`,
+      fontFamily: 'Manrope, sans-serif',
+      boxSizing: 'border-box',
+      width: '100%',
+    }}>
+      <p style={{ margin: '0 0 10px', fontSize: 13.5, fontWeight: 600, color: T.text }}>
+        Rate your trade experience
+      </p>
+
+      {/* Star selector */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {[1, 2, 3, 4, 5].map(star => (
-          <span
+          <button
             key={star}
+            type="button"
             onClick={() => setRating(star)}
-            style={{ cursor: 'pointer', fontSize: 24, color: star <= rating ? 'gold' : '#ccc' }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 28, padding: 0, lineHeight: 1,
+              color: star <= rating ? '#f59e0b' : T.border,
+              transition: 'color 0.12s',
+            }}
+            aria-label={`${star} star${star > 1 ? 's' : ''}`}
           >
             ★
-          </span>
+          </button>
         ))}
       </div>
+
+      {/* Optional comment */}
       <textarea
-        placeholder="Optional comment"
+        placeholder="Optional comment…"
         value={review}
         onChange={e => setReview(e.target.value)}
-        style={{ width: '100%', marginTop: 8 }}
+        rows={2}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          borderRadius: T.radiusCtrl, border: `1px solid ${T.border}`,
+          padding: '8px 10px', resize: 'vertical',
+          fontFamily: 'Manrope, sans-serif', fontSize: 13, color: T.text,
+          background: T.bg, marginBottom: 10, display: 'block',
+        }}
       />
-      {error && <p style={{ color: 'red', fontSize: 13 }}>{error}</p>}
-      <button onClick={handleSubmit} disabled={submitting} style={{ marginTop: 8 }}>
-        {submitting ? 'Submitting...' : 'Submit Rating'}
-      </button>
+
+      {error && (
+        <p style={{ color: T.danger, fontSize: 12.5, margin: '0 0 8px' }}>{error}</p>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || rating === 0}
+          style={{
+            padding: '7px 20px',
+            borderRadius: T.radiusCtrl,
+            border: 'none',
+            background: rating === 0 ? T.border : T.accent,
+            color: rating === 0 ? T.muted : '#fff',
+            fontWeight: 600, fontSize: 13,
+            cursor: rating === 0 ? 'default' : 'pointer',
+            fontFamily: 'Manrope, sans-serif',
+            transition: 'background 0.15s',
+          }}
+        >
+          {submitting ? 'Submitting…' : 'Submit Rating'}
+        </button>
+      </div>
     </div>
   );
 }

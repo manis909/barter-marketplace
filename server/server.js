@@ -23,9 +23,14 @@ const skillChatRoutes = require("./routes/skillChat");
 const skillsRoutes = require("./routes/skills");
 const skillWishlistRoutes = require("./routes/skillWishlist");
 const rateLimit = require("express-rate-limit");
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+const authLimiter = rateLimit({ 
+  windowMs: 15 * 60 * 1000, 
+  max: 30,
+  message: { error: 'Too many login attempts. Please try again later.' } 
+});
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
 
@@ -91,9 +96,25 @@ io.use((socket, next) => {
 });
 require('./routes/notifications').setIO(io);
 
+// ------------------------------------------------------------
+// Connection handling — one trade = one room, so messages only
+// broadcast to the 2 users actually in that trade.
+// ------------------------------------------------------------
+
+// In-memory presence tracking: userId → Set of socket IDs
+// Allows multiple tabs without falsely going offline when one closes.
+const onlineUsers = new Map();
+
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id, "user:", socket.user?.userId);
   socket.join(`user:${socket.user.userId}`);
+
+  // Track presence
+  const uid = socket.user.userId;
+  if (!onlineUsers.has(uid)) onlineUsers.set(uid, new Set());
+  onlineUsers.get(uid).add(socket.id);
+  // Notify everyone this user is now online
+  socket.broadcast.emit("userOnline", { userId: uid });
 
   socket.on("joinTrade", async (tradeOfferId) => {
     try {
@@ -120,6 +141,14 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
+    const sockets = onlineUsers.get(uid);
+    if (sockets) {
+      sockets.delete(socket.id);
+      if (sockets.size === 0) {
+        onlineUsers.delete(uid);
+        socket.broadcast.emit("userOffline", { userId: uid });
+      }
+    }
   });
 });
 // Make io accessible inside route files via req.app.get('io')

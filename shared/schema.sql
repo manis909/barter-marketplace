@@ -231,7 +231,14 @@ CREATE TABLE reports (
     reported_by        UUID NOT NULL,
     reported_user_id   UUID NOT NULL,
     trade_offer_id     UUID,
+    skill_booking_id   UUID,
     reason             TEXT,
+
+    status             VARCHAR(50) DEFAULT 'open',
+    admin_action       VARCHAR(50),
+    admin_notes        TEXT,
+    actioned_by        UUID,
+    actioned_at        TIMESTAMPTZ,
 
     created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -239,7 +246,13 @@ CREATE TABLE reports (
     CONSTRAINT fk_report_by
         FOREIGN KEY (reported_by) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_report_user
-        FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_report_trade
+        FOREIGN KEY (trade_offer_id) REFERENCES trade_offers(id) ON DELETE CASCADE,
+    CONSTRAINT fk_report_booking
+        FOREIGN KEY (skill_booking_id) REFERENCES skill_bookings(id) ON DELETE CASCADE,
+    CONSTRAINT fk_report_actioned_by
+        FOREIGN KEY (actioned_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE verification_logs (
