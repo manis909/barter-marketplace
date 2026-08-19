@@ -7,6 +7,7 @@ import { createSkillBooking } from '../services/skillBookingService'
 import SkillWishlistButton from '../components/SkillWishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
 import useVerificationStatus from '../hooks/useVerificationStatus'
+import SkillProviderBookingModal from '../components/SkillProviderBookingModal'
 import './SkillDetail.css'
 
 export default function SkillDetailPage() {
@@ -22,6 +23,7 @@ export default function SkillDetailPage() {
   const [error, setError] = useState('')
   const [touchStartX, setTouchStartX] = useState(null)
   const [booking, setBooking] = useState({ loading: false, error: '', success: false })
+  const [showBookingModal, setShowBookingModal] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -285,10 +287,18 @@ export default function SkillDetailPage() {
                   className="primary-button detail-action"
                   disabled={booking.loading || booking.success}
                   onClick={async () => {
+                    // Approved Skill Provider applications use the provider booking flow
+                    if (skill?.source === 'application') {
+                      setShowBookingModal(true)
+                      return
+                    }
+
+                    // Regular skill listings require verification before booking
                     if (!isVerified && !verificationLoading) {
                       setShowVerificationModal(true)
                       return
                     }
+
                     setBooking({ loading: true, error: '', success: false })
                     try {
                       await createSkillBooking(normalizedSkill.id)
@@ -326,6 +336,18 @@ export default function SkillDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal for Approved Applications */}
+      {showBookingModal && skill?.source === 'application' && (
+        <SkillProviderBookingModal
+          skill={skill}
+          onClose={() => setShowBookingModal(false)}
+          onSuccess={() => {
+            // After successful booking, optionally navigate or show a message
+            setTimeout(() => navigate('/skilter/learning'), 1000)
+          }}
+        />
+      )}
     </div>
 
     {showVerificationModal && (

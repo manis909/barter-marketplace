@@ -91,6 +91,12 @@
   border: 1px solid rgba(30, 64, 175, 0.15);
 }
 
+.compact-skill-card .verified-pill {
+  background: #EEF9F3;
+  color: #196D3C;
+  border: 1px solid rgba(25, 109, 60, 0.15);
+}
+
 /* Row 2: Title */
 .compact-skill-card .card-title {
   margin: 0;

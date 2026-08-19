@@ -20,6 +20,7 @@ export default function SkillCard({ skill }) {
   const category = skill.category || 'General'
   const teacherName = skill.teacher_name || 'Teacher'
   const isOwner = currentUser && currentUser.id === skill.teacher_id
+  const isApprovedApplication = skill.source === 'application'
 
   return (
     <>
@@ -38,12 +39,23 @@ export default function SkillCard({ skill }) {
 
       {/* Compact Content Density */}
       <div className="card-body">
-        {/* Row 1: Category & Session Type Pill Badges */}
+        {/* Row 1: Category & Session Type / Teaching Mode Pills */}
         <div className="card-badges-row">
           <span className="pill-badge category-pill">{category}</span>
-          <span className="pill-badge session-pill">
-            {skill.session_type === 'one_on_one' ? 'One-on-One' : 'Group'}
-          </span>
+          {isApprovedApplication ? (
+            <>
+              <span className="pill-badge verified-pill">✓ Verified</span>
+              {skill.teaching_mode && (
+                <span className="pill-badge session-pill">
+                  {skill.teaching_mode}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="pill-badge session-pill">
+              {skill.session_type === 'one_on_one' ? 'One-on-One' : 'Group'}
+            </span>
+          )}
         </div>
 
         {/* Row 2: 2-Line Truncated Title */}
@@ -63,13 +75,22 @@ export default function SkillCard({ skill }) {
               {teacherName}
             </Link>
           </div>
-          {(skill.price_type === 'coins' || skill.price_type === 'negotiable') && skill.price && (
-            <div className="price-box">
-              ₹{Number(skill.price).toLocaleString('en-IN')}
-            </div>
+          {!isApprovedApplication && (
+            <>
+              {(skill.price_type === 'coins' || skill.price_type === 'negotiable') && skill.price && (
+                <div className="price-box">
+                  ₹{Number(skill.price).toLocaleString('en-IN')}
+                </div>
+              )}
+              {skill.price_type === 'free' && (
+                <div className="price-box free">Free</div>
+              )}
+            </>
           )}
-          {skill.price_type === 'free' && (
-            <div className="price-box free">Free</div>
+          {isApprovedApplication && skill.experience_level && (
+            <div className="price-box">
+              Level: {skill.experience_level}
+            </div>
           )}
         </div>
 
@@ -86,7 +107,7 @@ export default function SkillCard({ skill }) {
           <Link to={`/skilter/skill/${skill.id}`} className="btn-compact btn-compact-secondary">
             View Details
           </Link>
-          {!isOwner && (
+          {!isOwner && !isApprovedApplication && (
             <span style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <button
                 id={`btn-card-book-${skill.id}`}

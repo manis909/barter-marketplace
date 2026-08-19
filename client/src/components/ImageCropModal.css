@@ -2,7 +2,7 @@
 .icm-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 600;
+  z-index: 10000;
   background: rgba(24, 23, 20, 0.65);
   backdrop-filter: blur(5px);
   display: grid;

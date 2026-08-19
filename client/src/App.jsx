@@ -23,6 +23,8 @@ import TermsAndConditionsPage from './pages/TermsAndConditions';
 import SkilterPage from './pages/Skilter';
 import SkillDetailPage from './pages/SkillDetail';
 import MySkillsPage from './pages/MySkillsPage';
+import SkillProviderApplication from './pages/SkillProviderApplication';
+import MySkillsManagement from './pages/MySkillsManagement';
 import RenterPage from './pages/Renter';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
@@ -32,6 +34,7 @@ import RentalProfile from './pages/RentalProfile';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
+import AdminApplicationReviewPage from './pages/AdminApplicationReview';
 
 // ── Skilter placeholder ───────────────────────────────────────────────────
 // Rendered for Skilter-specific routes whose full page is being built
@@ -95,6 +98,7 @@ function App() {
             <Route path="/skills" element={<SkilterPage />} />
             <Route path="/skilter/profile/:userId" element={<SkillsProfile />} />
             <Route path="/skilter/profile" element={<SkillsProfile />} />
+            <Route path="/skilter/skill-provider/apply" element={<SkillProviderApplication />} />
 
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
@@ -102,12 +106,14 @@ function App() {
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
             <Route path="/admin/payment-review" element={<AdminPaymentReviewPage />} />
+            <Route path="/admin/skill-applications/:id" element={<AdminApplicationReviewPage />} />
             <Route path="/rental/profile/:userId" element={<RentalProfile />} />
             <Route path="/rental/profile" element={<RentalProfile />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
-            <Route path="/skilter/skills"    element={<MySkillsPage />} />
-            <Route path="/skilter/learning"  element={<MyLearningPage />} />
+            <Route path="/skilter/skills"        element={<MySkillsPage />} />
+            <Route path="/skilter/skills/manage" element={<MySkillsManagement />} />
+            <Route path="/skilter/learning"      element={<MyLearningPage />} />
             <Route path="/skilter/teaching"  element={<MyTeachingPage />} />
             <Route path="/skilter/requests"  element={<SkilterPlaceholder title="Requests" />} />
             <Route path="/skilter/wishlist"  element={<SkilterWishlistPage />} />

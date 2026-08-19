@@ -370,7 +370,7 @@ export default function Navbar() {
                           onClick={() => setAdminDropdownOpen(false)}
                           style={{ textDecoration: 'none' }}
                         >
-                          Trade Verification
+                          Barter Admin
                         </Link>
                         <Link
                           to="/admin/payment-review"
@@ -378,7 +378,7 @@ export default function Navbar() {
                           onClick={() => setAdminDropdownOpen(false)}
                           style={{ textDecoration: 'none' }}
                         >
-                          Payment Review
+                          Skilter Admin
                         </Link>
                       </motion.div>
                     )}
