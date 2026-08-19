@@ -47,17 +47,12 @@ export default function Profile() {
   const navigate = useNavigate();
   const { currentUser, loading, refreshUser } = useAuth();
 
-  const hasUrlUserId = !!userId;
-  const isOwnProfile = !hasUrlUserId || userId === currentUser?.id;
-
-  console.log('PROFILE URL USER ID:', userId);
-  console.log('LOGGED IN USER ID:', currentUser?.id);
-  console.log('PROFILE MODE:', { hasUrlUserId, isOwnProfile, targetUserId: userId });
+  const isOwnProfile = !userId || userId === currentUser?.id;
 
   const [viewedUser, setViewedUser] = useState(null);
-  const [viewedUserLoading, setViewedUserLoading] = useState(hasUrlUserId && !isOwnProfile);
+  const [viewedUserLoading, setViewedUserLoading] = useState(!isOwnProfile);
 
-  const profileData = hasUrlUserId ? (userId === currentUser?.id ? currentUser : viewedUser) : currentUser;
+  const profileData = isOwnProfile ? currentUser : viewedUser;
 
   const [isEditing, setIsEditing] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
@@ -86,24 +81,14 @@ export default function Profile() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   useEffect(() => {
-    if (hasUrlUserId && userId && !isOwnProfile) {
-      console.log('FETCHING PROFILE FOR:', userId);
+    if (!isOwnProfile && userId) {
       setViewedUserLoading(true);
       api.get(`/users/${userId}`)
-        .then(res => {
-          console.log('FETCHED PROFILE USER:', res.data?.user?.id, res.data?.user?.username);
-          setViewedUser(res.data.user);
-        })
-        .catch((err) => {
-          console.error('PROFILE FETCH ERROR:', err);
-          setViewedUser(null);
-        })
+        .then(res => setViewedUser(res.data.user))
+        .catch(() => setViewedUser(null))
         .finally(() => setViewedUserLoading(false));
-    } else if (hasUrlUserId && userId && isOwnProfile) {
-      setViewedUser(null);
-      setViewedUserLoading(false);
     }
-  }, [userId, hasUrlUserId, isOwnProfile]);
+  }, [userId, isOwnProfile]);
 
   useEffect(() => {
     if (profileData) {
@@ -122,7 +107,10 @@ export default function Profile() {
         .catch(() => setRecentReviews([]));
 
       api.get(`/users/${profileData.id}/items`)
-        .then(res => setListedItems(res.data.items || []))
+        .then(res => {
+          const items = res.data.items || [];
+          setListedItems(items.filter(item => item.status === 'available'));
+        })
         .catch(() => setListedItems([]));
     }
   }, [profileData]);

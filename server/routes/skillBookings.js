@@ -5,6 +5,7 @@ const path     = require("path");
 const fs       = require("fs");
 const multer   = require("multer");
 const requireAuth  = require("../middleware/auth");
+const requireVerified = require("../middleware/verified");
 const requireAdmin = require("../middleware/admin");
 const { createNotification } = require("./notifications");
 
@@ -44,7 +45,7 @@ const screenshotUpload = multer({
 // ── POST /api/skill-bookings ─────────────────────────────────────────────────
 // Capacity rule: any number of unpaid reservations allowed.
 // Capacity is enforced only at admin-confirm time.
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireVerified, async (req, res) => {
   try {
     const { skill_listing_id, scheduled_time, message } = req.body;
     const requester_id = req.userId;
@@ -333,7 +334,7 @@ router.get("/:id/payment-screenshot", requireAuth, async (req, res) => {
 });
 
 // ── PATCH /api/skill-bookings/:id/status ──────────────────────────────────────
-router.patch("/:id/status", requireAuth, async (req, res) => {
+router.patch("/:id/status", requireAuth, requireVerified, async (req, res) => {
   const bookingId = req.params.id;
   const { status } = req.body;
 
@@ -434,6 +435,7 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
 router.post(
   "/:id/upload-payment",
   requireAuth,
+  requireVerified,
   screenshotUpload.single("screenshot"),
   async (req, res) => {
     const bookingId = req.params.id;

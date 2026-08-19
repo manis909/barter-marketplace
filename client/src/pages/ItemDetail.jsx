@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
+import VerificationRequiredModal from '../components/VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import './ItemDetail.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -12,6 +14,8 @@ export default function ItemDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { currentUser } = useAuth()
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   const [item, setItem] = useState(null)
   const [selectedImage, setSelectedImage] = useState(null)
@@ -143,6 +147,11 @@ export default function ItemDetailPage() {
   async function openTradeModal() {
     if (!currentUser) {
       navigate('/login')
+      return
+    }
+
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
       return
     }
 
@@ -464,6 +473,14 @@ export default function ItemDetailPage() {
             )}
           </div>
         </div>
+      )}
+
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          status={verificationStatus}
+          rejectionReason={rejectionReason}
+          onClose={() => setShowVerificationModal(false)}
+        />
       )}
     </div>
   )

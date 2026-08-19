@@ -1,0 +1,156 @@
+/* ── Verification Required Modal ─────────────────────────────────── */
+.vrm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(24, 23, 20, 0.45);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  animation: vrm-fade-in 0.15s ease;
+}
+
+@keyframes vrm-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.vrm-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: #FFFFFF;
+  border: 1px solid #E4E2D9;
+  border-radius: 24px;
+  padding: 32px 28px 28px;
+  box-shadow: 0 24px 60px rgba(36, 35, 31, 0.18);
+  display: grid;
+  gap: 12px;
+  animation: vrm-slide-up 0.18s ease;
+}
+
+@keyframes vrm-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vrm-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #A8A29E;
+  padding: 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.vrm-close:hover {
+  background: #F5F5F4;
+  color: #1C1917;
+}
+
+.vrm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+}
+
+.vrm-icon--pending {
+  background: #FEF9C3;
+  color: #A16207;
+}
+
+.vrm-icon--rejected {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.vrm-icon--unverified {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+
+.vrm-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1C1917;
+  margin: 0;
+}
+
+.vrm-message {
+  font-size: 14px;
+  color: #57534E;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.vrm-reason-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #78716C;
+  margin: 4px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vrm-reason {
+  font-size: 13px;
+  color: #1C1917;
+  background: #F5F5F4;
+  border: 1px solid #E7E5E4;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.vrm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.vrm-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.vrm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vrm-btn--secondary {
+  background: #F5F5F4;
+  color: #57534E;
+  border: 1px solid #E7E5E4;
+}
+
+.vrm-btn--secondary:hover:not(:disabled) {
+  background: #E7E5E4;
+}
+
+.vrm-btn--primary {
+  background: #2F6F5E;
+  color: #FFFFFF;
+}
+
+.vrm-btn--primary:hover:not(:disabled) {
+  background: #27604F;
+}

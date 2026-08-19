@@ -3,6 +3,7 @@ const router = express.Router();
 
 const db = require("../models/db");
 const requireAuth = require("../middleware/auth");
+const requireVerified = require("../middleware/verified");
 const { createNotification } = require("./notifications");
 const supabaseAdmin = require("../utils/supabaseAdmin");
 const requireAdmin = require("../middleware/admin");
@@ -14,7 +15,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function isValidUUID(val) { return UUID_RE.test(val); }
 
 // ── POST /api/trades ───────────────────────────────────────────────────────
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireVerified, async (req, res) => {
   try {
     const { offered_item_id, requested_item_id, message } = req.body;
     const sender_id = req.userId;
@@ -196,7 +197,7 @@ router.get('/admin/awaiting-verification', requireAuth, requireAdmin, async (req
 
 // ── POST /api/trades/:id/proof ────────────────────────────────────────
 // Upload proof images to Supabase and record submission flags.
-router.post('/:id/proof', requireAuth, upload.array('proof_images'), async (req, res) => {
+router.post('/:id/proof', requireAuth, requireVerified, upload.array('proof_images'), async (req, res) => {
   try {
     const tradeId = req.params.id;
     if (!isValidUUID(tradeId)) return res.status(400).json({ error: 'Invalid trade id' });
@@ -400,7 +401,7 @@ router.get("/:id/items", requireAuth, async (req, res) => {
 // Inserts into trade_offer_items (role = 'offered'), resets needs_more_items
 // and counter_note, logs offer_updated to trade_events.
 // Must be before /:id.
-router.post("/:id/add-items", requireAuth, async (req, res) => {
+router.post("/:id/add-items", requireAuth, requireVerified, async (req, res) => {
   try {
     const tradeId = req.params.id;
     if (!isValidUUID(tradeId)) {
@@ -557,7 +558,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 // ── PATCH /api/trades/:id/cancel — Sender cancels a pending offer ─────────
 // Only the sender can cancel, and only while the trade is still pending.
 // Sets status to 'cancelled' and restores both items to 'available'.
-router.patch("/:id/cancel", requireAuth, async (req, res) => {
+router.patch("/:id/cancel", requireAuth, requireVerified, async (req, res) => {
   try {
     if (!isValidUUID(req.params.id)) return res.status(400).json({ error: "Invalid trade id" });
 
@@ -631,7 +632,7 @@ router.get("/:id/events", requireAuth, async (req, res) => {
 });
 
 // ── PATCH /api/trades/:id/request-more ──────────────────────────────────────
-router.patch("/:id/request-more", requireAuth, async (req, res) => {
+router.patch("/:id/request-more", requireAuth, requireVerified, async (req, res) => {
   try {
     const tradeId = req.params.id;
     if (!isValidUUID(tradeId)) {
@@ -799,13 +800,13 @@ async function handleConfirmTrade(req, res) {
 }
 
 // ── PATCH /api/trades/:id/confirm ──────────────────────────────────────────
-router.patch("/:id/confirm", requireAuth, handleConfirmTrade);
+router.patch("/:id/confirm", requireAuth, requireVerified, handleConfirmTrade);
 
 // ── PATCH /api/trades/:id/complete (legacy alias) ──────────────────────────
-router.patch("/:id/complete", requireAuth, handleConfirmTrade);
+router.patch("/:id/complete", requireAuth, requireVerified, handleConfirmTrade);
 
 // ── PATCH /api/trades/:id — Accept or decline ─────────────────────────────
-router.patch("/:id", requireAuth, async (req, res) => {
+router.patch("/:id", requireAuth, requireVerified, async (req, res) => {
   try {
     const { status } = req.body;
     if (!isValidUUID(req.params.id)) return res.status(400).json({ error: "Invalid trade id" });

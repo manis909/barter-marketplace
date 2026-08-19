@@ -5,12 +5,16 @@ import { User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import { createSkillBooking } from '../services/skillBookingService'
 import SkillWishlistButton from './SkillWishlistButton'
+import VerificationRequiredModal from './VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import './SkillCard.css'
 
 export default function SkillCard({ skill }) {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
   const [cardBooking, setCardBooking] = useState({ loading: false, error: '', success: false })
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   const image = skill.image_urls?.[0] || 'https://via.placeholder.com/300x220?text=Skill'
   const category = skill.category || 'General'
@@ -18,6 +22,7 @@ export default function SkillCard({ skill }) {
   const isOwner = currentUser && currentUser.id === skill.teacher_id
 
   return (
+    <>
     <motion.article
       className="compact-skill-card"
       whileHover={{ y: -3 }}
@@ -90,6 +95,10 @@ export default function SkillCard({ skill }) {
                 disabled={cardBooking.loading || cardBooking.success}
                 onClick={async (e) => {
                   e.stopPropagation()
+                  if (!isVerified && !verificationLoading) {
+                    setShowVerificationModal(true)
+                    return
+                  }
                   setCardBooking({ loading: true, error: '', success: false })
                   try {
                     await createSkillBooking(skill.id)
@@ -119,5 +128,14 @@ export default function SkillCard({ skill }) {
         </div>
       </div>
     </motion.article>
+
+    {showVerificationModal && (
+      <VerificationRequiredModal
+        status={verificationStatus}
+        rejectionReason={rejectionReason}
+        onClose={() => setShowVerificationModal(false)}
+      />
+    )}
+    </>
   )
 }

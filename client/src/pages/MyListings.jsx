@@ -16,6 +16,8 @@ import { uploadImageToSupabase } from '../services/supabase'
 import { categoryNames } from '../data/categories'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
+import VerificationRequiredModal from '../components/VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import UndoToast from '../components/UndoToast'
 import { fmtDate, normalizeToUTC } from '../utils/helpers'
 import './MyListings.css'
@@ -51,6 +53,10 @@ export default function MyListingsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const createListingRef = useRef(null)
+
+  // ── verification gate ─────────────────────────────────────────
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   // ── delete / undo state ────────────────────────────────────────
   const [confirmItem, setConfirmItem]     = useState(null)  // item pending confirmation
@@ -200,6 +206,10 @@ export default function MyListingsPage() {
 
   // ── open create form ───────────────────────────────────────────
   const handleOpenCreateForm = () => {
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
+      return
+    }
     resetForm()
     setIsFormOpen(true)
     scrollToForm()
@@ -207,6 +217,10 @@ export default function MyListingsPage() {
 
   // ── edit handler ───────────────────────────────────────────────
   const handleEdit = (item) => {
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
+      return
+    }
     setIsEditing(true)
     setEditingItemId(item.id)
     setForm({
@@ -792,6 +806,15 @@ export default function MyListingsPage() {
         message="Listing deleted"
         onUndo={handleUndo}
         onExpire={handleDeleteExpire}
+      />
+    )}
+
+    {/* ── Verification required modal ─────────────────────────── */}
+    {showVerificationModal && (
+      <VerificationRequiredModal
+        status={verificationStatus}
+        rejectionReason={rejectionReason}
+        onClose={() => setShowVerificationModal(false)}
       />
     )}
     </>

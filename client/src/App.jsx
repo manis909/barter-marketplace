@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './features/auth/AuthContext';
+import { useAuth } from './features/auth/AuthContext';
 import Navbar from './components/Navbar';
 import LoginPage from './features/auth/LoginPage';
 import SignupPage from './features/auth/SignupPage';
@@ -27,6 +28,7 @@ import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout'; 
 import SkillsProfile from './pages/SkillsProfile';
+import RentalProfile from './pages/RentalProfile';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
@@ -51,16 +53,26 @@ import MyLearningPage from './pages/MyLearning';
 import MyTeachingPage from './pages/MyTeaching';
 import SkilterWishlistPage from './pages/SkilterWishlist';
 
+// Redirects an already-logged-in user straight to Explore if they land
+// on the marketing/auth pages — no reason to show them Login/Signup/Landing
+// again once they're already authenticated.
+function RedirectIfLoggedIn({ children }) {
+  const { currentUser, loading } = useAuth();
+  if (loading) return null; // avoid a flash-redirect before auth state loads
+  if (currentUser) return <Navigate to="/explore" replace />;
+  return children;
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <AppLayout>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/" element={<RedirectIfLoggedIn><LandingPage /></RedirectIfLoggedIn>} />
+            <Route path="/landing" element={<RedirectIfLoggedIn><LandingPage /></RedirectIfLoggedIn>} />
+            <Route path="/login" element={<RedirectIfLoggedIn><LoginPage /></RedirectIfLoggedIn>} />
+            <Route path="/signup" element={<RedirectIfLoggedIn><SignupPage /></RedirectIfLoggedIn>} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/item/:id" element={<ItemDetailPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
@@ -90,6 +102,8 @@ function App() {
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
             <Route path="/admin/payment-review" element={<AdminPaymentReviewPage />} />
+            <Route path="/rental/profile/:userId" element={<RentalProfile />} />
+            <Route path="/rental/profile" element={<RentalProfile />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
             <Route path="/skilter/skills"    element={<MySkillsPage />} />

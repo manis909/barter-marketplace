@@ -2,11 +2,15 @@ import { useState } from 'react'
 import api from '../services/api'
 import { uploadImageToSupabase } from '../services/supabase'
 import { categoryNames } from '../data/categories'
+import VerificationRequiredModal from '../components/VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import './AddItem.css'
 
 const conditions = ['Excellent', 'Very Good', 'Good', 'Fair']
 
 export default function AddItemPage() {
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -40,6 +44,12 @@ export default function AddItemPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
+      return
+    }
+
     setIsSubmitting(true)
     setMessage('')
 
@@ -87,6 +97,7 @@ export default function AddItemPage() {
   }
 
   return (
+    <>
     <section className="add-item-page">
       <div className="add-item-header">
         <div>
@@ -203,5 +214,14 @@ export default function AddItemPage() {
         {message && <p className="form-message">{message}</p>}
       </form>
     </section>
+
+    {showVerificationModal && (
+      <VerificationRequiredModal
+        status={verificationStatus}
+        rejectionReason={rejectionReason}
+        onClose={() => setShowVerificationModal(false)}
+      />
+    )}
+    </>
   )
 }

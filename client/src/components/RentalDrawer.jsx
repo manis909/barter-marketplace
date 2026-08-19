@@ -16,7 +16,7 @@ import {
 import './ProfileDrawer.css'
 
 const primaryItems = [
-  { label: 'My Profile',               icon: User,             path: '/profile' },
+  { label: 'My Profile',               icon: User,             path: '/rental/profile' },
   { label: 'My  Rental Listings',      icon: Home,             path: '/renter/listings' },
   { label: 'My Rentals',               icon: KeyRound,         path: '/renter/my-rentals' },
   { label: 'Rental Requests',          icon: BriefcaseBusiness, path: '/renter/requests' },

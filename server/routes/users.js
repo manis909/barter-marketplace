@@ -158,5 +158,17 @@ router.get('/:id/skills', async (req, res) => {
   );
   res.json({ skills: result.rows });
 });
+// ---- Get all rental listings owned by a specific user (for their Rental Profile page) ----
+// Add this anywhere before module.exports = router; in users.js
+router.get('/:id/rental-listings', async (req, res) => {
+  const result = await db.query(
+    `SELECT id, item_name, description, category, image_urls, rate_type, rate_amount, status
+     FROM rental_listings
+     WHERE owner_id = $1
+     ORDER BY created_at DESC`,
+    [req.params.id]
+  );
+  res.json({ listings: result.rows });
+});
 
 module.exports = router;

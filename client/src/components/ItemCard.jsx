@@ -5,11 +5,15 @@ import { User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from './WishlistButton'
+import VerificationRequiredModal from './VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import './ItemCard.css'
 
 export default function ItemCard({ item }) {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   const image = item.image || item.image_urls?.[0] || 'https://via.placeholder.com/300x220?text=Barter'
   const condition = item.condition || item.item_condition || 'Good'
@@ -30,6 +34,11 @@ export default function ItemCard({ item }) {
   async function handleOfferTradeClick() {
     if (!currentUser) {
       navigate('/login')
+      return
+    }
+
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
       return
     }
 
@@ -215,6 +224,14 @@ export default function ItemCard({ item }) {
             )}
           </div>
         </div>
+      )}
+
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          status={verificationStatus}
+          rejectionReason={rejectionReason}
+          onClose={() => setShowVerificationModal(false)}
+        />
       )}
     </>
   )

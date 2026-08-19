@@ -5,12 +5,16 @@ import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import { createSkillBooking } from '../services/skillBookingService'
 import SkillWishlistButton from '../components/SkillWishlistButton'
+import VerificationRequiredModal from '../components/VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import './SkillDetail.css'
 
 export default function SkillDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { currentUser } = useAuth()
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   const [skill, setSkill] = useState(null)
   const [selectedImage, setSelectedImage] = useState(null)
@@ -147,6 +151,7 @@ export default function SkillDetailPage() {
   const isOwner = currentUser && (currentUser.id === normalizedSkill.teacherId)
 
   return (
+    <>
     <div className="skill-detail-page">
       <Link
         to="/skilter/explore"
@@ -280,6 +285,10 @@ export default function SkillDetailPage() {
                   className="primary-button detail-action"
                   disabled={booking.loading || booking.success}
                   onClick={async () => {
+                    if (!isVerified && !verificationLoading) {
+                      setShowVerificationModal(true)
+                      return
+                    }
                     setBooking({ loading: true, error: '', success: false })
                     try {
                       await createSkillBooking(normalizedSkill.id)
@@ -318,5 +327,14 @@ export default function SkillDetailPage() {
         </div>
       </div>
     </div>
+
+    {showVerificationModal && (
+      <VerificationRequiredModal
+        status={verificationStatus}
+        rejectionReason={rejectionReason}
+        onClose={() => setShowVerificationModal(false)}
+      />
+    )}
+    </>
   )
 }

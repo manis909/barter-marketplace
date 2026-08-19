@@ -3,15 +3,18 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
-import './SkillsProfile.css';
+import './RentalProfile.css';
 
-// Skill detail pages live at /skilter/skill/:id (confirmed by Member 2).
-// Editing is not duplicated here — Edit Profile still goes to /profile,
-// which is the single source of truth for editing profile fields.
-// Same for resubmitting ID verification — it navigates to /profile,
-// where the actual submission form lives (not duplicated here either).
+// Rental listing detail pages live at /rental/:id (confirmed by Member 2 —
+// route not finalized on her end yet, may change later).
+// Editing and ID resubmission both navigate to /profile — the single
+// source of truth for those forms, not duplicated here.
+//
+// TODO: "Borrowed" count is not wired up yet — waiting to confirm the
+// rental bookings table name/columns with Member 3 (or whoever owns
+// the borrow/booking flow). Currently only "Listed" is shown.
 
-export default function SkillsProfile() {
+export default function RentalProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
@@ -23,7 +26,7 @@ export default function SkillsProfile() {
   const profileData = isOwnProfile ? currentUser : viewedUser;
 
   const [ratingSummary, setRatingSummary] = useState(null);
-  const [skillsTaught, setSkillsTaught] = useState([]);
+  const [rentalListings, setRentalListings] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null);
 
@@ -43,9 +46,9 @@ export default function SkillsProfile() {
         .then(res => setRatingSummary(res.data.summary))
         .catch(() => setRatingSummary(null));
 
-      api.get(`/users/${profileData.id}/skills`)
-        .then(res => setSkillsTaught(res.data.skills || []))
-        .catch(() => setSkillsTaught([]));
+      api.get(`/users/${profileData.id}/rental-listings`)
+        .then(res => setRentalListings(res.data.listings || []))
+        .catch(() => setRentalListings([]));
     }
   }, [profileData]);
 
@@ -58,7 +61,7 @@ export default function SkillsProfile() {
   }, [isOwnProfile]);
 
   function handleCopyLink() {
-    const url = `${window.location.origin}/skilter/profile/${profileData.id}`;
+    const url = `${window.location.origin}/rental/profile/${profileData.id}`;
     navigator.clipboard.writeText(url).then(() => {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
@@ -79,19 +82,19 @@ export default function SkillsProfile() {
   const displayImage = profileData.profile_image;
 
   return (
-    <div className="skills-profile-page">
+    <div className="rental-profile-page">
       <button
         type="button"
         className="profile-back-btn"
-        onClick={() => navigate('/skilter/explore')}
-        aria-label="Back to Skilter"
+        onClick={() => navigate('/renter')}
+        aria-label="Back to Renter"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
       </button>
 
-      <div className="skills-profile-header">
+      <div className="rental-profile-header">
         {displayImage ? (
           <img src={displayImage} alt="Profile" className="profile-photo" />
         ) : (
@@ -103,21 +106,27 @@ export default function SkillsProfile() {
           </div>
         )}
 
-        <div className="skills-profile-header-info">
+        <div className="rental-profile-header-info">
           <p className="profile-username">
             {profileData.username}
             {profileData.is_verified && <VerifiedBadge />}
           </p>
 
-          <div className="skills-profile-rating">
-            {ratingSummary && ratingSummary.avg_rating != null ? (
-              <>
-                <span className="profile-stat-number">{Number(ratingSummary.avg_rating).toFixed(1)}</span>
-                <span className="profile-stat-label">rating</span>
-              </>
-            ) : (
-              <span className="profile-stat-label profile-no-rating">No ratings</span>
-            )}
+          <div className="rental-profile-stats-row">
+            <div className="profile-stat">
+              <span className="profile-stat-number">{rentalListings.length}</span>
+              <span className="profile-stat-label">Listed</span>
+            </div>
+            <div className="profile-stat">
+              {ratingSummary && ratingSummary.avg_rating != null ? (
+                <>
+                  <span className="profile-stat-number">{Number(ratingSummary.avg_rating).toFixed(1)}</span>
+                  <span className="profile-stat-label">rating</span>
+                </>
+              ) : (
+                <span className="profile-stat-label profile-no-rating">No ratings</span>
+              )}
+            </div>
           </div>
 
           {profileData.created_at && (
@@ -166,35 +175,34 @@ export default function SkillsProfile() {
         </>
       )}
 
-      {skillsTaught.length > 0 && (
-        <div className="skills-teach-grid">
-          <h3>Skills I Teach</h3>
-          <div className="skills-teach-grid-inner">
-            {skillsTaught.map(skill => (
-              <Link to={`/skilter/skill/${skill.id}`} key={skill.id} className="skills-teach-card">
+      {rentalListings.length > 0 ? (
+        <div className="rental-listings-grid">
+          <h3>Items for Rent</h3>
+          <div className="rental-listings-grid-inner">
+            {rentalListings.map(listing => (
+              <Link to={`/rental/${listing.id}`} key={listing.id} className="rental-listing-card">
                 <img
                   src={
-                    Array.isArray(skill.image_urls) && skill.image_urls.length > 0
-                      ? skill.image_urls[0]
+                    Array.isArray(listing.image_urls) && listing.image_urls.length > 0
+                      ? listing.image_urls[0]
                       : 'https://placehold.co/300'
                   }
-                  alt={skill.skill_name}
-                  className="skills-teach-card-image"
+                  alt={listing.item_name}
+                  className="rental-listing-card-image"
                 />
-                <div className="skills-teach-card-body">
-                  <div className="skills-teach-card-top">
-                    <span className="profile-skill-name">{skill.skill_name}</span>
-                    <span className={`profile-skill-badge profile-skill-badge-${skill.price_type}`}>
-                      {skill.price_type === 'free' ? 'Free' : skill.price_type === 'coins' ? 'Coins' : 'Negotiable'}
-                    </span>
-                  </div>
-                  {skill.category && <p className="profile-skill-category">{skill.category}</p>}
-                  {skill.description && <p className="profile-skill-description">{skill.description}</p>}
+                <div className="rental-listing-card-body">
+                  <span className="rental-listing-title">{listing.item_name}</span>
+                  <span className="rental-listing-rate">
+                    {listing.rate_amount} / {listing.rate_type || 'day'}
+                  </span>
+                  {listing.category && <p className="rental-listing-category">{listing.category}</p>}
                 </div>
               </Link>
             ))}
           </div>
         </div>
+      ) : (
+        <p className="rental-empty-note">No items listed for rent yet.</p>
       )}
     </div>
   );

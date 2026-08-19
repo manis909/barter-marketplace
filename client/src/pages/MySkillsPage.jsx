@@ -15,6 +15,8 @@ import api from '../services/api'
 import { uploadImageToSupabase } from '../services/supabase'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
+import VerificationRequiredModal from '../components/VerificationRequiredModal'
+import useVerificationStatus from '../hooks/useVerificationStatus'
 import UndoToast from '../components/UndoToast'
 import { fmtDate, normalizeToUTC } from '../utils/helpers'
 import './MySkillsPage.css'
@@ -66,6 +68,10 @@ export default function MySkillsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const createSkillRef = useRef(null)
+
+  // ── verification gate ─────────────────────────────────────────
+  const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   // ── delete / undo state ────────────────────────────────────────
   const [confirmItem, setConfirmItem] = useState(null)
@@ -199,6 +205,10 @@ export default function MySkillsPage() {
 
   // ── open create form ───────────────────────────────────────────
   const handleOpenCreateForm = () => {
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
+      return
+    }
     resetForm()
     setIsFormOpen(true)
     scrollToForm()
@@ -206,6 +216,10 @@ export default function MySkillsPage() {
 
   // ── edit handler ───────────────────────────────────────────────
   const handleEdit = (skill) => {
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
+      return
+    }
     setIsEditing(true)
     setEditingSkillId(skill.id)
     setForm({
@@ -813,6 +827,15 @@ export default function MySkillsPage() {
         message="Skill deleted"
         onUndo={handleUndo}
         onExpire={handleDeleteExpire}
+      />
+    )}
+
+    {/* ── Verification required modal ─────────────────────────── */}
+    {showVerificationModal && (
+      <VerificationRequiredModal
+        status={verificationStatus}
+        rejectionReason={rejectionReason}
+        onClose={() => setShowVerificationModal(false)}
       />
     )}
     </>

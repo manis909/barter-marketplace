@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const db = require('../models/db');
 const requireAuth = require('../middleware/auth');
+const requireVerified = require('../middleware/verified');
 
 // Exact Skilter categories as specified
 const SKILL_CATEGORIES = [
@@ -49,7 +50,7 @@ function normalizeSessionType(value) {
 
 // ── POST /api/skills ──────────────────────────────────────────────
 // Create a new skill listing
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, requireVerified, async (req, res) => {
   try {
     console.log('🔍 BACKEND DEBUG - req.body:', req.body);
 
@@ -270,7 +271,7 @@ router.get('/:id', async (req, res) => {
 
 // ── PUT /api/skills/:id ───────────────────────────────────────────
 // Update a skill (owner only)
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, requireVerified, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -381,7 +382,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 
 // ── DELETE /api/skills/:id ────────────────────────────────────────
 // Delete a skill (owner only)
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireVerified, async (req, res) => {
   const { id } = req.params;
 
   try {
