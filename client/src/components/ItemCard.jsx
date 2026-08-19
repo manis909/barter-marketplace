@@ -15,7 +15,7 @@ export default function ItemCard({ item }) {
   const condition = item.condition || item.item_condition || 'Good'
   const category = item.category || 'General'
 
-  
+
   const ownerName = item.ownerName || item.owner_name || 'Owner'
 
   // Trade modal state
@@ -120,7 +120,7 @@ export default function ItemCard({ item }) {
                 {ownerName}
               </Link>
             </div>
-          
+
           </div>
 
           {/* Row 4: Clean Icon-Free Equal-Width Buttons */}
@@ -128,18 +128,18 @@ export default function ItemCard({ item }) {
             {!isOwner && item.status === 'available' ? (
               <button
                 type="button"
-                className="btn-compact btn-compact-secondary"
+                className="btn-compact btn-compact-primary"
                 onClick={handleOfferTradeClick}
               >
-                Offer Trade
+                Trade
               </button>
             ) : isOwner ? (
               <span className="card-status-pill owner-pill">Mine</span>
             ) : (
               <span className="card-status-pill unavailable-pill">Unavailable</span>
             )}
-            <Link to={`/item/${item.id}`} className="btn-compact btn-compact-primary">
-              View Details
+            <Link to={`/item/${item.id}`} className="btn-compact btn-compact-secondary">
+              Details
             </Link>
           </div>
         </div>
