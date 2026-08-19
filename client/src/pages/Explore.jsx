@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { Layers, X } from 'lucide-react'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
 import SmartSection from '../components/SmartSection'
@@ -7,6 +8,7 @@ import Footer from '../components/Footer'
 import { normalizeCategory } from '../data/categories'
 import { useAuth } from '../features/auth/AuthContext'
 import { getViewed } from '../hooks/useRecentlyViewed'
+import MobileSwipeDeck from '../components/MobileSwipeDeck'
 import api from '../services/api'
 import './Explore.css'
 
@@ -18,7 +20,9 @@ function normaliseItem(item) {
     ...item,
     image: item.image || item.image_urls?.[0] || 'https://via.placeholder.com/300x200?text=Barter+Item',
     condition: item.condition || item.item_condition || 'good',
-    ownerName: item.ownerName || item.owner_name || 'Owner',
+    ownerName: item.ownerName || item.owner_name || item.owner?.name || item.user?.name || 'Owner',
+    ownerId: item.owner_id || item.ownerId || item.owner?.id || item.user_id || item.user?.id || '1',
+    ownerUsername: item.owner_username || item.username || item.owner?.username || item.user?.username || '',
     ownerRating: item.ownerRating ?? item.owner_rating ?? 4.5,
   }
 }
@@ -51,6 +55,7 @@ export default function ExplorePage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isSwipeModeOpen, setIsSwipeModeOpen] = useState(false)
 
   // ── Smart-section state ──────────────────────────────────────────────────
   const [trendingItems,   setTrendingItems]   = useState([])
@@ -127,76 +132,78 @@ export default function ExplorePage() {
     setSmartLoading(true)
 
     async function fetchSmartSections() {
-      // 1. Always-visible non-auth sections ─────────────────────────────────
-      const [rawTrending, rawLatest] = await Promise.all([
-        safeFetch(`${apiBaseUrl}/items/trending`),
-        safeFetch(`${apiBaseUrl}/items`),        // sorted by created_at DESC already
-      ])
-
-      // 2. Auth-gated sections ───────────────────────────────────────────────
-      let rawRecommended = []
-      let rawMatches     = []
-      let rawSimilar     = []
-      let rawViewed      = []
-
-      if (currentUser) {
-        // Build the dedup set incrementally as we assign sections so we can
-        // pass already-claimed IDs to /similar before it returns.
-        // We know trending is highest priority so build a temp set first.
-        const tempTrendingIds = new Set(rawTrending.map((i) => i.id))
-
-        ;[rawRecommended, rawMatches] = await Promise.all([
-          safeFetch(api.get('/items/recommended')),
-          safeFetch(api.get('/items/matches')),
+      try {
+        // 1. Always-visible non-auth sections ─────────────────────────────────
+        const [rawTrending, rawLatest] = await Promise.all([
+          safeFetch(`${apiBaseUrl}/items/trending`),
+          safeFetch(`${apiBaseUrl}/items`),        // sorted by created_at DESC already
         ])
 
-        // Exclude IDs already claimed by trending + recommended + matches
-        const excludeSoFar = [
-          ...rawTrending.map((i) => i.id),
-          ...rawRecommended.map((i) => i.id),
-          ...rawMatches.map((i) => i.id),
-        ].join(',')
+        // 2. Auth-gated sections ───────────────────────────────────────────────
+        let rawRecommended = []
+        let rawMatches     = []
+        let rawSimilar     = []
+        let rawViewed      = []
 
-        rawSimilar = await safeFetch(
-          api.get(`/items/similar${excludeSoFar ? `?exclude=${excludeSoFar}` : ''}`)
-        )
+        if (currentUser) {
+          ;[rawRecommended, rawMatches] = await Promise.all([
+            safeFetch(api.get('/items/recommended')),
+            safeFetch(api.get('/items/matches')),
+          ])
 
-        // Recently viewed comes from localStorage — already filtered to exclude
-        // the user's own items by getViewed(userId, userId).
-        rawViewed = getViewed(currentUser.id, currentUser.id)
+          // Exclude IDs already claimed by trending + recommended + matches
+          const excludeSoFar = [
+            ...rawTrending.map((i) => i.id),
+            ...rawRecommended.map((i) => i.id),
+            ...rawMatches.map((i) => i.id),
+          ].join(',')
+
+          rawSimilar = await safeFetch(
+            api.get(`/items/similar${excludeSoFar ? `?exclude=${excludeSoFar}` : ''}`)
+          )
+
+          // Recently viewed comes from localStorage — already filtered to exclude
+          // the user's own items by getViewed(userId, userId).
+          rawViewed = getViewed(currentUser.id, currentUser.id)
+        }
+
+        // Guard: if a newer fetch started while we were awaiting, discard these results
+        if (fetchId !== smartFetchId.current) return
+
+        // ── Global deduplication ──────────────────────────────────────────────
+        // Priority: Trending → Recommended → Matches → Recently Viewed → Similar → Latest
+        const displayedIds = new Set()
+
+        function dedup(raw) {
+          const unique = raw.filter((i) => !displayedIds.has(i.id))
+          unique.forEach((i) => displayedIds.add(i.id))
+          return unique.map(normaliseItem)
+        }
+
+        const trending    = dedup(rawTrending)
+        const recommended = dedup(rawRecommended)
+        const matches     = dedup(rawMatches)
+        const viewed      = dedup(rawViewed)
+        const similar     = dedup(rawSimilar)
+        // Latest: take up to 8 from the already-fetched main items list
+        // (sorted newest-first), excluding anything already shown above
+        const latest      = dedup(rawLatest.slice(0, 20))  // slice gives enough candidates
+
+        setTrendingItems(trending)
+        setRecommendedItems(recommended)
+        setMatchesItems(matches)
+        setRecentlyViewed(viewed)
+        setSimilarItems(similar)
+        setLatestItems(latest.slice(0, 8))
+        // Snapshot the full set of displayed IDs so the main grid can exclude them
+        setShownSmartIds(new Set(displayedIds))
+      } catch (err) {
+        console.error('Error fetching smart sections:', err)
+      } finally {
+        if (fetchId === smartFetchId.current) {
+          setSmartLoading(false)
+        }
       }
-
-      // Guard: if a newer fetch started while we were awaiting, discard these results
-      if (fetchId !== smartFetchId.current) return
-
-      // ── Global deduplication ──────────────────────────────────────────────
-      // Priority: Trending → Recommended → Matches → Recently Viewed → Similar → Latest
-      const displayedIds = new Set()
-
-      function dedup(raw) {
-        const unique = raw.filter((i) => !displayedIds.has(i.id))
-        unique.forEach((i) => displayedIds.add(i.id))
-        return unique.map(normaliseItem)
-      }
-
-      const trending    = dedup(rawTrending)
-      const recommended = dedup(rawRecommended)
-      const matches     = dedup(rawMatches)
-      const viewed      = dedup(rawViewed)
-      const similar     = dedup(rawSimilar)
-      // Latest: take up to 8 from the already-fetched main items list
-      // (sorted newest-first), excluding anything already shown above
-      const latest      = dedup(rawLatest.slice(0, 20))  // slice gives enough candidates
-
-      setTrendingItems(trending)
-      setRecommendedItems(recommended)
-      setMatchesItems(matches)
-      setRecentlyViewed(viewed)
-      setSimilarItems(similar)
-      setLatestItems(latest.slice(0, 8))
-      // Snapshot the full set of displayed IDs so the main grid can exclude them
-      setShownSmartIds(new Set(displayedIds))
-      setSmartLoading(false)
     }
 
     fetchSmartSections()
@@ -236,82 +243,118 @@ export default function ExplorePage() {
       {/* ── Existing: category filter bar (UNCHANGED) ─────────────────── */}
       <CategoryFilter activeCategory={activeCategory} onSelect={handleCategorySelect} />
 
-      {/* ── Existing: market summary header (UNCHANGED) ───────────────── */}
-      <div className="market-summary">
-        <div>
-          <p className="section-label">Marketplace</p>
-          <h2>Trade items with trusted local members</h2>
+      {/* ── Marketplace Hero Advertisement Banner ─────────────────────── */}
+      <div className="market-promo-banner">
+        <div className="market-promo-content">
+          <span className="market-promo-badge">✨ BARTER MARKETPLACE</span>
+          <h2 className="market-promo-heading">Trade items with trusted local members</h2>
+          <p className="market-promo-subtext">
+            Give items a second life • {loading ? 'Loading items...' : `${normalizedItems.length} items available in ${activeCategory || 'All categories'}`}
+          </p>
         </div>
-        <p>
-          {loading
-            ? 'Loading items...'
-            : `${normalizedItems.length} items available in ${activeCategory || 'All categories'}`}
-        </p>
+        <div className="market-promo-action">
+          <button
+            type="button"
+            className="swipe-mode-trigger-btn"
+            onClick={() => setIsSwipeModeOpen(true)}
+            aria-label="Open Swipe Discovery Mode"
+            title="Swipe Mode"
+          >
+            <Layers size={18} />
+            <span>Swipe Mode</span>
+          </button>
+        </div>
       </div>
 
       {error ? <p className="section-label">{error}</p> : null}
 
-      {/* ── Smart sections — only shown when NOT filtered ─────────────── */}
-      {!isFiltered && (
-        <div className="smart-sections-block">
-          <SmartSection
-            title="🔥 Trending Now"
-            subtitle="Items people are viewing and saving right now"
-            items={trendingItems}
-            loading={smartLoading}
+      {/* ── Main Explore Content (Visible on all screen sizes) ─────────── */}
+      <div className="explore-main-content">
+        {!isFiltered && (
+          <div className="smart-sections-block">
+            <SmartSection
+              title="🔥 Trending Now"
+              subtitle="Items people are viewing and saving right now"
+              items={trendingItems}
+              loading={smartLoading}
+            />
+
+            {currentUser && (
+              <SmartSection
+                title="💜 Recommended for You"
+                subtitle="Based on your wishlist activity"
+                items={recommendedItems}
+                loading={smartLoading}
+              />
+            )}
+
+            {currentUser && (
+              <SmartSection
+                title="🎯 Matches Your Desired Items"
+                subtitle="Listings that are looking for something you might have"
+                items={matchesItems}
+                loading={smartLoading}
+              />
+            )}
+
+            {currentUser && recentlyViewed.length > 0 && (
+              <SmartSection
+                title="👀 Recently Viewed"
+                subtitle="Pick up where you left off"
+                items={recentlyViewed}
+                loading={false}
+              />
+            )}
+
+            {currentUser && (
+              <SmartSection
+                title="✨ You May Also Like"
+                subtitle="Similar to items you've shown interest in"
+                items={similarItems}
+                loading={smartLoading}
+              />
+            )}
+
+            <SmartSection
+              title="🆕 Latest Listings"
+              subtitle="Fresh items just added to the marketplace"
+              items={latestItems}
+              loading={smartLoading}
+            />
+          </div>
+        )}
+
+        {/* Main grid (filtered only — shows search/category results) */}
+        {isFiltered && (
+          <CategorySection
+            title={activeCategory && activeCategory !== 'All' ? activeCategory : 'Search Results'}
+            items={normalizedItems}
           />
+        )}
+      </div>
 
-          {currentUser && (
-            <SmartSection
-              title="💜 Recommended for You"
-              subtitle="Based on your wishlist activity"
-              items={recommendedItems}
-              loading={smartLoading}
-            />
-          )}
+      {/* ── Full-screen Swipe Discovery Mode Overlay ─────────────────────── */}
+      {isSwipeModeOpen && (
+        <div className="swipe-modal-backdrop" onClick={() => setIsSwipeModeOpen(false)}>
+          <div className="swipe-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="swipe-modal-header">
+              <div className="swipe-modal-title-row">
+                <Layers size={20} className="swipe-modal-icon" />
+                <span className="swipe-modal-title">Swipe Discovery Mode</span>
+              </div>
+              <button
+                type="button"
+                className="swipe-modal-close-btn"
+                onClick={() => setIsSwipeModeOpen(false)}
+                aria-label="Close Swipe Mode"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-          {currentUser && (
-            <SmartSection
-              title="🎯 Matches Your Desired Items"
-              subtitle="Listings that are looking for something you might have"
-              items={matchesItems}
-              loading={smartLoading}
-            />
-          )}
-
-          {currentUser && recentlyViewed.length > 0 && (
-            <SmartSection
-              title="👀 Recently Viewed"
-              subtitle="Pick up where you left off"
-              items={recentlyViewed}
-              loading={false}
-            />
-          )}
-
-          {currentUser && (
-            <SmartSection
-              title="✨ You May Also Like"
-              subtitle="Similar to items you've shown interest in"
-              items={similarItems}
-              loading={smartLoading}
-            />
-          )}
-
-          <SmartSection
-            title="🆕 Latest Listings"
-            subtitle="Fresh items just added to the marketplace"
-            items={latestItems}
-            loading={smartLoading}
-          />
+            <MobileSwipeDeck items={normalizedItems} onClose={() => setIsSwipeModeOpen(false)} />
+          </div>
         </div>
-      )}
-
-      {/* ── Main grid (filtered only — shows search/category results) */}
-      {isFiltered && (
-        <CategorySection
-          title={activeCategory && activeCategory !== 'All' ? activeCategory : 'Search Results'}
-          items={normalizedItems}
-        />
       )}
 
       <Footer />

@@ -30,14 +30,14 @@
   font-family: 'Fraunces', serif;
   font-size: clamp(1.1rem, 1.6vw, 1.35rem);
   font-weight: 700;
-  color: #1C1917;
+  color: #005C66;
   line-height: 1.2;
 }
 
 .smart-section__subtitle {
   margin: 0;
   font-size: 0.83rem;
-  color: #78716C;
+  color: #3D7880;
   line-height: 1.4;
 }
 
@@ -45,7 +45,7 @@
   flex-shrink: 0;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #2F6B57;
+  color: #007885;
   text-decoration: none;
   white-space: nowrap;
   padding: 4px 0;
@@ -54,73 +54,52 @@
 }
 
 .smart-section__see-all:hover {
-  color: #1b4d3e;
-  border-bottom-color: #2F6B57;
+  color: #005C66;
+  border-bottom-color: #007885;
 }
 
-/* ── Scroll track ──────────────────────────────────────────────── */
-/* MOBILE (default): horizontal scroll carousel, hidden scrollbar  */
+/* ── Scroll track / Grid container ─────────────────────────────── */
+/* MOBILE (default): vertical 2-column grid layout (no horizontal carousel) */
 .smart-section__scroll-track {
-  overflow-x: auto;
-  overflow-y: hidden;
-  /* Constrain the track to the parent's width so the nowrap card row
-     scrolls INSIDE this element rather than expanding the document.  */
+  overflow-x: visible;
+  overflow-y: visible;
   max-width: 100%;
-  /* Prevent the track itself from becoming wider than the viewport   */
   width: 100%;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding-bottom: 8px;
   box-sizing: border-box;
 }
 
-.smart-section__scroll-track::-webkit-scrollbar {
-  display: none;
-}
-
 /* ── Card row ─────────────────────────────────────────────────── */
-/* MOBILE (default): single nowrap row — enables horizontal scroll */
+/* MOBILE (default): 2-column grid — users scroll down naturally */
 .smart-section__row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: nowrap;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
-/* Each card wrapper: fixed width on mobile for the carousel */
+/* Each card wrapper fills grid column naturally */
 .smart-section__card-wrap {
-  flex: 0 0 220px;
-  width: 220px;
+  width: 100%;
   min-width: 0;
 }
 
 /* ── DESKTOP overrides (768px and above) ───────────────────────── */
-/* Match the project's standard mobile/desktop breakpoint (App.css,
-   Navbar.css, CategorySection.css all use 767px/768px).            */
 @media (min-width: 768px) {
-  /* No scroll container needed on desktop */
   .smart-section__scroll-track {
     overflow-x: visible;
     overflow-y: visible;
     padding-bottom: 0;
   }
 
-  /* Switch the row to a grid so cards always fill the full width
-     regardless of how many are present.
-     auto-fill + minmax: browser fits as many columns as possible
-     while keeping each at least 200px wide; remaining space is
-     distributed equally — no empty gap on the right side.          */
   .smart-section__row {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    flex-wrap: unset; /* clear the mobile flex-wrap */
+    gap: 10px;
   }
 
   .smart-section__card-wrap {
-    flex: unset;      /* grid manages sizing — flex shorthand not needed */
     width: auto;
-    max-width: none;  /* let the grid column dictate the width */
-    min-width: 0;     /* prevent grid blowout */
+    max-width: none;
+    min-width: 0;
   }
 }
 
@@ -218,6 +197,6 @@
   }
 
   .smart-section__row {
-    gap: 10px;
+    gap: 6px;
   }
 }

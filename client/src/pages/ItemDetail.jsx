@@ -1,12 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import {
+  ArrowLeft,
+  User,
+  Star,
+  ArrowLeftRight,
+  Tag,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Layers,
+  Award
+} from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
 import './ItemDetail.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
+function formatCondition(cond) {
+  if (!cond) return 'Good'
+  return cond.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
 export default function ItemDetailPage() {
   const { id } = useParams()
@@ -202,7 +221,7 @@ export default function ItemDetailPage() {
   if (error) {
     return (
       <div className="item-detail-page">
-        <p>{error}</p>
+        <p className="detail-loading">{error}</p>
       </div>
     )
   }
@@ -210,7 +229,7 @@ export default function ItemDetailPage() {
   if (!normalizedItem) {
     return (
       <div className="item-detail-page">
-        <p>Item not found.</p>
+        <p className="detail-loading">Item not found.</p>
       </div>
     )
   }
@@ -219,22 +238,24 @@ export default function ItemDetailPage() {
 
   return (
     <div className="item-detail-page">
-     <Link
-  to="/explore"
-  aria-label="Back to Explore"
-  className="detail-back"
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '40px',
-    height: '40px',
-    borderRadius: '12px'
-  }}
->
-  <ArrowLeft size={20} />
-</Link>
+      {/* Top Navigation & Breadcrumb */}
+      <div className="detail-top-nav">
+        <Link to="/explore" className="detail-back-btn" aria-label="Back to Explore">
+          <ArrowLeft size={18} />
+          <span>Back to Explore</span>
+        </Link>
+
+        <div className="detail-breadcrumb">
+          <span>Explore</span>
+          <span className="sep">/</span>
+          <span>{normalizedItem.category}</span>
+          <span className="sep">/</span>
+          <span className="current">{normalizedItem.title}</span>
+        </div>
+      </div>
+
       <div className="detail-grid">
+        {/* Left Column: Gallery */}
         <div className="detail-gallery">
           <div
             className="detail-image-shell"
@@ -242,6 +263,14 @@ export default function ItemDetailPage() {
             onTouchEnd={handleTouchEnd}
           >
             <img src={displayImage} alt={normalizedItem.title} className="detail-main-image" />
+            
+            <div className="detail-image-top-left-badge">
+              <span className={`status-badge-pill ${normalizedItem.status === 'available' ? 'is-available' : 'is-traded'}`}>
+                <CheckCircle2 size={13} />
+                {normalizedItem.status === 'available' ? 'Available for Trade' : 'Traded'}
+              </span>
+            </div>
+
             <WishlistButton itemId={normalizedItem.id} />
 
             {images.length > 1 && (
@@ -253,7 +282,7 @@ export default function ItemDetailPage() {
                     onClick={goToPreviousImage}
                     aria-label="View previous image"
                   >
-                    &lt;
+                    <ChevronLeft size={20} />
                   </button>
                 )}
 
@@ -264,71 +293,148 @@ export default function ItemDetailPage() {
                     onClick={goToNextImage}
                     aria-label="View next image"
                   >
-                    &gt;
+                    <ChevronRight size={20} />
                   </button>
                 )}
               </>
             )}
           </div>
-          <div className="detail-thumbs">
-            {images.map((photo) => (
-              <button
-                key={photo}
-                type="button"
-                className={photo === displayImage ? 'thumb-button active' : 'thumb-button'}
-                onClick={() => setSelectedImage(photo)}
-              >
-                <img src={photo} alt={normalizedItem.title} />
-              </button>
-            ))}
-          </div>
+
+          {images.length > 1 && (
+            <div className="detail-thumbs">
+              {images.map((photo, idx) => (
+                <button
+                  key={photo || idx}
+                  type="button"
+                  className={photo === displayImage ? 'thumb-button active' : 'thumb-button'}
+                  onClick={() => setSelectedImage(photo)}
+                >
+                  <img src={photo} alt={`${normalizedItem.title} thumbnail ${idx + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* Right Column: Copy & Interactive Cards */}
         <div className="detail-copy">
-          <h1>{normalizedItem.title}</h1>
-          <p className="detail-description">{normalizedItem.description}</p>
-          <div className="detail-info-grid">
-            <div>
-              <span className="detail-label">Owner</span>
-              <p>{normalizedItem.ownerName}</p>
+          {/* Header Title Card */}
+          <div className="detail-header-card">
+            <div className="detail-tags-row">
+              <span className="category-pill-tag">
+                <Layers size={13} />
+                {normalizedItem.category}
+              </span>
+              <span className="condition-pill-tag">
+                <Sparkles size={13} />
+                {formatCondition(normalizedItem.condition)}
+              </span>
             </div>
-            <div>
-              <span className="detail-label">Owner Rating</span>
-              <p>{normalizedItem.ownerRating.toFixed(1)}</p>
+
+            <h1 className="detail-title">{normalizedItem.title}</h1>
+          </div>
+
+          {/* Description Card */}
+          <div className="detail-section-card description-card">
+            <h3 className="section-card-title">About this Item</h3>
+            <p className="detail-description">{normalizedItem.description}</p>
+          </div>
+
+          {/* Trade Preference Card */}
+          <div className="detail-section-card preference-card">
+            <div className="preference-header">
+              <ArrowLeftRight size={18} className="pref-icon" />
+              <h3 className="section-card-title">Owner's Trade Preference</h3>
             </div>
-            <div>
-              <span className="detail-label">Desired Item</span>
-              <p>{normalizedItem.desiredItem || 'Open to any suitable trade'}</p>
+            <div className="preference-box">
+              <span className="pref-label">Desired Item in Return:</span>
+              <p className="pref-value">
+                {normalizedItem.desiredItem ? `"${normalizedItem.desiredItem}"` : 'Open to any suitable barter offer'}
+              </p>
             </div>
           </div>
-          <div className="detail-info-grid">
-            <div>
-              <span className="detail-label">Status</span>
-              <p>{normalizedItem.status}</p>
+
+          {/* Owner Info Card */}
+          <div
+            className="detail-owner-card clickable-owner-card"
+            onClick={() => {
+              if (normalizedItem.ownerId) {
+                navigate(currentUser && currentUser.id === normalizedItem.ownerId ? '/profile' : `/profile/${normalizedItem.ownerId}`)
+              }
+            }}
+            title={`View ${normalizedItem.ownerName}'s Profile`}
+          >
+            <div className="owner-avatar-box">
+              <User size={22} />
             </div>
-            <div>
-              <span className="detail-label">Category</span>
-              <p>{normalizedItem.category}</p>
+            <div className="owner-details">
+              <div className="owner-name-row">
+                <span className="owner-title-name">{normalizedItem.ownerName}</span>
+                <span className="verified-badge"><Award size={12} /> Verified Member</span>
+              </div>
+              <div className="owner-rating-row">
+                <Star size={14} className="star-icon" fill="#F59E0B" color="#F59E0B" />
+                <span className="rating-score">{Number(normalizedItem.ownerRating).toFixed(1)} Rating</span>
+                <span className="dot-sep">•</span>
+                <span className="trust-text">View Profile & Ratings</span>
+              </div>
             </div>
-            <div>
-              <span className="detail-label">Condition</span>
-              <p>{normalizedItem.condition}</p>
+            <div className="owner-arrow-indicator">
+              <ChevronRight size={20} />
             </div>
           </div>
-          <div className="detail-actions">
+
+          {/* Key Specs Card Grid */}
+          <div className="detail-section-card specs-card">
+            <h3 className="section-card-title">Listing Details</h3>
+            <div className="specs-grid">
+              <div className="spec-item">
+                <span className="spec-label"><Tag size={13} /> Category</span>
+                <span className="spec-value">{normalizedItem.category}</span>
+              </div>
+              <div className="spec-item">
+                <span className="spec-label"><Sparkles size={13} /> Condition</span>
+                <span className="spec-value">{formatCondition(normalizedItem.condition)}</span>
+              </div>
+              <div className="spec-item">
+                <span className="spec-label"><CheckCircle2 size={13} /> Status</span>
+                <span className="spec-value capitalize">{normalizedItem.status}</span>
+              </div>
+              <div className="spec-item">
+                <span className="spec-label"><ArrowLeftRight size={13} /> Est. Value</span>
+                <span className="spec-value">
+                  {normalizedItem.estimated_value ? `$${normalizedItem.estimated_value}` : 'Open Barter'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Card */}
+          <div className="detail-action-card">
             {!isOwner && normalizedItem.status === 'available' ? (
               <button
                 type="button"
-                className="primary-button detail-action"
+                className="detail-primary-offer-btn"
                 onClick={openTradeModal}
               >
-                Offer Trade
+                <ShoppingBag size={20} />
+                <span>Propose Trade Offer</span>
               </button>
             ) : isOwner ? (
-              <p style={{ color: '#57534E', fontWeight: 600 }}>This is your listing.</p>
+              <div className="owner-listing-banner">
+                <CheckCircle2 size={18} />
+                <span>This is your listing. You can manage or edit it in My Listings.</span>
+              </div>
             ) : (
-              <p style={{ color: '#C8624B', fontWeight: 600 }}>This item is no longer available.</p>
+              <div className="unavailable-listing-banner">
+                <span>This item has been successfully traded and is no longer available.</span>
+              </div>
             )}
+
+            <div className="guarantee-footer">
+              <ShieldCheck size={16} />
+              <span>Protected by Barter Safe Swap Guarantee</span>
+            </div>
           </div>
         </div>
       </div>

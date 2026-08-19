@@ -2,15 +2,19 @@
 
 :root {
   color-scheme: light;
-  --bg: #F6F5F0;
+  --bg: #F2FAF9;
   --surface: #FFFFFF;
-  --text: #24231F;
-  --muted: #5F5B52;
-  --border: #E4E2D9;
-  --accent: #3D6E63;
-  --accent-strong: #2F5B4D;
-  --radius-card: 14px;
-  --radius-control: 9px;
+  --text: #005C66;
+  --muted: #3D7880;
+  --border: #D0ECE9;
+  --accent: #005C66;
+  --accent-strong: #007885;
+  --accent-medium: #008C99;
+  --accent-light: #20B2AA;
+  --accent-subtle: #38C7BD;
+  --accent-bg: #E6F7F6;
+  --radius-card: 16px;
+  --radius-control: 10px;
   --radius-pill: 999px;
   --font-heading: 'Fraunces', serif;
   --font-body: 'Manrope', sans-serif;
@@ -55,7 +59,7 @@ button {
 .app-main {
   width: min(1400px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 20px 0 40px;
+  padding: 4px 0 40px;
 }
 
 .primary-button,
@@ -68,7 +72,7 @@ button {
   min-height: 42px;
   border-radius: var(--radius-control);
   border: 1px solid transparent;
-  background: var(--accent);
+  background: #005C66;
   color: #ffffff;
   font-weight: 600;
   transition: transform 0.2s ease, background-color 0.2s ease;
@@ -77,7 +81,7 @@ button {
 .primary-button:hover,
 .primary-btn:hover {
   transform: translateY(-1px);
-  background: var(--accent-strong);
+  background: #007885;
 }
 
 .secondary-button {
@@ -90,7 +94,7 @@ button {
   border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--text);
+  color: #005C66;
 }
 
 input,
@@ -109,7 +113,7 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: #008C99;
 }
 
 .sr-only {
@@ -127,6 +131,6 @@ select:focus {
 @media (max-width: 767px) {
   .app-main {
     width: min(100%, calc(100% - 24px));
-    padding: 20px 0 40px;
+    padding: 4px 0 30px;
   }
 }

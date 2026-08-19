@@ -1,6 +1,20 @@
 .explore-page {
-  display: grid;
-  gap: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Explore Main Content layout (visible on all screen sizes) */
+.explore-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .explore-main-content {
+    gap: 20px;
+  }
 }
 
 /* ── Desktop centering ──────────────────────────────────────────────────────
@@ -18,38 +32,194 @@
   }
 }
 
-.market-summary {
+/* ── Marketplace Hero Banner Card (Clean White with Turquoise Accents) ── */
+.market-promo-banner {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid #D0ECE9;
+  border-radius: 20px;
+  padding: 12px 18px;
+  color: #005C66;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 14px;
+  box-shadow: 0 2px 10px rgba(0, 92, 102, 0.05);
+  overflow: hidden;
+  margin-top: 0px;
+}
+
+.market-promo-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 620px;
+  z-index: 1;
+}
+
+.market-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #E6F7F6;
+  color: #007885;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  width: fit-content;
+}
+
+.market-promo-heading {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #005C66;
+  line-height: 1.25;
+}
+
+.market-promo-subtext {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #3D7880;
+}
+
+.market-promo-action {
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.swipe-mode-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: #005C66;
+  color: #FFFFFF;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 92, 102, 0.2);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.swipe-mode-trigger-btn:hover {
+  background: #007885;
+  transform: scale(1.03);
+}
+
+.swipe-mode-trigger-btn:active {
+  transform: scale(0.96);
 }
 
 .section-label {
   margin: 0 0 6px;
-  color: #5F5B52;
+  color: #007885;
   text-transform: uppercase;
   letter-spacing: 0.15em;
   font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.market-summary h2 {
-  margin: 0;
-  font-family: 'Fraunces', serif;
-  font-size: 1.7rem;
-}
+@media (max-width: 767px) {
+  .explore-page {
+    gap: 4px;
+  }
 
-.market-summary p {
-  margin: 0;
-  color: #5F5B52;
-  font-size: 0.95rem;
-}
-
-@media (max-width: 760px) {
-  .market-summary {
+  .market-promo-banner {
     flex-direction: column;
     align-items: flex-start;
+    padding: 18px 20px;
+    gap: 14px;
   }
+
+  .market-promo-heading {
+    font-size: 1.25rem;
+  }
+
+  .market-promo-subtext {
+    font-size: 0.82rem;
+  }
+
+  .market-promo-action {
+    width: 100%;
+  }
+
+  .market-promo-action .swipe-mode-trigger-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Full-screen Swipe Discovery Modal Overlay ────────────────────────────── */
+.swipe-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 92, 102, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.swipe-modal-container {
+  background: #F2FAF9;
+  border: 1px solid #D0ECE9;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 92, 102, 0.3);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.swipe-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 12px;
+  border-bottom: 1px solid #D0ECE9;
+  margin-bottom: 8px;
+}
+
+.swipe-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #005C66;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.swipe-modal-close-btn {
+  background: #E6F7F6;
+  border: 1px solid #D0ECE9;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #005C66;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.swipe-modal-close-btn:hover {
+  background: #38C7BD;
 }
 
 /* ================================================================
