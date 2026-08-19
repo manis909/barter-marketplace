@@ -319,5 +319,39 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Failed to update report" });
   }
 });
+// GET /api/reports/export — admin only
+// Export the full reports history as CSV.
+// Add this anywhere before module.exports = router; in reports.js
+router.get("/export", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT r.created_at, reporter.username AS reporter_username,
+              reported.username AS reported_username, r.reason,
+              r.status, r.admin_action, r.admin_notes,
+              actioned.username AS actioned_by_username, r.actioned_at
+       FROM reports r
+       JOIN users reporter ON reporter.id = r.reported_by
+       JOIN users reported ON reported.id = r.reported_user_id
+       LEFT JOIN users actioned ON actioned.id = r.actioned_by
+       ORDER BY r.created_at DESC`
+    );
+
+    const header = 'Date,Reporter,Reported User,Reason,Status,Admin Action,Admin Notes,Actioned By,Actioned At\n';
+    const rows = result.rows.map(r => {
+      const escape = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+      return [
+        r.created_at, r.reporter_username, r.reported_username, r.reason,
+        r.status, r.admin_action, r.admin_notes, r.actioned_by_username, r.actioned_at
+      ].map(escape).join(',');
+    }).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="reports_log.csv"');
+    res.send(header + rows);
+  } catch (error) {
+    console.error("GET /reports/export error:", error);
+    res.status(500).json({ message: "Failed to export reports" });
+  }
+});
 
 module.exports = router;
