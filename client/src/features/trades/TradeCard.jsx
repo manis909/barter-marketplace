@@ -255,6 +255,105 @@ const TRADE_ITEMS_ROW_CSS = `
 }
 .item-row .cond { font-size: 11px; color: var(--muted); }
 
+/* ── Multi-item offered row (2+ items) ── */
+.item-row.give.multi {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 12px;
+  gap: 10px;
+}
+.item-row.give.multi .side-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--peach-ink);
+  opacity: 0.65;
+  margin-bottom: 2px;
+}
+.multi-items-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+.multi-item-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f3f4f6;
+  border: 2px solid rgba(255,255,255,0.7);
+  box-shadow: 0 2px 8px rgba(138, 74, 42, 0.1);
+  transition: transform 0.15s ease;
+}
+.multi-item-thumb:hover {
+  transform: scale(1.05);
+}
+.multi-plus-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(138, 74, 42, 0.12);
+  color: var(--peach-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.multi-more-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(138, 74, 42, 0.1);
+  color: var(--peach-ink);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+.multi-items-meta {
+  min-width: 0;
+}
+.multi-items-meta .name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.multi-items-meta .cond {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+@media (min-width: 768px) {
+  .multi-item-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+  }
+  .multi-plus-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .multi-items-row {
+    gap: 12px;
+  }
+  .item-row.give.multi {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+}
+
 /* Divider */
 .divider {
   display: flex; align-items: center;
@@ -1034,17 +1133,22 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
             {items.length > 1 ? (
               <div className="item-row give multi">
                 <div className="side-label">{offeredLabel} · {items.length} items</div>
-                <div className="multi-images">
-                  {items.slice(0, 3).map((item, idx) => (
-                    <span key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      {idx > 0 && <span className="plus">+</span>}
-                      <img src={item.image_urls?.[0] ?? FALLBACK_IMAGE} alt={item.title} onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }} />
+                <div className="multi-items-row">
+                  {items.slice(0, 2).map((item, idx) => (
+                    <span key={item.id} style={{ display: 'contents' }}>
+                      {idx > 0 && <span className="multi-plus-icon">+</span>}
+                      <img
+                        className="multi-item-thumb"
+                        src={item.image_urls?.[0] ?? FALLBACK_IMAGE}
+                        alt={item.title}
+                        onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
+                      />
                     </span>
                   ))}
-                  {items.length > 3 && <div className="more-badge">+{items.length - 3}</div>}
+                  {items.length > 2 && <span className="multi-more-badge">+{items.length - 2} more</span>}
                 </div>
-                <div className="meta">
-                  <div className="name">{items.map(i => i.title).join(' + ')}</div>
+                <div className="multi-items-meta">
+                  <div className="name">{items.slice(0, 2).map(i => i.title).join(' + ')}{items.length > 2 ? ` +${items.length - 2} more` : ''}</div>
                   <div className="cond">{items[0]?.item_condition?.replace(/_/g, ' ') || 'Good'}</div>
                 </div>
               </div>
