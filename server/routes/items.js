@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const db = require('../models/db');
 const requireAuth = require('../middleware/auth');
+const requireVerified = require('../middleware/verified');
 
 const conditionMap = {
   excellent: 'like_new',
@@ -35,7 +36,7 @@ function normalizeCategory(value) {
   return categoryNormalizationMap[lower] || trimmed;
 }
 
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, requireVerified, async (req, res) => {
   try {
     console.log('POST /items request body:', req.body);
 
@@ -423,7 +424,7 @@ router.get('/similar', requireAuth, async (req, res) => {
   }
 });
 
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, requireVerified, async (req, res) => {
   try {
     const { id } = req.params;
 
