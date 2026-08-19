@@ -24,6 +24,10 @@ const SKILTER_TYPES = [
   "skill_booking_completed",
   "skill_booking_cancelled",
   "new_skill_message",
+  "payment_submitted",
+  "skill_booking_paid_teacher",
+  "skill_booking_paid_learner",
+  "payment_rejected",
 ];
 
 // Skilter report-action notification types

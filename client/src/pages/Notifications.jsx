@@ -29,12 +29,16 @@ const ICON_MAP = {
   item_approved:       '✔️',
   profile_update:      '👤',
   // Skilter types
-  skill_booking:           '🎓',
-  skill_booking_accepted:  '✅',
-  skill_booking_declined:  '❌',
-  skill_booking_completed: '🏆',
-  skill_booking_cancelled: '🚫',
-  new_skill_message:       '💬',
+  skill_booking:              '🎓',
+  skill_booking_accepted:     '✅',
+  skill_booking_declined:     '❌',
+  skill_booking_completed:    '🏆',
+  skill_booking_cancelled:    '🚫',
+  new_skill_message:          '💬',
+  payment_submitted:          '💳',
+  skill_booking_paid_teacher: '🎉',
+  skill_booking_paid_learner: '🎉',
+  payment_rejected:           '⚠️',
   default:             '🔔',
 };
 const getIcon = type => ICON_MAP[type] || ICON_MAP.default;
@@ -49,6 +53,10 @@ function getNavigationPath(n) {
     'skill_booking_completed',
     'skill_booking_cancelled',
     'new_skill_message',
+    'payment_submitted',
+    'skill_booking_paid_teacher',
+    'skill_booking_paid_learner',
+    'payment_rejected',
   ].includes(type);
 
   // Barter paths
@@ -68,6 +76,10 @@ function getNavigationPath(n) {
       return `/skilter/chat/${trade_offer_id}`;
     if (type.startsWith('skill_booking') && trade_offer_id)
       return `/skilter/chat/${trade_offer_id}`;
+    if (type === 'skill_booking_paid_learner' || type === 'payment_rejected')
+      return '/skilter/learning';
+    if (type === 'payment_submitted' || type === 'skill_booking_paid_teacher')
+      return '/skilter/teaching';
     if (type === 'skill_booking') return '/skilter/skills';
   }
 
@@ -426,6 +438,10 @@ export default function Notifications() {
       'skill_booking_completed',
       'skill_booking_cancelled',
       'new_skill_message',
+      'payment_submitted',
+      'skill_booking_paid_teacher',
+      'skill_booking_paid_learner',
+      'payment_rejected',
     ]);
 
     return items.filter(item => (
