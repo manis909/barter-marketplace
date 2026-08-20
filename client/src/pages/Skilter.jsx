@@ -47,7 +47,10 @@ export default function SkilterExplorePage() {
       try {
         setLoading(true)
         setError(null)
-        const response = await api.get('/skills')
+        const params = new URLSearchParams(location.search)
+        const response = await api.get('/skills', {
+          params: { search: params.get('search') || undefined },
+        })
         // Backend already filters for status === 'active'
         setSkills(response.data.skills || [])
       } catch (err) {
@@ -58,7 +61,7 @@ export default function SkilterExplorePage() {
       }
     }
     fetchSkills()
-  }, [])
+  }, [location.search])
 
   function handleCategorySelect(cat) {
     setActiveCategory(cat)

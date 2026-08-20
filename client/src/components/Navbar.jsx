@@ -169,16 +169,19 @@ export default function Navbar() {
       } else {
         params.delete('search')
       }
-      navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+      navigate({
+        pathname: currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore',
+        search: params.toString() ? `?${params.toString()}` : '',
+      })
     },
-    [location.search, navigate]
+    [currentPlatform, location.search, navigate]
   )
 
   const handleSelect = useCallback(
     (item) => {
-      navigate(`/item/${item.id}`)
+      navigate(currentPlatform === 'Skilter' ? `/skilter/skill/${item.id}` : `/item/${item.id}`)
     },
-    [navigate]
+    [currentPlatform, navigate]
   )
 
   const handleCategoryClick = useCallback(
@@ -306,7 +309,8 @@ export default function Navbar() {
             {/* Desktop Center: Search Bar */}
             <div className="navbar-center">
               <SearchBar
-                placeholder="Search items to trade..."
+                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : 'Search items to trade...'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}
@@ -506,7 +510,8 @@ export default function Navbar() {
             {/* ROW 2: Search Bar */}
             <div className={`mobile-row-2 ${brandDropdownOpen ? 'dropdown-open' : ''}`}>
               <SearchBar
-                placeholder="Search items to trade..."
+                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : 'Search items to trade...'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}

@@ -7,7 +7,7 @@
      the overrides below handle the different offset.               */
   width: calc(100% + 40px);
   margin: 48px -20px 0;
-  padding: 48px 24px 24px;
+  padding: 48px 24px 0;
   border-top: 1px solid #E4E2D9;
   background: #F4F7F5;
   color: var(--text);
@@ -75,12 +75,25 @@
 }
 
 .footer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #3D6E63;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.footer-heading svg {
+  display: none;
 }
 
 .footer-nav {
@@ -115,8 +128,10 @@ button.footer-link-item {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-top: 1px solid #E4E2D9;
-  padding-top: 18px;
+  margin: 0 -24px;
+  border-top: 1px solid #D8E5E0;
+  padding: 14px 24px;
+  background: #E8F0ED;
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -130,8 +145,8 @@ button.footer-link-item {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #EFF6F3;
   color: #3D6E63;
@@ -222,6 +237,22 @@ button.footer-link-item {
     border-bottom: 1px solid #E4E2D9;
   }
 
+  .footer-section .footer-nav {
+    display: none;
+  }
+
+  .footer-section.is-open .footer-nav {
+    display: grid;
+  }
+
+  .footer-section.is-open .footer-nav-inline {
+    display: flex;
+  }
+
+  .footer-section.is-open .footer-heading svg {
+    transform: rotate(180deg);
+  }
+
   .footer-col:last-child {
     border-bottom: 0;
     padding-bottom: 0;
@@ -232,8 +263,13 @@ button.footer-link-item {
     letter-spacing: 0.16em;
   }
 
+  .footer-heading svg {
+    display: block;
+    transition: transform 0.2s ease;
+  }
+
   .footer-nav {
-    gap: 8px;
+    gap: 4px;
   }
 
   .footer-nav-grid {
@@ -248,7 +284,7 @@ button.footer-link-item {
     align-items: center;
     gap: 8px;
     min-height: 44px;
-    padding: 0;
+    padding: 7px 0;
     border: 0;
     background: transparent;
     border-radius: 0;
@@ -278,7 +314,8 @@ button.footer-link-item {
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    padding-top: 12px;
+    margin: 0 -16px;
+    padding: 12px 16px;
     gap: 10px;
     font-size: 0.83rem;
   }
@@ -290,5 +327,13 @@ button.footer-link-item {
   .footer-socials-bottom a {
     width: 38px;
     height: 38px;
+  }
+
+  .footer-socials-inline {
+    justify-content: center;
+  }
+
+  .footer-socials-bottom {
+    display: none;
   }
 }
