@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMySkillBookings, getHiddenSkillBookingIds, hideSkillBookingChat } from '../services/skillBookingService';
+import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
 import SkillBookingChatWindow from '../features/chat/SkillBookingChatWindow';
+import ReportModal from '../components/ReportModal';
 
 const T = {
   bg:           '#F6F5F0',
@@ -44,23 +46,40 @@ const LAYOUT_CSS = `
 @media (max-width: 767px) {
   .skillchatslayout-root {
     border-radius: 0 !important; border: none !important;
-    height: calc(100dvh - 80px) !important; height: calc(100vh - 80px) !important;
-    max-width: 100vw !important; width: 100vw !important;
+    height: calc(100vh - 80px) !important;
+    height: calc(100dvh - 80px) !important;
+    height: calc(var(--vv-height, 100dvh) - 80px) !important;
+    max-width: 100% !important; width: 100% !important;
     margin: 0 !important; overflow: hidden !important;
+    overscroll-behavior: contain !important;
   }
   .skillchatslayout-sidebar  { display: none !important; }
   .skillchatslayout-mainpane { display: none !important; }
   .skillchatslayout-sidebar.mobile-show {
     display: flex !important;
-    width: 100vw !important; min-width: 0 !important; max-width: 100vw !important;
+    width: 100% !important; min-width: 0 !important; max-width: 100% !important;
     height: 100% !important; overflow: hidden !important;
     flex-shrink: 0 !important; border-right: none !important;
+    overscroll-behavior: contain !important;
   }
   .skillchatslayout-mainpane.mobile-show {
-    display: flex !important; position: fixed !important; inset: 0 !important; z-index: 101 !important;
-    width: 100vw !important; height: 100dvh !important; height: 100vh !important;
-    min-width: 0 !important; max-width: 100vw !important; overflow: hidden !important;
-    flex-direction: column !important; background: ${T.surface} !important;
+    display: flex !important;
+    position: fixed !important;
+    top: var(--vv-top, 0px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    z-index: 101 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important;
+    overscroll-behavior: contain !important;
+    flex-direction: column !important;
+    background: ${T.surface} !important;
   }
   .skillchatslayout-mobile-back { display: flex !important; }
   .skillchatslayout-mainpane.mobile-show .skillchatslayout-mobile-back {
@@ -146,21 +165,51 @@ export default function SkillChatsLayout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showReport, setShowReport] = useState(false);
-  const [reportReason, setReportReason] = useState('');
+  const [reportedBookings, setReportedBookings] = useState(new Set());
   const [otherUserId, setOtherUserId] = useState(null);
   const [deleteMenuFor, setDeleteMenuFor] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [hiddenIds, setHiddenIds] = useState([]);
 
+  /* ── mobile visual viewport tracking for on-screen keyboard ── */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleVV = () => {
+      document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
+      document.documentElement.style.setProperty('--vv-top', `${vv.offsetTop}px`);
+    };
+
+    handleVV();
+    vv.addEventListener('resize', handleVV);
+    vv.addEventListener('scroll', handleVV);
+
+    return () => {
+      vv.removeEventListener('resize', handleVV);
+      vv.removeEventListener('scroll', handleVV);
+      document.documentElement.style.removeProperty('--vv-height');
+      document.documentElement.style.removeProperty('--vv-top');
+    };
+  }, []);
+
   const fetchAll = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [bookingData, hidden] = await Promise.all([
+      const [bookingData, hidden, reportsRes] = await Promise.all([
         getMySkillBookings(),
         getHiddenSkillBookingIds().catch(() => []),
+        api.get('/reports/mine').catch(() => ({ data: { reports: [] } })),
       ]);
       setBookings(bookingData.bookings ?? []);
       setHiddenIds(hidden ?? []);
+
+      const userReports = reportsRes?.data?.reports || [];
+      const reportedBookingIds = userReports
+        .filter(r => r.skill_booking_id)
+        .map(r => String(r.skill_booking_id));
+
+      setReportedBookings(new Set(reportedBookingIds));
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Failed to load chats');
     } finally { setLoading(false); }
@@ -200,15 +249,7 @@ export default function SkillChatsLayout() {
     finally { setDeleting(false); setDeleteMenuFor(null); }
   };
 
-  const handleSubmitReport = async () => {
-    const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/api/reports`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reported_user_id: otherUserId, reason: reportReason, skill_booking_id: bookingId }),
-    });
-    setShowReport(false); setReportReason('');
-  };
+
 
   if (!authLoading && !currentUser) {
     return (
@@ -304,11 +345,17 @@ export default function SkillChatsLayout() {
                   <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
                 </div>
               </button>
-              <button type="button"
-                onClick={() => { setOtherUserId(otherUserIdForReport); setShowReport(true); }}
-                style={s.reportHeaderBtn} aria-label="Report user">
-                ⚑
-              </button>
+              {bookingId && reportedBookings.has(String(bookingId)) ? (
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                  ✓
+                </span>
+              ) : (
+                <button type="button"
+                  onClick={() => { setOtherUserId(otherUserIdForReport); setShowReport(true); }}
+                  style={s.reportHeaderBtn} aria-label="Report user">
+                  ⚑
+                </button>
+              )}
             </div>
 
             <div className="skc-desktop-header" style={s.desktopHeader}>
@@ -323,11 +370,17 @@ export default function SkillChatsLayout() {
                   <div style={s.desktopHeaderName}>{otherUserName || 'Chat'}</div>
                 </div>
               </button>
-              <button type="button"
-                onClick={() => { setOtherUserId(otherUserIdForReport); setShowReport(true); }}
-                style={s.reportHeaderBtnDesktop}>
-                Report User
-              </button>
+              {bookingId && reportedBookings.has(String(bookingId)) ? (
+                <span style={{ ...s.reportHeaderBtnDesktop, opacity: 0.7, cursor: 'default', color: '#15803d' }}>
+                  ✓ Reported
+                </span>
+              ) : (
+                <button type="button"
+                  onClick={() => { setOtherUserId(otherUserIdForReport); setShowReport(true); }}
+                  style={s.reportHeaderBtnDesktop}>
+                  Report User
+                </button>
+              )}
             </div>
 
             <div style={s.chatFill}>
@@ -344,31 +397,18 @@ export default function SkillChatsLayout() {
         )}
       </div>
 
-      {showReport && (
-        <div className="skc-report-overlay" onClick={() => setShowReport(false)}>
-          <div className="skc-report-modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontFamily: 'Fraunces, serif', color: T.text }}>
-              Report User
-            </h3>
-            <textarea
-              placeholder="Describe the issue…"
-              value={reportReason}
-              onChange={e => setReportReason(e.target.value)}
-              rows={4}
-              style={{
-                width: '100%', borderRadius: T.radiusCtrl, border: `1px solid ${T.border}`,
-                padding: '10px 12px', boxSizing: 'border-box', resize: 'vertical',
-                fontFamily: 'Manrope, sans-serif', fontSize: 13.5, color: T.text,
-                background: T.surface, marginBottom: 12,
-              }}
-            />
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowReport(false)} style={s.secondaryBtn}>Cancel</button>
-              <button onClick={handleSubmitReport} style={s.ctaBtn}>Submit Report</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        reportedUserId={otherUserId || otherUserIdForReport}
+        skillBookingId={bookingId || null}
+        userName={otherUserName}
+        onSuccess={() => {
+          if (bookingId) {
+            setReportedBookings(prev => new Set(prev).add(String(bookingId)));
+          }
+        }}
+      />
     </div>
   );
 }

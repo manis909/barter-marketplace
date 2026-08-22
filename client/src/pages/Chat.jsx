@@ -3,16 +3,12 @@ import { useParams } from 'react-router-dom';
 import ChatWindow from '../features/chat/ChatWindow';
 import { useAuth } from '../features/auth/AuthContext';
 import { getMyTrades, getTrade } from '../services/tradeService';
-
-const API_URL = 'http://localhost:5000';
+import ReportModal from '../components/ReportModal';
 
 export default function Chat() {
   const { tradeId } = useParams();
-  console.log('CHAT TRADE ID:', tradeId);
   const [showReport, setShowReport] = useState(false);
-  const [reportReason, setReportReason] = useState('');
   const [reportSuccess, setReportSuccess] = useState(false);
-  const [reportError, setReportError] = useState('');
   const [otherUserId, setOtherUserId] = useState(null);
   const [otherUserName, setOtherUserName] = useState('');
 
@@ -55,79 +51,45 @@ export default function Chat() {
     if (tradeId && currentUserId) loadTradeInfo();
   }, [tradeId, currentUserId]);
 
-  const handleSubmitReport = async () => {
-    setReportError('');
-    // Validate required fields before sending
-    if (!otherUserId) {
-      setReportError('Cannot submit report: reported user is unknown.');
-      return;
-    }
-    if (!tradeId) {
-      setReportError('Cannot submit report: trade ID is missing.');
-      return;
-    }
-
-    const token = localStorage.getItem('token');
-    console.log('REPORT SUBMIT PAYLOAD:', {
-      reported_user_id: otherUserId,
-      reason: reportReason,
-      trade_offer_id: tradeId
-    });
-
-    try {
-      const res = await fetch(`${API_URL}/api/reports`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          reported_user_id: otherUserId,
-          reason: reportReason,
-          trade_offer_id: tradeId || null,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Failed to submit report');
-
-      setShowReport(false);
-      setReportReason('');
-      setReportSuccess(true);
-    } catch (err) {
-      console.error('Report submission failed:', err);
-      setReportError('Report submission failed. Please try again.');
-    }
-  };
-
   return (
     <div style={{ maxWidth: 500, margin: '0 auto', padding: 16 }}>
       <ChatWindow tradeOfferId={tradeId} currentUserId={currentUserId} otherUserName={otherUserName} />
 
-      <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-        <button
-          onClick={() => {
-            setShowReport(!showReport);
-            setReportSuccess(false);
-          }}
-        >
-          Report User
-        </button>
+      <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+        {reportSuccess ? (
+          <span style={{ fontSize: 13, color: '#15803d', fontWeight: 600 }}>
+            ✓ Reported
+          </span>
+        ) : (
+          <button
+            onClick={() => setShowReport(true)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              background: '#ffffff',
+              cursor: 'pointer',
+            }}
+          >
+            Report User
+          </button>
+        )}
       </div>
 
-      {reportSuccess && <p style={{ color: 'green', fontSize: 13 }}>Report submitted successfully</p>}
-      {reportError && <p style={{ color: 'red', fontSize: 13 }}>{reportError}</p>}
-
-      {showReport && (
-        <div style={{ marginTop: 12 }}>
-          <textarea
-            placeholder="Reason for report"
-            value={reportReason}
-            onChange={e => setReportReason(e.target.value)}
-            style={{ width: '100%' }}
-          />
-          <button onClick={handleSubmitReport}>Submit Report</button>
-        </div>
+      {reportSuccess && (
+        <p style={{ color: '#15803d', fontSize: 13, marginTop: 8 }}>
+          Report submitted successfully
+        </p>
       )}
+
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        reportedUserId={otherUserId}
+        tradeOfferId={tradeId || null}
+        userName={otherUserName}
+        onSuccess={() => setReportSuccess(true)}
+      />
     </div>
   );
 }

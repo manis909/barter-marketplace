@@ -5,14 +5,37 @@ const requireAdmin = require("../middleware/admin");
 const db = require("../models/db");
 const { createNotification } = require("./notifications");
 
+const ALLOWED_REPORT_REASONS = [
+  "Fraud / Scam",
+  "Harassment / Abuse",
+  "Payment / Transaction Issue",
+  "Other",
+];
+
 // POST a new report (any authenticated user)
 // Accepts optional trade_offer_id (Barter) or skill_booking_id (Skilter) for conversation linking.
 router.post("/", requireAuth, async (req, res) => {
   try {
     console.log('REPORT POST RECEIVED', { body: req.body, userId: req.userId });
-    console.log('SERVER REPORT BODY:', req.body);
-    const { reported_user_id, reason, trade_offer_id = null, skill_booking_id = null } = req.body;
+    const { reported_user_id, reason, description, trade_offer_id = null, skill_booking_id = null } = req.body;
     const reported_by = req.userId;
+
+    if (!reported_user_id) {
+      return res.status(400).json({ error: "reported_user_id is required" });
+    }
+
+    if (!reason || !ALLOWED_REPORT_REASONS.includes(reason)) {
+      return res.status(400).json({
+        error: `Invalid report reason. Allowed reasons: ${ALLOWED_REPORT_REASONS.join(', ')}`
+      });
+    }
+
+    const cleanDescription = typeof description === 'string' ? description.trim() : '';
+    if (reason === 'Other' && !cleanDescription) {
+      return res.status(400).json({ error: "Description is required when selecting 'Other'." });
+    }
+
+    const finalReason = cleanDescription ? `${reason}: ${cleanDescription}` : reason;
 
     let canonicalTradeOfferId = null;
     if (trade_offer_id) {
@@ -35,7 +58,7 @@ router.post("/", requireAuth, async (req, res) => {
     console.log('INSERT VALUES:', {
       reported_by,
       reported_user_id,
-      reason,
+      reason: finalReason,
       trade_offer_id,
       skill_booking_id,
       canonicalTradeOfferId,
@@ -44,7 +67,7 @@ router.post("/", requireAuth, async (req, res) => {
 
     const insertRes = await db.query(
       "INSERT INTO reports (reported_by, reported_user_id, reason, trade_offer_id, skill_booking_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, reported_by, reported_user_id, reason, trade_offer_id, skill_booking_id, created_at",
-      [reported_by, reported_user_id, reason, canonicalTradeOfferId, canonicalSkillBookingId]
+      [reported_by, reported_user_id, finalReason, canonicalTradeOfferId, canonicalSkillBookingId]
     );
     const created = insertRes.rows[0];
     console.log('REPORT INSERTED', created);
@@ -54,7 +77,10 @@ router.post("/", requireAuth, async (req, res) => {
     // If skill_booking_id column doesn't exist yet, fall back to trade_offer_id only
     if (error.message && error.message.includes('column "skill_booking_id" of relation "reports"')) {
       try {
-        const { reported_user_id, reason, trade_offer_id = null } = req.body;
+        const { reported_user_id, reason, description, trade_offer_id = null } = req.body;
+        const cleanDescription = typeof description === 'string' ? description.trim() : '';
+        const finalReason = cleanDescription ? `${reason}: ${cleanDescription}` : reason;
+
         let canonicalTradeOfferId = null;
         if (trade_offer_id) {
           const tradeRes = await db.query(
@@ -65,7 +91,7 @@ router.post("/", requireAuth, async (req, res) => {
         }
         const insertRes = await db.query(
           "INSERT INTO reports (reported_by, reported_user_id, reason, trade_offer_id) VALUES ($1, $2, $3, $4) RETURNING id, reported_by, reported_user_id, reason, trade_offer_id, created_at",
-          [req.userId, reported_user_id, reason, canonicalTradeOfferId]
+          [req.userId, reported_user_id, finalReason, canonicalTradeOfferId]
         );
         console.log('REPORT INSERTED (fallback)', insertRes.rows[0]);
         return res.status(201).json({ success: true, report: insertRes.rows[0] });
@@ -76,6 +102,23 @@ router.post("/", requireAuth, async (req, res) => {
     }
     console.error(error);
     res.status(500).json({ message: "Failed to submit report" });
+  }
+});
+
+// GET /api/reports/mine — user-scoped reports submitted by the authenticated user
+router.get("/mine", requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, trade_offer_id, skill_booking_id, reported_user_id, reason, status, created_at
+       FROM reports
+       WHERE reported_by = $1
+       ORDER BY created_at DESC`,
+      [req.userId]
+    );
+    res.json({ success: true, reports: result.rows });
+  } catch (error) {
+    console.error("GET /reports/mine error:", error);
+    res.status(500).json({ message: "Failed to fetch user reports" });
   }
 });
 

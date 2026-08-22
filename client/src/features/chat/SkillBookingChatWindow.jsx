@@ -437,10 +437,9 @@ export default function SkillBookingChatWindow({
     const vv = window.visualViewport;
     if (!vv) return;
     const h = () => {
-      const c = msgContRef.current;
-      if (!c) return;
-      if (c.scrollHeight - c.scrollTop - c.clientHeight < 300)
+      setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
     };
     vv.addEventListener('resize', h);
     return () => vv.removeEventListener('resize', h);
