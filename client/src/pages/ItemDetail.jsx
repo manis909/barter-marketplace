@@ -247,8 +247,15 @@ export default function ItemDetailPage() {
       setSubmittingTrade(false)
     }
   }
+
+  async function handleCreateRentalListing(e) {
+    e.preventDefault()
+    const rate = Number(rentalRateInput)
+    if (!Number.isFinite(rate) || rate <= 0) {
+      setRentalListingError('Please enter a valid positive daily rate.')
       return
     }
+
     setSubmittingRentalListing(true)
     setRentalListingError('')
     try {
@@ -273,9 +280,6 @@ export default function ItemDetailPage() {
     return (
       <div className="item-detail-page">
         <JugglingLoader message="Getting your barter item ready..." />
-      </div>
-    )
-  }
       </div>
     )
   }
