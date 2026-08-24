@@ -170,7 +170,7 @@ export default function Navbar() {
         params.delete('search')
       }
       navigate({
-        pathname: currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore',
+        pathname: currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore',
         search: params.toString() ? `?${params.toString()}` : '',
       })
     },
@@ -179,7 +179,7 @@ export default function Navbar() {
 
   const handleSelect = useCallback(
     (item) => {
-      navigate(currentPlatform === 'Skilter' ? `/skilter/skill/${item.id}` : `/item/${item.id}`)
+      navigate(currentPlatform === 'Skilter' ? `/skilter/skill/${item.id}` : currentPlatform === 'Renter' ? `/rental/${item.id}` : `/item/${item.id}`)
     },
     [currentPlatform, navigate]
   )
@@ -309,8 +309,8 @@ export default function Navbar() {
             {/* Desktop Center: Search Bar */}
             <div className="navbar-center">
               <SearchBar
-                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : 'Search items to trade...'}
-                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : '/items'}
+                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : currentPlatform === 'Renter' ? 'Search rental items...' : 'Search items to trade...'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rentals' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}
@@ -321,7 +321,7 @@ export default function Navbar() {
             {/* Desktop Right: Actions */}
             <div className="navbar-right">
               <Link 
-                to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'} 
                 className="navbar-link" 
                 style={{ position: 'relative' }}
               >
@@ -473,7 +473,7 @@ export default function Navbar() {
               <div className="mobile-actions-right">
                 {/* 1. Home Button */}
                 <Link
-                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'}
+                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'}
                   className="mobile-home-btn"
                   aria-label="Explore Home"
                 >

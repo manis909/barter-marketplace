@@ -1,0 +1,54 @@
+.renter-page {
+  min-height: 100vh;
+  background: #f8f6f1;
+  color: #24231f;
+}
+
+.renter-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px clamp(20px, 6vw, 88px) 32px;
+  background: linear-gradient(135deg, #e8f7f5 0%, #f8f6f1 100%);
+  color: #fff;
+}
+
+.renter-hero-copy { max-width: 680px; }
+.renter-kicker { color: #dfe88a; font-size: .72rem; font-weight: 800; letter-spacing: .17em; }
+.renter-hero h1 { margin: 6px 0 0; color: #005c66; font-family: 'Fraunces', serif; font-size: clamp(1.6rem, 3vw, 2.35rem); line-height: 1.1; }
+.renter-hero p { margin: 8px 0 0; color: #3d7880; line-height: 1.6; }
+.renter-owner-action { flex-shrink: 0; border-radius: 12px; padding: 11px 16px; background: #005c66; color: #fff; font-weight: 750; text-decoration: none; }
+.renter-content { width: min(1260px, calc(100% - 40px)); margin: 0 auto; position: relative; z-index: 1; }
+.renter-content .category-filter { margin-top: 18px; }
+.renter-results { margin: 24px 0 14px; color: #53615a; font-size: .9rem; font-weight: 700; }
+.renter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding-bottom: 48px; }
+.rental-market-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e4e2d9; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.03); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.rental-market-card:hover { transform: translateY(-3px); border-color: #c9dbd2; box-shadow: 0 8px 20px rgba(0,0,0,.06); }
+.rental-market-media { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #f5f4f0; }
+.rental-market-backdrop { position: absolute; inset: -12px; background-position: center; background-size: cover; filter: blur(18px) saturate(1.12); transform: scale(1.08); opacity: .48; }
+.rental-market-image { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
+.rental-market-body { display: flex; flex: 1; flex-direction: column; gap: 7px; padding: 10px; }
+.rental-market-badges { display: flex; align-items: center; gap: 6px; overflow: hidden; }
+.rental-market-badge, .rental-market-status { padding: 2px 7px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.rental-market-badge { overflow: hidden; text-overflow: ellipsis; background: #e4f0ed; color: #2f5b4d; }
+.rental-market-status { background: #e8f5ee; color: #2f6b57; }
+.rental-market-title { display: -webkit-box; margin: 0; overflow: hidden; color: #1c1917; font-family: 'Fraunces', serif; font-size: .98rem; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.rental-market-owner { display: flex; align-items: center; gap: 4px; min-width: 0; color: #57534e; font-size: .8rem; }
+.rental-market-owner span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rental-market-rate { margin-top: auto; color: #2f6b57; font-size: 1rem; font-weight: 800; }
+.rental-market-rate small { color: #778078; font-size: .78rem; font-weight: 600; }
+.rental-market-actions { display: flex; gap: 6px; padding-top: 3px; }
+.rental-market-actions a, .rental-market-actions button { display: inline-flex; flex: 1; align-items: center; justify-content: center; height: 36px; min-width: 0; padding: 0 6px; border-radius: 9px; font-size: .82rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+.rental-market-details { border: 1px solid #c9dbd2; background: #f6f5f0; color: #2f5b4d; }
+.rental-market-rent { border: 0; background: #3d6e63; color: #fff; }
+.rental-market-rent:hover { background: #2f5b4d; }
+.renter-notice, .renter-state { display: grid; justify-items: center; gap: 10px; margin: 24px 0 48px; padding: 42px 20px; border: 1px solid #e1e6dd; border-radius: 18px; background: #fbfcf7; color: #367269; text-align: center; }
+.renter-state h2 { margin: 0; color: #283934; font-family: 'Fraunces', serif; }
+.renter-state p, .renter-notice p { max-width: 430px; margin: 0; color: #6e786f; line-height: 1.6; }
+.renter-error { color: #9b4947; }
+.renter-retry { border: 0; border-radius: 10px; padding: 11px 16px; background: #3d6e63; color: #fff; font-weight: 700; cursor: pointer; }
+.renter-spinner { width: 30px; height: 30px; border: 3px solid #cbded7; border-top-color: #126b68; border-radius: 50%; animation: renter-spin .8s linear infinite; }
+@keyframes renter-spin { to { transform: rotate(360deg); } }
+@media (max-width: 1050px) { .renter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .renter-hero { display: block; padding: 24px 20px 28px; } .renter-owner-action { display: inline-block; margin-top: 18px; } .renter-content { width: min(100% - 24px, 560px); } .renter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .rental-market-body { padding: 8px; gap: 5px; } .rental-market-title { font-size: .86rem; } .rental-market-owner { font-size: .76rem; } .rental-market-badge, .rental-market-status { font-size: .66rem; } .rental-market-actions a, .rental-market-actions button { height: 34px; font-size: .76rem; } }
