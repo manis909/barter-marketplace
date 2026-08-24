@@ -93,6 +93,16 @@ export default function ItemCard({ item }) {
     <>
       <motion.article
         className="compact-item-card"
+        role="link"
+        tabIndex={0}
+        aria-label={`View details for ${item.title}`}
+        onClick={() => navigate(`/item/${item.id}`)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            navigate(`/item/${item.id}`)
+          }
+        }}
         whileHover={{ y: -3 }}
         whileTap={{ scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 450, damping: 28 }}
@@ -138,7 +148,10 @@ export default function ItemCard({ item }) {
               <button
                 type="button"
                 className="btn-compact btn-compact-primary"
-                onClick={handleOfferTradeClick}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleOfferTradeClick()
+                }}
               >
                 Trade
               </button>
@@ -147,9 +160,6 @@ export default function ItemCard({ item }) {
             ) : (
               <span className="card-status-pill unavailable-pill">Unavailable</span>
             )}
-            <Link to={`/item/${item.id}`} className="btn-compact btn-compact-secondary">
-              Details
-            </Link>
           </div>
         </div>
       </motion.article>
