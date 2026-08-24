@@ -31,6 +31,8 @@ import ChatsLayout from './pages/ChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout'; 
 import SkillsProfile from './pages/SkillsProfile';
 import RentalProfile from './pages/RentalProfile';
+import RentalListingsPage from './pages/RentalListings';
+import RentalDetailPage from './pages/RentalDetail';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
@@ -102,6 +104,8 @@ function App() {
 
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
+            <Route path="/renter/listings" element={<RentalListingsPage />} />
+            <Route path="/rental/:id" element={<RentalDetailPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />

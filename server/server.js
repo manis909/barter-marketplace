@@ -24,6 +24,7 @@ const skillsRoutes = require("./routes/skills");
 const skillProviderApplicationsRoutes = require("./routes/skillProviderApplications");
 const skillProviderRequestsRoutes = require("./routes/skillProviderRequests");
 const skillWishlistRoutes = require("./routes/skillWishlist");
+const rentalRoutes = require("./routes/rentals");
 const rateLimit = require("express-rate-limit");
 const authLimiter = rateLimit({ 
   windowMs: 15 * 60 * 1000, 
@@ -55,6 +56,7 @@ app.use("/api/skills", skillsRoutes);
 app.use("/api/skill-provider-applications", skillProviderApplicationsRoutes);
 app.use("/api/skill-provider-requests", skillProviderRequestsRoutes);
 app.use("/api/skill-wishlist", skillWishlistRoutes);
+app.use("/api/rentals", rentalRoutes);
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");

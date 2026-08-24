@@ -26,6 +26,16 @@ export default function SkillCard({ skill }) {
     <>
     <motion.article
       className="compact-skill-card"
+      role="link"
+      tabIndex={0}
+      aria-label={`View details for ${skill.skill_name}`}
+      onClick={() => navigate(`/skilter/skill/${skill.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          navigate(`/skilter/skill/${skill.id}`)
+        }
+      }}
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 450, damping: 28 }}
@@ -99,14 +109,11 @@ export default function SkillCard({ skill }) {
           {skill.description || 'No description provided.'}
         </p>
 
-        {/* Row 5: Clean Equal-Width Buttons */}
+        {/* Row 5: Booking Action */}
         <div className="card-actions-row">
           {isOwner && (
             <span className="card-status-pill owner-pill">Mine</span>
           )}
-          <Link to={`/skilter/skill/${skill.id}`} className="btn-compact btn-compact-secondary">
-            View Details
-          </Link>
           {!isOwner && !isApprovedApplication && (
             <span style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <button

@@ -60,7 +60,9 @@ export default function SearchBar({
           signal: abortRef.current.signal,
         })
 
-        const allItems = Array.isArray(response.data?.items)
+        const allItems = searchEndpoint === '/rentals' && Array.isArray(response.data?.rentals)
+          ? response.data.rentals
+          : Array.isArray(response.data?.items)
           ? response.data.items
           : Array.isArray(response.data?.skills)
             ? response.data.skills
@@ -68,7 +70,7 @@ export default function SearchBar({
 
         const normalised = allItems.map((item) => ({
           id: item.id,
-          title: item.title || item.skill_name || item.name || '',
+          title: item.title || item.skill_name || item.item_name || item.name || '',
           category: item.category || '',
           image:
             (Array.isArray(item.image_urls) && item.image_urls[0]) ||
