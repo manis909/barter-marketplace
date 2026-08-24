@@ -282,6 +282,11 @@ CREATE TABLE skill_listings (
     price_type       VARCHAR(20) DEFAULT 'free' CHECK (price_type IN ('free', 'paid', 'negotiable')),
     price            DECIMAL(10,2) DEFAULT 0.00,
     session_type     TEXT NOT NULL DEFAULT 'one_on_one' CHECK (session_type IN ('one_on_one', 'group')),
+    experience_level VARCHAR(50),
+    session_duration VARCHAR(50),
+    teaching_mode    VARCHAR(50),
+    teaching_language VARCHAR(50),
+    availability     TEXT,
     max_participants INTEGER NOT NULL DEFAULT 1,
     status           VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused')),
     created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

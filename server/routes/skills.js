@@ -28,24 +28,78 @@ function normalizeCategory(value) {
   return found || trimmed;
 }
 
-// Normalize price type
-// Normalize price type
+const EXPERIENCE_LEVELS = ['beginner', 'intermediate', 'advanced', 'all levels'];
+const SESSION_DURATIONS = ['30 minutes', '45 minutes', '1 hour', '1.5 hours', '2 hours', 'flexible'];
+const TEACHING_MODES = ['online', 'in-person', 'online & in-person'];
+const TEACHING_LANGUAGES = ['english', 'telugu', 'hindi', 'tamil', 'kannada', 'malayalam', 'other'];
+const AVAILABILITY_OPTIONS = ['weekdays', 'weekends', 'morning', 'afternoon', 'evening', 'flexible'];
+
 function normalizePriceType(value) {
   if (!value) return 'free';
   const normalized = String(value).trim().toLowerCase();
-  // Map frontend values to DB constraint values (free, coins, negotiable)
-  if (normalized === 'paid') return 'coins';
+  if (normalized === 'paid' || normalized === 'coins') return 'coins';
   if (normalized === 'negotiable') return 'negotiable';
   return 'free';
 }
 
-// Normalize session type
 function normalizeSessionType(value) {
   if (!value) return 'one_on_one';
   const normalized = String(value).trim().toLowerCase();
   if (normalized === 'group') return 'group';
   if (normalized === 'one-on-one' || normalized === 'one_on_one') return 'one_on_one';
   return 'one_on_one';
+}
+
+function normalizeExperienceLevel(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const match = EXPERIENCE_LEVELS.find(level => level === normalized.toLowerCase());
+  return match ? match.charAt(0).toUpperCase() + match.slice(1) : normalized;
+}
+
+function normalizeSessionDuration(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const match = SESSION_DURATIONS.find(duration => duration === normalized.toLowerCase());
+  return match ? match.charAt(0).toUpperCase() + match.slice(1) : normalized;
+}
+
+function normalizeTeachingMode(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const lower = normalized.toLowerCase();
+
+  if (lower === 'online') return 'Online';
+  if (lower === 'in-person') return 'In-Person';
+  if (lower === 'online & in-person') return 'Online & In-Person';
+
+  return normalized;
+}
+
+function normalizeTeachingLanguage(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const match = TEACHING_LANGUAGES.find(language => language === normalized.toLowerCase());
+  return match ? match.charAt(0).toUpperCase() + match.slice(1) : normalized;
+}
+
+function normalizeAvailability(value) {
+  if (!value) return null;
+
+  const values = Array.isArray(value)
+    ? value
+    : String(value).split(',');
+
+  const normalizedValues = values
+    .map(item => String(item).trim())
+    .filter(Boolean)
+    .map(item => {
+      const match = AVAILABILITY_OPTIONS.find(option => option === item.toLowerCase());
+      return match ? match.charAt(0).toUpperCase() + match.slice(1) : item;
+    })
+    .filter((item, index, arr) => arr.indexOf(item) === index);
+
+  return normalizedValues.length > 0 ? normalizedValues.join(', ') : null;
 }
 
 // ── POST /api/skills ──────────────────────────────────────────────
@@ -63,6 +117,11 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
       price,
       price_unit,
       session_type,
+      experience_level,
+      session_duration,
+      teaching_mode,
+      teaching_language,
+      availability,
       max_participants
     } = req.body;
 
@@ -94,15 +153,25 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
 
     const normalizedPriceType = normalizePriceType(price_type);
     const normalizedSessionType = normalizeSessionType(session_type);
+    const normalizedExperienceLevel = normalizeExperienceLevel(experience_level);
+    const normalizedSessionDuration = normalizeSessionDuration(session_duration);
+    const normalizedTeachingMode = normalizeTeachingMode(teaching_mode);
+    const normalizedTeachingLanguage = normalizeTeachingLanguage(teaching_language);
+    const normalizedAvailability = normalizeAvailability(availability);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
 
-    // Validate paid skills have price
-    if (normalizedPriceType === 'coins' || normalizedPriceType === 'negotiable') {
+    if (normalizedPriceType === 'coins') {
       if (!price || isNaN(price) || Number(price) <= 0) {
         return res.status(400).json({ error: 'Price is required for paid skills' });
       }
       if (!price_unit || !price_unit.trim()) {
-        return res.status(400).json({ error: 'Price unit is required for paid skills' });
+        return res.status(400).json({ error: 'Pricing basis is required for paid skills' });
+      }
+    }
+
+    if (normalizedPriceType === 'negotiable' && price !== undefined && price !== null && price !== '') {
+      if (isNaN(price) || Number(price) <= 0) {
+        return res.status(400).json({ error: 'Negotiable price must be a positive number when provided' });
       }
     }
 
@@ -139,11 +208,16 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         price,
         price_unit,
         session_type,
+        experience_level,
+        session_duration,
+        teaching_mode,
+        teaching_language,
+        availability,
         max_participants,
         image_urls,
         status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *`,
       [
         req.userId,
@@ -151,9 +225,14 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         description.trim(),
         normalizedCategory,
         normalizedPriceType,
-        (normalizedPriceType === 'coins' || normalizedPriceType === 'negotiable') ? Number(price) : null,
-        (normalizedPriceType === 'coins' || normalizedPriceType === 'negotiable') ? price_unit?.trim() : null,
+        normalizedPriceType === 'coins' ? Number(price) : (normalizedPriceType === 'negotiable' && price !== undefined && price !== null && price !== '' ? Number(price) : null),
+        normalizedPriceType === 'coins' ? price_unit?.trim() : null,
         normalizedSessionType,
+        normalizedExperienceLevel,
+        normalizedSessionDuration,
+        normalizedTeachingMode,
+        normalizedTeachingLanguage,
+        normalizedAvailability,
         finalMaxParticipants,
         normalizedImageUrls,
         'active' // default status - matches DB constraint (active, paused)
@@ -190,28 +269,52 @@ router.get('/mine', requireAuth, async (req, res) => {
 
 // ── GET /api/skills ───────────────────────────────────────────────
 // Get all available skills (for Skilter Explore)
+// Only actual skill listings are public; provider applications remain private.
 // Supports ?category=Dance and ?search=keyword
 router.get('/', async (req, res) => {
   try {
     const { category, search } = req.query;
     const normalizedSearch = String(search || '').trim();
 
-    let query = `
-      SELECT s.*, u.username AS teacher_name, u.id AS teacher_id
+    // ── PART 1: Active skills from skill_listings ──────────────────────────
+    let query1 = `
+      SELECT
+        s.id,
+        s.teacher_id,
+        s.skill_name,
+        s.description,
+        s.category,
+        s.image_urls,
+        s.price_type,
+        s.price,
+        s.price_unit,
+        s.session_type,
+        s.experience_level,
+        s.session_duration,
+        s.teaching_mode,
+        s.teaching_language,
+        s.availability,
+        s.max_participants,
+        s.status,
+        s.created_at,
+        s.created_at AS updated_at,
+        u.username AS teacher_name,
+        'listing' AS source
       FROM skill_listings s
       JOIN users u ON u.id = s.teacher_id
       WHERE s.status = $1
     `;
     const values = ['active']; // Only show active skills (not paused)
 
-    // Category filter
+    // Category filter for skill_listings
     if (category) {
       const normalizedCategory = normalizeCategory(category);
-      query += ` AND s.category = $${values.length + 1}`;
+      query1 += ` AND s.category = $${values.length + 1}`;
       values.push(normalizedCategory);
     }
 
-    // Search filter (searches skill_name, description, category)
+    // Search filter for skill_listings (searches skill_name, description, category)
+    const searchClauses1 = [];
     if (normalizedSearch) {
       const searchTerms = normalizedSearch
         .split(/\s+/)
@@ -219,12 +322,10 @@ router.get('/', async (req, res) => {
         .map((term) => term.replace(/[%_]/g, '\\$&'));
 
       if (searchTerms.length > 0) {
-        const searchClauses = [];
-
         for (const term of searchTerms) {
           const baseIndex = values.length + 1;
           const pattern = `%${term}%`;
-          searchClauses.push(`(
+          searchClauses1.push(`(
             LOWER(s.skill_name) LIKE LOWER($${baseIndex}) OR
             LOWER(s.description) LIKE LOWER($${baseIndex + 1}) OR
             LOWER(s.category) LIKE LOWER($${baseIndex + 2})
@@ -232,16 +333,21 @@ router.get('/', async (req, res) => {
           values.push(pattern, pattern, pattern);
         }
 
-        query += ` AND (${searchClauses.join(' OR ')})`;
+        query1 += ` AND (${searchClauses1.join(' OR ')})`;
       }
     }
 
-    query += ' ORDER BY s.created_at DESC';
+    const query = `${query1} ORDER BY updated_at DESC`;
+
+    console.log('📊 Skills Query:', query);
+    console.log('📊 Values:', values);
 
     const result = await db.query(query, values);
     res.json({ skills: result.rows });
   } catch (err) {
-    console.error('GET /skills error:', err);
+    console.error('GET /skills error:', err?.message || err);
+    console.error('Error code:', err?.code);
+    console.error('Error detail:', err?.detail);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -300,6 +406,11 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
       price,
       price_unit,
       session_type,
+      experience_level,
+      session_duration,
+      teaching_mode,
+      teaching_language,
+      availability,
       max_participants
     } = req.body;
 
@@ -325,15 +436,25 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
 
     const normalizedPriceType = normalizePriceType(price_type);
     const normalizedSessionType = normalizeSessionType(session_type);
+    const normalizedExperienceLevel = normalizeExperienceLevel(experience_level);
+    const normalizedSessionDuration = normalizeSessionDuration(session_duration);
+    const normalizedTeachingMode = normalizeTeachingMode(teaching_mode);
+    const normalizedTeachingLanguage = normalizeTeachingLanguage(teaching_language);
+    const normalizedAvailability = normalizeAvailability(availability);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
 
-    // Validate paid skills
-    if (normalizedPriceType === 'coins' || normalizedPriceType === 'negotiable') {
+    if (normalizedPriceType === 'coins') {
       if (!price || isNaN(price) || Number(price) <= 0) {
         return res.status(400).json({ error: 'Price is required for paid skills' });
       }
       if (!price_unit || !price_unit.trim()) {
-        return res.status(400).json({ error: 'Price unit is required for paid skills' });
+        return res.status(400).json({ error: 'Pricing basis is required for paid skills' });
+      }
+    }
+
+    if (normalizedPriceType === 'negotiable' && price !== undefined && price !== null && price !== '') {
+      if (isNaN(price) || Number(price) <= 0) {
+        return res.status(400).json({ error: 'Negotiable price must be a positive number when provided' });
       }
     }
 
@@ -355,18 +476,28 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
            price = $5,
            price_unit = $6,
            session_type = $7,
-           max_participants = $8,
-           image_urls = $9
-       WHERE id = $10
+           experience_level = $8,
+           session_duration = $9,
+           teaching_mode = $10,
+           teaching_language = $11,
+           availability = $12,
+           max_participants = $13,
+           image_urls = $14
+       WHERE id = $15
        RETURNING *`,
       [
         skill_name.trim(),
         description.trim(),
         normalizedCategory,
         normalizedPriceType,
-        (normalizedPriceType === 'coins' || normalizedPriceType === 'negotiable') ? Number(price) : null,
-        (normalizedPriceType === 'coins' || normalizedPriceType === 'negotiable') ? price_unit?.trim() : null,
+        normalizedPriceType === 'coins' ? Number(price) : (normalizedPriceType === 'negotiable' && price !== undefined && price !== null && price !== '' ? Number(price) : null),
+        normalizedPriceType === 'coins' ? price_unit?.trim() : null,
         normalizedSessionType,
+        normalizedExperienceLevel,
+        normalizedSessionDuration,
+        normalizedTeachingMode,
+        normalizedTeachingLanguage,
+        normalizedAvailability,
         normalizedSessionType === 'group' ? Number(max_participants) : 1,
         normalizedImageUrls,
         id

@@ -31,6 +31,7 @@ import {
   Star,
   LogOut,
   Shield,
+  ClipboardList,
 } from 'lucide-react'
 // Reuse ProfileDrawer's CSS — no new stylesheet needed
 import './ProfileDrawer.css'
@@ -40,6 +41,7 @@ const primaryItems = [
   { label: 'My Skills',    icon: Lightbulb,     path: '/skilter/skills' },
   { label: 'My Learning',  icon: BookOpen,      path: '/skilter/learning' },
   { label: 'My Teaching',  icon: GraduationCap, path: '/skilter/teaching' },
+  { label: 'Requests',     icon: ClipboardList, path: '/skilter/requests' },
   { label: 'Wishlist',     icon: Heart,         path: '/skilter/wishlist' },
   { label: 'Chat',         icon: MessageCircle, path: '/skilter/chat' },
   { label: 'Feedback',     icon: Star,          path: '/feedback' },
@@ -166,7 +168,7 @@ export default function SkilterDrawer({ open, onClose }) {
                   <span className="drawer-icon" aria-hidden="true">
                     <Shield size={18} />
                   </span>
-                  <span>Trade Verification</span>
+                  <span>Barter Admin</span>
                 </button>
                 <button
                   type="button"
@@ -179,7 +181,7 @@ export default function SkilterDrawer({ open, onClose }) {
                   <span className="drawer-icon" aria-hidden="true">
                     <Shield size={18} />
                   </span>
-                  <span>Payment Review</span>
+                  <span>Skilter Admin</span>
                 </button>
               </div>
             </>

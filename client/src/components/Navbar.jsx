@@ -169,16 +169,19 @@ export default function Navbar() {
       } else {
         params.delete('search')
       }
-      navigate({ pathname: '/explore', search: params.toString() ? `?${params.toString()}` : '' })
+      navigate({
+        pathname: currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore',
+        search: params.toString() ? `?${params.toString()}` : '',
+      })
     },
-    [location.search, navigate]
+    [currentPlatform, location.search, navigate]
   )
 
   const handleSelect = useCallback(
     (item) => {
-      navigate(`/item/${item.id}`)
+      navigate(currentPlatform === 'Skilter' ? `/skilter/skill/${item.id}` : currentPlatform === 'Renter' ? `/rental/${item.id}` : `/item/${item.id}`)
     },
-    [navigate]
+    [currentPlatform, navigate]
   )
 
   const handleCategoryClick = useCallback(
@@ -306,7 +309,8 @@ export default function Navbar() {
             {/* Desktop Center: Search Bar */}
             <div className="navbar-center">
               <SearchBar
-                placeholder="Search items to trade..."
+                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : currentPlatform === 'Renter' ? 'Search rental items...' : 'Search items to trade...'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rentals' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}
@@ -317,7 +321,7 @@ export default function Navbar() {
             {/* Desktop Right: Actions */}
             <div className="navbar-right">
               <Link 
-                to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'} 
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'} 
                 className="navbar-link" 
                 style={{ position: 'relative' }}
               >
@@ -370,7 +374,7 @@ export default function Navbar() {
                           onClick={() => setAdminDropdownOpen(false)}
                           style={{ textDecoration: 'none' }}
                         >
-                          Trade Verification
+                          Barter Admin
                         </Link>
                         <Link
                           to="/admin/payment-review"
@@ -378,7 +382,7 @@ export default function Navbar() {
                           onClick={() => setAdminDropdownOpen(false)}
                           style={{ textDecoration: 'none' }}
                         >
-                          Payment Review
+                          Skilter Admin
                         </Link>
                       </motion.div>
                     )}
@@ -469,7 +473,7 @@ export default function Navbar() {
               <div className="mobile-actions-right">
                 {/* 1. Home Button */}
                 <Link
-                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : '/explore'}
+                  to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'}
                   className="mobile-home-btn"
                   aria-label="Explore Home"
                 >
@@ -506,7 +510,8 @@ export default function Navbar() {
             {/* ROW 2: Search Bar */}
             <div className={`mobile-row-2 ${brandDropdownOpen ? 'dropdown-open' : ''}`}>
               <SearchBar
-                placeholder="Search items to trade..."
+                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : 'Search items to trade...'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}

@@ -506,10 +506,9 @@ export default function ChatWindow({
     const vv = window.visualViewport;
     if (!vv) return;
     const handler = () => {
-      const c = msgContRef.current;
-      if (!c) return;
-      const dist = c.scrollHeight - c.scrollTop - c.clientHeight;
-      if (dist < 300) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
     };
     vv.addEventListener('resize', handler);
     return () => vv.removeEventListener('resize', handler);

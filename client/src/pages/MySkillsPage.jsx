@@ -12,6 +12,7 @@ import {
   X
 } from 'lucide-react'
 import api from '../services/api'
+import { useAuth } from '../features/auth/AuthContext'
 import { uploadImageToSupabase } from '../services/supabase'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
@@ -54,6 +55,7 @@ const EMPTY_FORM = {
 
 export default function MySkillsPage() {
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [imagePreviews, setImagePreviews] = useState([])
@@ -67,7 +69,38 @@ export default function MySkillsPage() {
   const [activeFilter, setActiveFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [providerApplication, setProviderApplication] = useState(null)
+  const [providerApplicationLoading, setProviderApplicationLoading] = useState(true)
+  const [providerApplicationError, setProviderApplicationError] = useState('')
+  const [approvalAcknowledged, setApprovalAcknowledged] = useState(false)
   const createSkillRef = useRef(null)
+
+  useEffect(() => {
+    if (!currentUser) {
+      setProviderApplicationLoading(false)
+      return
+    }
+
+    const acknowledgementKey = `skill-provider-approved:${currentUser.id}`
+    setApprovalAcknowledged(localStorage.getItem(acknowledgementKey) === 'true')
+
+    api.get('/skill-provider-applications/mine')
+      .then((response) => {
+        const applications = Array.isArray(response.data?.applications) ? response.data.applications : []
+          setProviderApplication(applications.find((application) => application.status === 'approved') || applications[0] || null)
+      })
+      .catch((error) => {
+        console.error('Failed to load skill provider application status', error)
+        setProviderApplicationError('Unable to load your Skill Provider application status.')
+      })
+      .finally(() => setProviderApplicationLoading(false))
+  }, [currentUser])
+
+  const acknowledgeApproval = () => {
+    const acknowledgementKey = `skill-provider-approved:${currentUser.id}`
+    localStorage.setItem(acknowledgementKey, 'true')
+    setApprovalAcknowledged(true)
+  }
 
   // ── verification gate ─────────────────────────────────────────
   const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
@@ -395,6 +428,76 @@ export default function MySkillsPage() {
     setTimeout(() => {
       setShowSuggestions(false)
     }, 200)
+  }
+
+  if (providerApplicationLoading) {
+    return (
+      <section className="my-skills-page">
+        <div className="empty-state">
+          <p>Loading your My Skills experience...</p>
+        </div>
+      </section>
+    )
+  }
+
+  if (providerApplicationError) {
+    return (
+      <section className="my-skills-page">
+        <div className="empty-state">
+          <h3>My Skills is temporarily unavailable</h3>
+          <p>{providerApplicationError}</p>
+          <button type="button" className="primary-button" onClick={() => window.location.reload()}>
+            Try Again
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  const applicationStatus = providerApplication?.status || 'no_application'
+  const isApproved = applicationStatus === 'approved'
+
+  if (!isApproved || !approvalAcknowledged) {
+    const isPending = ['submitted', 'under_review'].includes(applicationStatus)
+    const isApprovalState = isApproved && !approvalAcknowledged
+
+    return (
+      <section className="my-skills-page">
+        <div className="empty-state">
+          <div className="empty-state__icon"><GraduationCap size={34} /></div>
+          {isApprovalState ? (
+            <>
+              <h3>You&apos;re approved as a Skill Provider</h3>
+              <p>Your application has been approved. Continue to Skills to create and manage your skill listings.</p>
+              <button type="button" className="primary-button" onClick={acknowledgeApproval}>
+                Continue to Skills
+              </button>
+            </>
+          ) : isPending ? (
+            <>
+              <h3>Skill Provider application under review</h3>
+              <p>Your application is pending review. We&apos;ll update your access once the review is complete.</p>
+            </>
+          ) : applicationStatus === 'changes_requested' ? (
+            <>
+              <h3>Changes requested</h3>
+              <p>Please update your Skill Provider application before resubmitting it.</p>
+              <button type="button" className="primary-button" onClick={() => navigate('/skilter/skill-provider/apply')}>
+                Review Application
+              </button>
+            </>
+          ) : (
+            <>
+              <h3>Become a Skill Provider</h3>
+              <p>Apply to share your expertise with learners in the Skilter community.</p>
+              <button type="button" className="primary-button" onClick={() => navigate('/skilter/skill-provider/apply')}>
+                Apply Now
+              </button>
+            </>
+          )}
+        </div>
+      </section>
+    )
   }
 
   return (

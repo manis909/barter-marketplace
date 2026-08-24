@@ -24,6 +24,7 @@ export default function SearchBar({
   onSearch,
   onSelect,
   placeholder = 'Search items to trade...',
+  searchEndpoint = '/items',
 }) {
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -54,16 +55,22 @@ export default function SearchBar({
       abortRef.current = new AbortController()
 
       try {
-        const response = await api.get('/items', {
+        const response = await api.get(searchEndpoint, {
           params: { search: trimmed },
           signal: abortRef.current.signal,
         })
 
-        const allItems = Array.isArray(response.data?.items) ? response.data.items : []
+        const allItems = searchEndpoint === '/rentals' && Array.isArray(response.data?.rentals)
+          ? response.data.rentals
+          : Array.isArray(response.data?.items)
+          ? response.data.items
+          : Array.isArray(response.data?.skills)
+            ? response.data.skills
+            : []
 
         const normalised = allItems.map((item) => ({
           id: item.id,
-          title: item.title || item.name || '',
+          title: item.title || item.skill_name || item.item_name || item.name || '',
           category: item.category || '',
           image:
             (Array.isArray(item.image_urls) && item.image_urls[0]) ||
@@ -87,7 +94,7 @@ export default function SearchBar({
       clearTimeout(timerRef.current)
       abortRef.current?.abort()
     }
-  }, [value])
+  }, [value, searchEndpoint])
 
   const hasMore = totalMatches > suggestions.length
   const showDropdown = open && value.trim().length > 0

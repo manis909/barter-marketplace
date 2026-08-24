@@ -558,7 +558,7 @@ function ReportsPanel({ type = 'barter' }) {
           }}>
             <div style={{
               backgroundColor: '#ffffff', width: isMobile ? '100%' : 720, maxWidth: isMobile ? '100%' : '90vw',
-              height: '100%', overflow: 'auto', padding: 24,
+              height: '100%', overflow: 'auto', padding: '24px 24px 80px 24px',
               boxShadow: isMobile ? 'none' : '0 0 0 1px rgba(15, 23, 42, 0.06), -20px 0 40px rgba(15, 23, 42, 0.16)',
               borderRadius: isMobile ? 0 : '16px 0 0 16px',
             }}>
@@ -689,7 +689,7 @@ function ReportsPanel({ type = 'barter' }) {
 
               {/* Take Action Section */}
               {!confirmAction && (
-                <div>
+                <div style={{ marginBottom: 20 }}>
                   <strong style={{ fontSize: 12, color: '#6b7280', textTransform: 'uppercase', display: 'block', marginBottom: 12 }}>Take Action</strong>
                   <select
                     value={selectedAction}
@@ -780,6 +780,7 @@ function ReportsPanel({ type = 'barter' }) {
                   style={{
                     width: '100%', backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6,
                     padding: '10px 16px', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                    marginBottom: 16,
                   }}
                 >
                   Close

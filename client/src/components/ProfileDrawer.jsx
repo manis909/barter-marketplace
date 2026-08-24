@@ -184,7 +184,7 @@ export default function ProfileDrawer({ open, onClose, onLogout }) {
                   <span className="drawer-icon" aria-hidden="true">
                     <Shield size={18} />
                   </span>
-                  <span>Trade Verification</span>
+                  <span>Barter Admin</span>
                 </button>
                 <button
                   type="button"
@@ -197,7 +197,7 @@ export default function ProfileDrawer({ open, onClose, onLogout }) {
                   <span className="drawer-icon" aria-hidden="true">
                     <Shield size={18} />
                   </span>
-                  <span>Payment Review</span>
+                  <span>Skilter Admin</span>
                 </button>
               </div>
             </>

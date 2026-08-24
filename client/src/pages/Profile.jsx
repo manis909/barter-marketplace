@@ -69,6 +69,10 @@ export default function Profile() {
   const [recentReviews, setRecentReviews] = useState([]);
   const [listedItems, setListedItems] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [photoDragY, setPhotoDragY] = useState(0);
+  const [photoDragging, setPhotoDragging] = useState(false);
+  const photoDragStartY = useRef(0);
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
   const BIO_MAX_LENGTH = 150;
@@ -249,6 +253,31 @@ export default function Profile() {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }
 
+  // Swipe-down-to-dismiss for the full-screen photo viewer (mobile).
+  // Only downward drags move the image; dragging past 100px closes it,
+  // otherwise it snaps back to center.
+  const SWIPE_CLOSE_THRESHOLD = 100;
+
+  function handlePhotoTouchStart(e) {
+    photoDragStartY.current = e.touches[0].clientY;
+    setPhotoDragging(true);
+  }
+
+  function handlePhotoTouchMove(e) {
+    const delta = e.touches[0].clientY - photoDragStartY.current;
+    if (delta > 0) {
+      setPhotoDragY(delta);
+    }
+  }
+
+  function handlePhotoTouchEnd() {
+    setPhotoDragging(false);
+    if (photoDragY > SWIPE_CLOSE_THRESHOLD) {
+      setPhotoViewerOpen(false);
+    }
+    setPhotoDragY(0);
+  }
+
   if (loading || viewedUserLoading) return <p>Loading...</p>;
   if (!profileData) return isOwnProfile
     ? <p>Please log in to view your profile.</p>
@@ -280,7 +309,12 @@ export default function Profile() {
         <div className="profile-view">
           <div className="profile-header-row">
             {displayImage ? (
-              <img src={displayImage} alt="Profile" className="profile-photo" />
+              <img
+                src={displayImage}
+                alt="Profile"
+                className="profile-photo profile-photo-clickable"
+                onClick={() => setPhotoViewerOpen(true)}
+              />
             ) : (
               <div className="profile-photo profile-photo-placeholder">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -514,6 +548,41 @@ export default function Profile() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {photoViewerOpen && displayImage && (
+        <div
+          className="photo-viewer-backdrop"
+          onClick={() => setPhotoViewerOpen(false)}
+          style={{
+            backgroundColor: `rgba(0, 0, 0, ${Math.max(0.9 - photoDragY / 300, 0.3)})`,
+          }}
+        >
+          <button
+            type="button"
+            className="photo-viewer-close"
+            onClick={() => setPhotoViewerOpen(false)}
+            aria-label="Close"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <img
+            src={displayImage}
+            alt="Profile"
+            className="photo-viewer-image"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handlePhotoTouchStart}
+            onTouchMove={handlePhotoTouchMove}
+            onTouchEnd={handlePhotoTouchEnd}
+            style={{
+              transform: `translateY(${photoDragY}px)`,
+              transition: photoDragging ? 'none' : 'transform 0.2s ease',
+            }}
+          />
         </div>
       )}
     </div>

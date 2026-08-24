@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FaInstagram, FaXTwitter } from 'react-icons/fa6'
-import { Compass, LayoutGrid, Package, LifeBuoy, MessageCircleMore } from 'lucide-react'
+import { Compass, Package, LifeBuoy, MessageCircleMore, ShieldCheck, FileText, ChevronDown } from 'lucide-react'
 import './Footer.css'
 
 const barterQuickLinks = [
@@ -19,8 +20,8 @@ const supportLinks = [
 ]
 
 const legalLinks = [
-  { to: '/privacy', label: 'Privacy Policy' },
-  { to: '/terms', label: 'Terms & Conditions' },
+  { to: '/privacy', label: 'Privacy Policy', icon: ShieldCheck },
+  { to: '/terms', label: 'Terms & Conditions', icon: FileText },
 ]
 
 export default function Footer() {
@@ -32,9 +33,12 @@ export default function Footer() {
   
   // Choose the appropriate navigation links based on current section
   const quickLinks = isSkilterSection ? skilterQuickLinks : barterQuickLinks
-  
-  // Choose the appropriate explore path
   const explorePath = isSkilterSection ? '/skilter/explore' : '/explore'
+  const [openSections, setOpenSections] = useState({})
+
+  function toggleSection(section) {
+    setOpenSections((current) => ({ ...current, [section]: !current[section] }))
+  }
 
   function jumpToExploreTop() {
     window.scrollTo(0, 0)
@@ -92,8 +96,10 @@ export default function Footer() {
           </p>
         </div>
 
-        <div className="footer-col">
-          <p className="footer-heading">Navigation</p>
+        <div className={`footer-col footer-section ${openSections.navigation ? 'is-open' : ''}`}>
+          <button type="button" className="footer-heading" aria-expanded={Boolean(openSections.navigation)} onClick={() => toggleSection('navigation')}>
+            <span>Navigation</span><ChevronDown size={17} aria-hidden="true" />
+          </button>
           <nav className="footer-nav footer-nav-grid">
             {quickLinks.map(({ to, label, icon: Icon }) => {
               if (label === 'Explore') {
@@ -120,8 +126,10 @@ export default function Footer() {
           </nav>
         </div>
 
-        <div className="footer-col">
-          <p className="footer-heading">Support</p>
+        <div className={`footer-col footer-section ${openSections.support ? 'is-open' : ''}`}>
+          <button type="button" className="footer-heading" aria-expanded={Boolean(openSections.support)} onClick={() => toggleSection('support')}>
+            <span>Support</span><ChevronDown size={17} aria-hidden="true" />
+          </button>
           <nav className="footer-nav footer-nav-inline">
             {supportLinks.map(({ to, label, icon: Icon }) => (
               <Link key={label} to={to} className="footer-link-item footer-link-inline">
@@ -132,11 +140,14 @@ export default function Footer() {
           </nav>
         </div>
 
-        <div className="footer-col">
-          <p className="footer-heading">Legal</p>
+        <div className={`footer-col footer-section ${openSections.legal ? 'is-open' : ''}`}>
+          <button type="button" className="footer-heading" aria-expanded={Boolean(openSections.legal)} onClick={() => toggleSection('legal')}>
+            <span>Legal</span><ChevronDown size={17} aria-hidden="true" />
+          </button>
           <nav className="footer-nav footer-nav-inline">
-            {legalLinks.map(({ to, label }) => (
+            {legalLinks.map(({ to, label, icon: Icon }) => (
               <Link key={label} to={to} className="footer-link-item footer-link-inline">
+                <Icon size={14} aria-hidden="true" />
                 <span>{label}</span>
               </Link>
             ))}

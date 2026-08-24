@@ -2,23 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMyTrades, submitProof, getTradeProofStatus } from '../services/tradeService';
 import { getHiddenChatIds, deleteChatForMe, deleteChatForEveryone } from '../services/chatService';
+import api from '../services/api';
 import { getErrorMessage, fmtDate } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 import ChatWindow from '../features/chat/ChatWindow';
 import RatingForm from '../features/ratings/RatingForm';
+import ReportModal from '../components/ReportModal';
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
 const T = {
-  bg:           '#F6F5F0',
-  surface:      '#FFFFFF',
-  text:         '#24231F',
-  muted:        '#5F5B52',
-  border:       '#E4E2D9',
-  accent:       '#3D6E63',
+  bg: '#F6F5F0',
+  surface: '#FFFFFF',
+  text: '#24231F',
+  muted: '#5F5B52',
+  border: '#E4E2D9',
+  accent: '#3D6E63',
   accentStrong: '#2F5B4D',
-  danger:       '#dc2626',
-  radiusCard:   '14px',
-  radiusCtrl:   '9px',
+  danger: '#dc2626',
+  radiusCard: '14px',
+  radiusCtrl: '9px',
 };
 const API_URL = 'http://localhost:5000';
 
@@ -53,9 +55,12 @@ const LAYOUT_CSS = `
   /* Root just needs to exist; the active panels handle their own positioning */
   .chatslayout-root {
     border-radius: 0 !important; border: none !important;
-    height: calc(100dvh - 80px) !important; height: calc(100vh - 80px) !important;
-    max-width: 100vw !important; width: 100vw !important;
+    height: calc(100vh - 80px) !important;
+    height: calc(100dvh - 80px) !important;
+    height: calc(var(--vv-height, 100dvh) - 80px) !important;
+    max-width: 100% !important; width: 100% !important;
     margin: 0 !important; overflow: hidden !important;
+    overscroll-behavior: contain !important;
   }
 
   /* Both panels hidden by default */
@@ -65,26 +70,34 @@ const LAYOUT_CSS = `
   /* Chat list: fills the root normally */
   .chatslayout-sidebar.mobile-show {
     display: flex !important;
-    width: 100vw !important; min-width: 0 !important; max-width: 100vw !important;
+    width: 100% !important; min-width: 0 !important; max-width: 100% !important;
     height: 100% !important; overflow: hidden !important;
     flex-shrink: 0 !important; border-right: none !important;
+    overscroll-behavior: contain !important;
   }
 
   /*
    * Chat window: use position:fixed so it covers the ENTIRE viewport
-   * (including the area behind the navbar).  z-index:50 sits above everything
-   * else on the page.  This completely removes it from the flex/scroll chain
-   * so the navbar height never matters — the panel is always exactly the
-   * full screen, header pinned at top, input pinned at bottom.
+   * (including the area behind the navbar).  z-index:101 sits above everything
+   * else on the page.  Sized to the visual viewport so the mobile keyboard
+   * never covers the input area.
    */
   .chatslayout-mainpane.mobile-show {
     display: flex !important;
     position: fixed !important;
-    inset: 0 !important;
+    top: var(--vv-top, 0px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
     z-index: 101 !important;      /* above the sticky navbar (z-index: 100)   */
-    width: 100vw !important; height: 100dvh !important; height: 100vh !important;
-    min-width: 0 !important; max-width: 100vw !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+    min-width: 0 !important; max-width: 100% !important;
     overflow: hidden !important;
+    overscroll-behavior: contain !important;
     flex-direction: column !important;
     background: ${T.surface} !important;
   }
@@ -166,7 +179,7 @@ function Avatar({ name, imageUrl, size = 38 }) {
     }}>
       {src
         ? <img src={src} alt={name} onError={() => setErr(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         : initialOf(name)}
     </span>
   );
@@ -235,41 +248,75 @@ function TradeCompletedBanner({ completedAt }) {
 /* ─── Main layout component ─────────────────────────────────────────────── */
 export default function ChatsLayout() {
   const { tradeId } = useParams();
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
   const userId = currentUser?.id;
 
-  const [trades,        setTrades]        = useState([]);
-  const [hiddenIds,     setHiddenIds]     = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState('');
+  const [trades, setTrades] = useState([]);
+  const [hiddenIds, setHiddenIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [deleteMenuFor, setDeleteMenuFor] = useState(null);
-  const [deleting,      setDeleting]      = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   /* rating, report */
-  const [showRating,   setShowRating]   = useState(false);
-  const [iHaveRated,   setIHaveRated]   = useState(false);  // persisted from backend
-  const [showReport,   setShowReport]   = useState(false);
-  const [reportReason, setReportReason] = useState('');
+  const [showRating, setShowRating] = useState(false);
+  const [iHaveRated, setIHaveRated] = useState(false);  // persisted from backend
+  const [showReport, setShowReport] = useState(false);
+  const [reportedTrades, setReportedTrades] = useState(new Set());
 
   /* proof submission */
-  const [proofStatus,     setProofStatus]     = useState(null);  // backend proofStatus object (unwrapped)
-  const [showProofModal,  setShowProofModal]  = useState(false);
-  const [proofImages,     setProofImages]     = useState([]);    // File[]
-  const [proofPreviews,   setProofPreviews]   = useState([]);    // object URL[]
-  const [proofNote,       setProofNote]       = useState('');
+  const [proofStatus, setProofStatus] = useState(null);  // backend proofStatus object (unwrapped)
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [proofImages, setProofImages] = useState([]);    // File[]
+  const [proofPreviews, setProofPreviews] = useState([]);    // object URL[]
+  const [proofNote, setProofNote] = useState('');
   const [proofSubmitting, setProofSubmitting] = useState(false);
-  const [proofError,      setProofError]      = useState('');
+  const [proofError, setProofError] = useState('');
 
-  /* ── fetch trades + hidden ids ── */
+  /* ── mobile visual viewport tracking for on-screen keyboard ── */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleVV = () => {
+      document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
+      document.documentElement.style.setProperty('--vv-top', `${vv.offsetTop}px`);
+    };
+
+    handleVV();
+    vv.addEventListener('resize', handleVV);
+    vv.addEventListener('scroll', handleVV);
+
+    return () => {
+      vv.removeEventListener('resize', handleVV);
+      vv.removeEventListener('scroll', handleVV);
+      document.documentElement.style.removeProperty('--vv-height');
+      document.documentElement.style.removeProperty('--vv-top');
+    };
+  }, []);
+
+  /* ── fetch trades + hidden ids + reports ── */
   const fetchAll = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [tradeData, hidden] = await Promise.all([
-        getMyTrades(), getHiddenChatIds().catch(() => []),
+      const [tradeData, hidden, reportsRes] = await Promise.all([
+        getMyTrades(),
+        getHiddenChatIds().catch(() => []),
+        api.get('/reports/mine').catch(() => ({ data: { reports: [] } })),
       ]);
+
       setTrades(tradeData.trades ?? []);
       setHiddenIds(hidden ?? []);
+
+      const userReports = reportsRes?.data?.reports || [];
+      const reportedIds = new Set(
+        userReports
+          .filter(report => report.trade_offer_id)
+          .map(report => String(report.trade_offer_id))
+      );
+
+      setReportedTrades(reportedIds);
     } catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
@@ -328,14 +375,14 @@ export default function ChatsLayout() {
     ? (selectedTrade.sender_id === userId ? selectedTrade.receiver_username : selectedTrade.sender_username) : '';
   const otherUserImage = selectedTrade
     ? (selectedTrade.sender_id === userId
-        ? (selectedTrade.receiver_profile_image || selectedTrade.receiver_avatar || null)
-        : (selectedTrade.sender_profile_image  || selectedTrade.sender_avatar   || null))
+      ? (selectedTrade.receiver_profile_image || selectedTrade.receiver_avatar || null)
+      : (selectedTrade.sender_profile_image || selectedTrade.sender_avatar || null))
     : null;
 
   /* completion state derived from trade fields */
-  const isMeSender       = selectedTrade?.sender_id === userId;
+  const isMeSender = selectedTrade?.sender_id === userId;
   const tradeIsCompleted = selectedTrade?.status === 'completed';
-  const tradeIsAccepted  = selectedTrade?.status === 'accepted';
+  const tradeIsAccepted = selectedTrade?.status === 'accepted';
   const tradeIsAwaitingAdmin = selectedTrade?.status === 'awaiting_admin_verification';
 
   /* proof state — backend is the source of truth via proofStatus (already unwrapped) */
@@ -427,28 +474,7 @@ export default function ChatsLayout() {
     }
   };
 
-  const handleSubmitReport = async () => {
-    const token = localStorage.getItem('token');
 
-    // Temporary diagnostic log — remove after testing
-    console.log('REPORT DEBUG', {
-      tradeId,
-      reported_user_id: otherUserIdResolved,
-      reason: reportReason,
-      trade_offer_id: tradeId || null,
-    });
-
-    await fetch(`${API_URL}/api/reports`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        reported_user_id: otherUserIdResolved,
-        reason: reportReason,
-        trade_offer_id: tradeId || null,   // link report to this conversation
-      }),
-    });
-    setShowReport(false); setReportReason('');
-  };
 
   if (!authLoading && !currentUser) {
     return (
@@ -487,13 +513,13 @@ export default function ChatsLayout() {
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {visibleTrades.map(trade => {
-                const isSend   = trade.sender_id === userId;
-                const name     = isSend ? trade.receiver_username : trade.sender_username;
+                const isSend = trade.sender_id === userId;
+                const name = isSend ? trade.receiver_username : trade.sender_username;
                 const imgField = isSend
                   ? (trade.receiver_profile_image || trade.receiver_avatar || null)
-                  : (trade.sender_profile_image   || trade.sender_avatar   || null);
-                const isActive   = String(trade.id) === String(tradeId);
-                const menuOpen   = deleteMenuFor === trade.id;
+                  : (trade.sender_profile_image || trade.sender_avatar || null);
+                const isActive = String(trade.id) === String(tradeId);
+                const menuOpen = deleteMenuFor === trade.id;
                 const isComplete = trade.status === 'completed';
                 return (
                   <li key={trade.id} style={{ position: 'relative' }}>
@@ -570,9 +596,15 @@ export default function ChatsLayout() {
                 </div>
               </div>
               {/* Report User button in header — mobile */}
-              <button type="button" onClick={() => setShowReport(true)} style={s.reportHeaderBtn} aria-label="Report user">
-                ⚑
-              </button>
+              {tradeId && reportedTrades.has(String(tradeId)) ? (
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                  ✓
+                </span>
+              ) : (
+                <button type="button" onClick={() => setShowReport(true)} style={s.reportHeaderBtn} aria-label="Report user">
+                  ⚑
+                </button>
+              )}
             </div>
 
             {/* ── Desktop header strip (back bar hidden on desktop; this is shown instead) ── */}
@@ -596,9 +628,15 @@ export default function ChatsLayout() {
                 </div>
               </div>
               {/* Report button in desktop header */}
-              <button type="button" onClick={() => setShowReport(true)} style={s.reportHeaderBtnDesktop}>
-                Report User
-              </button>
+              {tradeId && reportedTrades.has(String(tradeId)) ? (
+                <span style={{ ...s.reportHeaderBtnDesktop, opacity: 0.7, cursor: 'default', color: '#15803d' }}>
+                  ✓ Reported
+                </span>
+              ) : (
+                <button type="button" onClick={() => setShowReport(true)} style={s.reportHeaderBtnDesktop}>
+                  Report User
+                </button>
+              )}
             </div>
 
             {/* ── Action bar: View Item + Proof submission ── */}
@@ -817,31 +855,20 @@ export default function ChatsLayout() {
       )}
 
       {/* ── Report modal ── */}
-      {showReport && (
-        <div className="cl-report-overlay" onClick={() => setShowReport(false)}>
-          <div className="cl-report-modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontFamily: 'Fraunces, serif', color: T.text }}>
-              Report User
-            </h3>
-            <textarea
-              placeholder="Describe the issue…"
-              value={reportReason}
-              onChange={e => setReportReason(e.target.value)}
-              rows={4}
-              style={{
-                width: '100%', borderRadius: T.radiusCtrl, border: `1px solid ${T.border}`,
-                padding: '10px 12px', boxSizing: 'border-box', resize: 'vertical',
-                fontFamily: 'Manrope, sans-serif', fontSize: 13.5, color: T.text,
-                background: T.surface, marginBottom: 12,
-              }}
-            />
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowReport(false)} style={s.secondaryBtn}>Cancel</button>
-              <button onClick={handleSubmitReport} style={s.ctaBtn}>Submit Report</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        reportedUserId={otherUserIdResolved}
+        tradeOfferId={tradeId || null}
+        userName={otherUserName}
+        onSuccess={() => {
+          if (tradeId) {
+            setReportedTrades(prev =>
+              new Set(prev).add(String(tradeId))
+            );
+          }
+        }}
+      />
     </div>
   );
 }
