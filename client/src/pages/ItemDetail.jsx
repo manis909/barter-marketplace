@@ -24,6 +24,7 @@ import WishlistButton from '../components/WishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
 import { getRentalByItem, createRentalRequest, createRental } from '../services/rentalService'
 import useVerificationStatus from '../hooks/useVerificationStatus'
+import JugglingLoader from '../components/JugglingLoader'
 import './ItemDetail.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -196,7 +197,8 @@ export default function ItemDetailPage() {
       return
     }
 
-    if (!isVerified && !verificationLoading) {
+    // Check verification status before opening trade modal
+    if (!isVerified) {
       setShowVerificationModal(true)
       return
     }
@@ -245,32 +247,6 @@ export default function ItemDetailPage() {
       setSubmittingTrade(false)
     }
   }
-
-  // Rental pricing preview — mirrors server-side computation (display only;
-  // the server recomputes authoritative amounts on submit).
-  const rentalFee = rental ? Math.round(Number(rental.daily_rate) * daysRequested * 100) / 100 : 0
-  const rentalDeposit = rental ? Math.round(0.15 * rentalFee) : 0
-  const rentalTotal = Math.round((rentalFee + rentalDeposit) * 100) / 100
-
-  function openRentalModal() {
-    if (!currentUser) {
-      navigate('/login')
-      return
-    }
-    if (!isVerified && !verificationLoading) {
-      setShowVerificationModal(true)
-      return
-    }
-    setRentalError('')
-    setDaysRequested(1)
-    setIsRentalModalOpen(true)
-  }
-
-  async function handleCreateRentalListing(e) {
-    e.preventDefault()
-    const rate = parseFloat(rentalRateInput)
-    if (!Number.isFinite(rate) || rate <= 0) {
-      setRentalListingError('Enter a valid daily rate greater than zero.')
       return
     }
     setSubmittingRentalListing(true)
@@ -293,27 +269,13 @@ export default function ItemDetailPage() {
     }
   }
 
-  async function handleSendRentalRequest(e) {
-    e.preventDefault()
-    if (!rental) return
-    setSubmittingRental(true)
-    setRentalError('')
-    try {
-      await createRentalRequest(rental.id, daysRequested)
-      setIsRentalModalOpen(false)
-      navigate('/renter/my-rentals')
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to send rental request.'
-      setRentalError(msg)
-    } finally {
-      setSubmittingRental(false)
-    }
-  }
-
-  if (loading) {
+  if (loading || (!item && !error)) {
     return (
       <div className="item-detail-page">
-        <p className="detail-loading">Loading item details...</p>
+        <JugglingLoader message="Getting your barter item ready..." />
+      </div>
+    )
+  }
       </div>
     )
   }
@@ -321,7 +283,12 @@ export default function ItemDetailPage() {
   if (error) {
     return (
       <div className="item-detail-page">
-        <p className="detail-loading">{error}</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#005C66' }}>
+          <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 16 }}>{error}</p>
+          <Link to="/explore" className="detail-back-btn">
+            Back to Explore
+          </Link>
+        </div>
       </div>
     )
   }
@@ -329,7 +296,12 @@ export default function ItemDetailPage() {
   if (!normalizedItem) {
     return (
       <div className="item-detail-page">
-        <p className="detail-loading">Item not found.</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#005C66' }}>
+          <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 16 }}>Item not found or no longer available.</p>
+          <Link to="/explore" className="detail-back-btn">
+            Back to Explore
+          </Link>
+        </div>
       </div>
     )
   }

@@ -1,0 +1,75 @@
+.clean-juggling-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  width: 100%;
+  background: #FFFFFF;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.clean-juggling-stage {
+  position: relative;
+  width: 140px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 28px;
+}
+
+.clean-item-shell {
+  position: absolute;
+  top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clean-3d-capsule {
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+.clean-shadow-oval {
+  width: 44px;
+  height: 6px;
+  border-radius: 50%;
+  background: #000000;
+  filter: blur(3px);
+  margin-bottom: 4px;
+}
+
+.clean-juggling-text {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #18181B;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 620px) {
+  .clean-juggling-screen {
+    min-height: 50vh;
+  }
+
+  .clean-juggling-text {
+    font-size: 1.1rem;
+  }
+
+  .clean-3d-capsule {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+  }
+}

@@ -98,7 +98,6 @@ export default function SkilterExplorePage() {
       <div className="skilter-summary">
         <div>
           <p className="skilter-section-label">Skilter</p>
-          <h2>Find students with the skills you need</h2>
         </div>
         {isFiltered && (
           <p className="skilter-filter-hint">

@@ -51,47 +51,45 @@
   transform: scale(1.03);
 }
 
-/* White Rounded-Square Floating Wishlist Button */
+/* Standalone Floating Wishlist Heart Icon (No Square Box) */
 .glass-wishlist-btn {
   position: absolute !important;
   top: 8px !important;
   right: 8px !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-height: 36px !important;
-  max-height: 36px !important;
+  width: 32px !important;
+  height: 32px !important;
   padding: 0 !important;
   margin: 0 !important;
-  border-radius: 10px !important;
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background: transparent !important;
+  border: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14) !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease !important;
+  box-shadow: none !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   z-index: 10 !important;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
   overflow: visible !important;
-  color: #1F2937 !important;
+  outline: none !important;
 }
 
 .glass-wishlist-btn:hover {
-  background: #F9FAFB !important;
-  border-color: rgba(0, 0, 0, 0.2) !important;
-  transform: scale(1.08) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  transform: scale(1.18) !important;
 }
 
 .heart-icon {
-  width: 18px !important;
-  height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
   color: #1F2937 !important;
   fill: none !important;
   stroke: #1F2937 !important;
-  stroke-width: 2px !important;
+  stroke-width: 2.2px !important;
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)) !important;
   transition: color 0.2s ease, fill 0.2s ease, transform 0.2s ease !important;
   display: block !important;
   opacity: 1 !important;
@@ -103,6 +101,7 @@
   color: #EF4444 !important;
   fill: #EF4444 !important;
   stroke: #EF4444 !important;
+  filter: drop-shadow(0 2px 6px rgba(239, 68, 68, 0.45)) !important;
   animation: heartPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -119,9 +118,9 @@
 }
 
 .glass-wishlist-btn.wishlisted {
-  background: #FFFFFF !important;
-  border-color: rgba(239, 68, 68, 0.35) !important;
-  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.18) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Content Body & High Density Hierarchy */
@@ -439,11 +438,11 @@
   .glass-wishlist-btn {
     top: 6px !important;
     right: 6px !important;
-    width: 32px !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
-    border-radius: 9px !important;
+    width: 30px !important;
+    height: 30px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .pill-badge {
