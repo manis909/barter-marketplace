@@ -20,6 +20,7 @@ import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
 import useVerificationStatus from '../hooks/useVerificationStatus'
+import JugglingLoader from '../components/JugglingLoader'
 import './ItemDetail.css'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -169,7 +170,8 @@ export default function ItemDetailPage() {
       return
     }
 
-    if (!isVerified && !verificationLoading) {
+    // Check verification status before opening trade modal
+    if (!isVerified) {
       setShowVerificationModal(true)
       return
     }
@@ -219,10 +221,10 @@ export default function ItemDetailPage() {
     }
   }
 
-  if (loading) {
+  if (loading || (!item && !error)) {
     return (
       <div className="item-detail-page">
-        <p className="detail-loading">Loading item details...</p>
+        <JugglingLoader message="Getting your barter item ready..." />
       </div>
     )
   }
@@ -230,7 +232,12 @@ export default function ItemDetailPage() {
   if (error) {
     return (
       <div className="item-detail-page">
-        <p className="detail-loading">{error}</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#005C66' }}>
+          <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 16 }}>{error}</p>
+          <Link to="/explore" className="detail-back-btn">
+            Back to Explore
+          </Link>
+        </div>
       </div>
     )
   }
@@ -238,7 +245,12 @@ export default function ItemDetailPage() {
   if (!normalizedItem) {
     return (
       <div className="item-detail-page">
-        <p className="detail-loading">Item not found.</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#005C66' }}>
+          <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 16 }}>Item not found or no longer available.</p>
+          <Link to="/explore" className="detail-back-btn">
+            Back to Explore
+          </Link>
+        </div>
       </div>
     )
   }

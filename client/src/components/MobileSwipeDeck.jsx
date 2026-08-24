@@ -1,11 +1,14 @@
-import { useState, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
-import { X, ArrowRightLeft, Star, RotateCcw, Sparkles, Tag } from 'lucide-react'
+import { X, Heart, Star, RotateCcw, Sparkles, Tag, Layers } from 'lucide-react'
+import { useAuth } from '../features/auth/AuthContext'
+import { addWishlist } from '../services/tradeService'
 import './MobileSwipeDeck.css'
 
 export default function MobileSwipeDeck({ items = [], onClose }) {
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [exitDirection, setExitDirection] = useState(null)
 
@@ -15,20 +18,57 @@ export default function MobileSwipeDeck({ items = [], onClose }) {
   const passOpacity = useTransform(x, [-100, -20], [1, 0])
   const tradeOpacity = useTransform(x, [20, 100], [0, 1])
 
-  const activeItem = items[currentIndex]
-  const isEnd = currentIndex >= items.length
+  // ── Stack order: New items on top, randomized older items underneath ──
+  const deckItems = useMemo(() => {
+    if (!items || items.length === 0) return []
+
+    const newItems = []
+    const olderItems = []
+
+    for (const item of items) {
+      if (item.isNew || item.status === 'new') {
+        newItems.push(item)
+      } else {
+        olderItems.push(item)
+      }
+    }
+
+    // Shuffle older items pseudo-randomly so every session feels fresh
+    const shuffledOlder = [...olderItems]
+    for (let i = shuffledOlder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffledOlder[i], shuffledOlder[j]] = [shuffledOlder[j], shuffledOlder[i]]
+    }
+
+    // Fallback if no items explicitly flagged as new: top 3 newest by ID first, shuffle rest
+    if (newItems.length === 0 && items.length > 0) {
+      const newestFirst = [...items].sort((a, b) => (b.id || 0) - (a.id || 0))
+      const topNew = newestFirst.slice(0, Math.min(3, newestFirst.length))
+      const rest = newestFirst.slice(Math.min(3, newestFirst.length))
+      for (let i = rest.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[rest[i], rest[j]] = [rest[j], rest[i]]
+      }
+      return [...topNew, ...rest]
+    }
+
+    return [...newItems, ...shuffledOlder]
+  }, [items])
+
+  const activeItem = deckItems[currentIndex]
+  const isEnd = currentIndex >= deckItems.length
 
   const handleDragEnd = (event, info) => {
     const offset = info.offset.x
     const velocity = info.velocity.x
 
     if (offset > 90 || velocity > 400) {
-      // Swipe Right -> Trade Interest
+      // Swipe Right -> Wishlist item
       setExitDirection('right')
+      if (activeItem && currentUser) {
+        addWishlist(activeItem.id).catch((err) => console.error('Wishlist error:', err))
+      }
       setTimeout(() => {
-        if (activeItem) {
-          navigate(`/item/${activeItem.id}`)
-        }
         setCurrentIndex((prev) => prev + 1)
         setExitDirection(null)
       }, 150)
@@ -50,11 +90,21 @@ export default function MobileSwipeDeck({ items = [], onClose }) {
     }, 150)
   }
 
-  const handleTradeInterest = () => {
+  const handleWishlist = async () => {
     if (!activeItem) return
+    if (!currentUser) {
+      navigate('/login')
+      return
+    }
+
     setExitDirection('right')
+    try {
+      await addWishlist(activeItem.id)
+    } catch (err) {
+      console.error('Failed to add to wishlist from swipe deck:', err)
+    }
+
     setTimeout(() => {
-      navigate(`/item/${activeItem.id}`)
       setCurrentIndex((prev) => prev + 1)
       setExitDirection(null)
     }, 150)
@@ -65,7 +115,7 @@ export default function MobileSwipeDeck({ items = [], onClose }) {
     setExitDirection(null)
   }
 
-  if (items.length === 0) {
+  if (deckItems.length === 0) {
     return (
       <div className="swipe-deck-empty">
         <Sparkles size={32} className="empty-icon" />
@@ -103,26 +153,36 @@ export default function MobileSwipeDeck({ items = [], onClose }) {
     )
   }
 
-  const nextItem = items[currentIndex + 1]
+  const nextItem = deckItems[currentIndex + 1]
 
   return (
     <div className="swipe-deck-wrapper">
+      {/* Clean Single Navigation Header */}
       <div className="swipe-deck-header">
-        <span className="deck-counter">
-          {currentIndex + 1} of {items.length}
+        <div className="deck-header-title-box">
+          <Layers size={18} className="deck-title-icon" />
+          <span className="deck-title-text">Swipe Discovery</span>
+        </div>
+
+        <span className="deck-counter-pill">
+          {currentIndex + 1} / {deckItems.length}
         </span>
-        <span className="deck-hint">Swipe right to trade • Left to skip</span>
+
         {onClose && (
           <button
             type="button"
             className="deck-header-close-btn"
             onClick={onClose}
-            aria-label="Exit Swipe Mode"
-            title="Exit Swipe Mode"
+            aria-label="Close Swipe Mode"
+            title="Close Swipe Mode"
           >
             <X size={18} />
           </button>
         )}
+      </div>
+
+      <div className="deck-sub-hint">
+        <span>Swipe right to wishlist • Left to pass</span>
       </div>
 
       <div className="swipe-card-stack">
@@ -163,7 +223,7 @@ export default function MobileSwipeDeck({ items = [], onClose }) {
                 PASS
               </motion.div>
               <motion.div className="swipe-overlay trade-overlay" style={{ opacity: tradeOpacity }}>
-                TRADE
+                WISHLIST
               </motion.div>
 
               {/* Main Image */}
@@ -230,11 +290,11 @@ export default function MobileSwipeDeck({ items = [], onClose }) {
         <button
           type="button"
           className="swipe-action-btn btn-trade"
-          onClick={handleTradeInterest}
-          aria-label="Trade interest"
+          onClick={handleWishlist}
+          aria-label="Add to Wishlist"
         >
-          <ArrowRightLeft size={22} />
-          <span>Trade Interest</span>
+          <Heart size={20} fill="#FFFFFF" color="#FFFFFF" />
+          <span>Wishlist</span>
         </button>
       </div>
     </div>

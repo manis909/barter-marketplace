@@ -224,6 +224,28 @@ export default function ExplorePage() {
     return mapped.filter((item) => !shownSmartIds.has(item.id))
   }, [items, isFiltered, shownSmartIds])
 
+  // ── allExploreItems (For Swipe Deck: includes ALL items, both old & new) ──
+  const allExploreItems = useMemo(() => {
+    const combined = [
+      ...trendingItems,
+      ...recommendedItems,
+      ...matchesItems,
+      ...recentlyViewed,
+      ...similarItems,
+      ...latestItems,
+      ...items
+    ]
+    const seen = new Set()
+    const result = []
+    for (const rawItem of combined) {
+      if (rawItem && rawItem.id && !seen.has(rawItem.id)) {
+        seen.add(rawItem.id)
+        result.push(normaliseItem(rawItem))
+      }
+    }
+    return result.length > 0 ? result : items.map(normaliseItem)
+  }, [trendingItems, recommendedItems, matchesItems, recentlyViewed, similarItems, latestItems, items])
+
   // ── Existing category handler (UNCHANGED) ────────────────────────────────
   const handleCategorySelect = (cat) => {
     setActiveCategory(cat)
@@ -249,7 +271,7 @@ export default function ExplorePage() {
           <span className="market-promo-badge">✨ BARTER MARKETPLACE</span>
           <h2 className="market-promo-heading">Trade items with trusted local members</h2>
           <p className="market-promo-subtext">
-            Give items a second life • {loading ? 'Loading items...' : `${normalizedItems.length} items available in ${activeCategory || 'All categories'}`}
+            Give items a second life • {loading ? 'Loading items...' : `${allExploreItems.length} items available in ${activeCategory || 'All categories'}`}
           </p>
         </div>
         <div className="market-promo-action">
@@ -337,22 +359,7 @@ export default function ExplorePage() {
       {isSwipeModeOpen && (
         <div className="swipe-modal-backdrop" onClick={() => setIsSwipeModeOpen(false)}>
           <div className="swipe-modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="swipe-modal-header">
-              <div className="swipe-modal-title-row">
-                <Layers size={20} className="swipe-modal-icon" />
-                <span className="swipe-modal-title">Swipe Discovery Mode</span>
-              </div>
-              <button
-                type="button"
-                className="swipe-modal-close-btn"
-                onClick={() => setIsSwipeModeOpen(false)}
-                aria-label="Close Swipe Mode"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <MobileSwipeDeck items={normalizedItems} onClose={() => setIsSwipeModeOpen(false)} />
+            <MobileSwipeDeck items={allExploreItems} onClose={() => setIsSwipeModeOpen(false)} />
           </div>
         </div>
       )}
