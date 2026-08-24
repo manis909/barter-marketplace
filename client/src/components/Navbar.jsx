@@ -536,7 +536,7 @@ export default function Navbar() {
                           aria-label={`Category ${cat.name}`}
                         >
                           <div className="category-tile-icon-box">
-                            {IconComp && <IconComp size={20} className="category-tile-icon" />}
+                            {IconComp && <IconComp size={15} className="category-tile-icon" />}
                           </div>
                           <span className="category-tile-label">{cat.name}</span>
                         </button>

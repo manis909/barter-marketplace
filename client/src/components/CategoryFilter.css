@@ -19,18 +19,19 @@
   border: 1px solid #D0ECE9;
   background: #FFFFFF;
   color: #005C66;
-  border-radius: 20px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 6px 12px;
   text-align: left;
   font-weight: 700;
+  font-size: 0.82rem;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
 
 .category-pill:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   border-color: #008C99;
   background: #F0FAF9;
 }
@@ -42,18 +43,18 @@
 }
 
 .category-icon {
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 8px;
   background: #E6F7F6;
   color: #008C99;
 }
 
 .category-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
 }
 
 @media (max-width: 767px) {
@@ -62,8 +63,8 @@
   }
 
   .category-filter h2 {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
+    font-size: 1rem;
+    margin-bottom: 8px;
   }
 
   .category-grid {
@@ -74,8 +75,8 @@
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    gap: 8px;
-    padding: 4px 0 8px;
+    gap: 6px;
+    padding: 2px 0 6px;
   }
 
   .category-grid::-webkit-scrollbar {
@@ -85,7 +86,8 @@
   .category-pill {
     flex-shrink: 0;
     white-space: nowrap;
-    padding: 8px 14px;
-    font-size: 0.85rem;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    border-radius: 10px;
   }
 }
