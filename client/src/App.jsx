@@ -26,6 +26,8 @@ import MySkillsPage from './pages/MySkillsPage';
 import SkillProviderApplication from './pages/SkillProviderApplication';
 import MySkillsManagement from './pages/MySkillsManagement';
 import RenterPage from './pages/Renter';
+import MyRentalsPage from './pages/MyRentals';
+import RentalRequestsPage from './pages/RentalRequests';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout'; 
@@ -102,6 +104,8 @@ function App() {
 
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
+            <Route path="/renter/my-rentals" element={<MyRentalsPage />} />
+            <Route path="/renter/requests" element={<RentalRequestsPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />

@@ -13,12 +13,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
-  Award
+  Award,
+  KeyRound,
+  Minus,
+  Plus
 } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
+import { getRentalByItem, createRentalRequest, createRental } from '../services/rentalService'
 import useVerificationStatus from '../hooks/useVerificationStatus'
 import './ItemDetail.css'
 
@@ -50,6 +54,20 @@ export default function ItemDetailPage() {
   const [submittingTrade, setSubmittingTrade] = useState(false)
   const [tradeError, setTradeError] = useState('')
   const [loadingMyItems, setLoadingMyItems] = useState(false)
+
+  // Rental state — "Request to Rent" entry point
+  const [rental, setRental] = useState(null)
+  const [isRentalModalOpen, setIsRentalModalOpen] = useState(false)
+  const [daysRequested, setDaysRequested] = useState(1)
+  const [rentalError, setRentalError] = useState('')
+  const [submittingRental, setSubmittingRental] = useState(false)
+
+  // Owner: "List this item for Rent" state
+  const [isRentListingModalOpen, setIsRentListingModalOpen] = useState(false)
+  const [rentalRateInput, setRentalRateInput] = useState('')
+  const [rentalDescInput, setRentalDescInput] = useState('')
+  const [rentalListingError, setRentalListingError] = useState('')
+  const [submittingRentalListing, setSubmittingRentalListing] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -84,6 +102,15 @@ export default function ItemDetailPage() {
       })
 
     return () => controller.abort()
+  }, [id])
+
+  // Fetch the rental listing attached to this item (if any) — decides
+  // whether the "Request to Rent" action is shown.
+  useEffect(() => {
+    if (!id) return
+    getRentalByItem(id)
+      .then((data) => setRental(data.rental || null))
+      .catch(() => setRental(null))
   }, [id])
 
   const normalizedItem = useMemo(() => {
@@ -216,6 +243,70 @@ export default function ItemDetailPage() {
       setTradeError(msg)
     } finally {
       setSubmittingTrade(false)
+    }
+  }
+
+  // Rental pricing preview — mirrors server-side computation (display only;
+  // the server recomputes authoritative amounts on submit).
+  const rentalFee = rental ? Math.round(Number(rental.daily_rate) * daysRequested * 100) / 100 : 0
+  const rentalDeposit = rental ? Math.round(0.15 * rentalFee) : 0
+  const rentalTotal = Math.round((rentalFee + rentalDeposit) * 100) / 100
+
+  function openRentalModal() {
+    if (!currentUser) {
+      navigate('/login')
+      return
+    }
+    if (!isVerified && !verificationLoading) {
+      setShowVerificationModal(true)
+      return
+    }
+    setRentalError('')
+    setDaysRequested(1)
+    setIsRentalModalOpen(true)
+  }
+
+  async function handleCreateRentalListing(e) {
+    e.preventDefault()
+    const rate = parseFloat(rentalRateInput)
+    if (!Number.isFinite(rate) || rate <= 0) {
+      setRentalListingError('Enter a valid daily rate greater than zero.')
+      return
+    }
+    setSubmittingRentalListing(true)
+    setRentalListingError('')
+    try {
+      await createRental({
+        title: normalizedItem.title,
+        description: rentalDescInput.trim() || normalizedItem.description,
+        daily_rate: rate,
+        image_url: images[0] || undefined,
+        item_id: normalizedItem.id,
+      })
+      setIsRentListingModalOpen(false)
+      const data = await getRentalByItem(normalizedItem.id)
+      setRental(data.rental || null)
+    } catch (err) {
+      setRentalListingError(err.response?.data?.error || 'Failed to list this item for rent.')
+    } finally {
+      setSubmittingRentalListing(false)
+    }
+  }
+
+  async function handleSendRentalRequest(e) {
+    e.preventDefault()
+    if (!rental) return
+    setSubmittingRental(true)
+    setRentalError('')
+    try {
+      await createRentalRequest(rental.id, daysRequested)
+      setIsRentalModalOpen(false)
+      navigate('/renter/my-rentals')
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to send rental request.'
+      setRentalError(msg)
+    } finally {
+      setSubmittingRental(false)
     }
   }
 
@@ -421,19 +512,59 @@ export default function ItemDetailPage() {
           {/* Action Card */}
           <div className="detail-action-card">
             {!isOwner && normalizedItem.status === 'available' ? (
-              <button
-                type="button"
-                className="detail-primary-offer-btn"
-                onClick={openTradeModal}
-              >
-                <ShoppingBag size={20} />
-                <span>Propose Trade Offer</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="detail-primary-offer-btn"
+                  onClick={openTradeModal}
+                >
+                  <ShoppingBag size={20} />
+                  <span>Propose Trade Offer</span>
+                </button>
+                {rental && rental.status === 'available' && (
+                  <button
+                    type="button"
+                    className="detail-primary-offer-btn"
+                    style={{ marginTop: 10, background: '#0F766E' }}
+                    onClick={openRentalModal}
+                  >
+                    <KeyRound size={20} />
+                    <span>Request to Rent — ₹{Number(rental.daily_rate)}/day</span>
+                  </button>
+                )}
+              </>
             ) : isOwner ? (
-              <div className="owner-listing-banner">
-                <CheckCircle2 size={18} />
-                <span>This is your listing. You can manage or edit it in My Listings.</span>
-              </div>
+              <>
+                <div className="owner-listing-banner">
+                  <CheckCircle2 size={18} />
+                  <span>This is your listing. You can manage or edit it in My Listings.</span>
+                </div>
+                {!rental ? (
+                  <button
+                    type="button"
+                    className="detail-primary-offer-btn"
+                    style={{ marginTop: 10, background: '#0F766E' }}
+                    onClick={() => {
+                      setRentalListingError('')
+                      setRentalRateInput('')
+                      setRentalDescInput('')
+                      setIsRentListingModalOpen(true)
+                    }}
+                  >
+                    <KeyRound size={20} />
+                    <span>List this item for Rent</span>
+                  </button>
+                ) : (
+                  <div style={{
+                    marginTop: 10, background: '#F0FDFA', border: '1px solid #99F6E4',
+                    borderRadius: 10, padding: '12px 14px', fontSize: 13.5, color: '#134E4A',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <KeyRound size={16} />
+                    <span>Listed for rent at ₹{Number(rental.daily_rate)}/day · status: {rental.status}</span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="unavailable-listing-banner">
                 <span>This item has been successfully traded and is no longer available.</span>
@@ -577,6 +708,240 @@ export default function ItemDetailPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* List for Rent Modal (owner) */}
+      {isRentListingModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: 20
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: 18,
+            padding: 28,
+            maxWidth: 480,
+            width: '100%',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+          }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#1C1917' }}>List this item for Rent</h2>
+            <p style={{ fontSize: 14, color: '#57534E', margin: '0 0 20px' }}>
+              Set a daily rate for <strong>{normalizedItem.title}</strong>. Students can then send you rental requests.
+            </p>
+
+            {rentalListingError && (
+              <div style={{
+                background: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                color: '#991B1B',
+                padding: '10px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                marginBottom: 16
+              }}>
+                {rentalListingError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateRentalListing}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
+                  Daily Rate (₹ per day):
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={rentalRateInput}
+                  onChange={e => setRentalRateInput(e.target.value)}
+                  placeholder="e.g. 100"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #E4E2D9',
+                    fontSize: 14,
+                    background: '#F9F8F6'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
+                  Rental Notes (Optional):
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Condition notes, accessories included, pickup instructions..."
+                  value={rentalDescInput}
+                  onChange={e => setRentalDescInput(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #E4E2D9',
+                    fontSize: 14,
+                    background: '#F9F8F6',
+                    resize: 'none'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsRentListingModalOpen(false)}
+                  disabled={submittingRentalListing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={submittingRentalListing}
+                >
+                  {submittingRentalListing ? 'Listing...' : 'List for Rent'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Request to Rent Modal */}
+      {isRentalModalOpen && rental && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: 20
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: 18,
+            padding: 28,
+            maxWidth: 480,
+            width: '100%',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+          }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#1C1917' }}>Request to Rent</h2>
+            <p style={{ fontSize: 14, color: '#57534E', margin: '0 0 20px' }}>
+              How many days would you like to rent <strong>{normalizedItem.title}</strong>?
+            </p>
+
+            {rentalError && (
+              <div style={{
+                background: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                color: '#991B1B',
+                padding: '10px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                marginBottom: 16
+              }}>
+                {rentalError}
+              </div>
+            )}
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
+                Number of Days:
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setDaysRequested(d => Math.max(1, d - 1))}
+                  style={{
+                    width: 36, height: 36, borderRadius: 8, border: '1px solid #E4E2D9',
+                    background: '#F9F8F6', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center'
+                  }}
+                  aria-label="Decrease days"
+                >
+                  <Minus size={16} />
+                </button>
+                <span style={{ fontSize: 18, fontWeight: 700, minWidth: 48, textAlign: 'center', color: '#1C1917' }}>
+                  {daysRequested}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDaysRequested(d => Math.min(365, d + 1))}
+                  style={{
+                    width: 36, height: 36, borderRadius: 8, border: '1px solid #E4E2D9',
+                    background: '#F9F8F6', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center'
+                  }}
+                  aria-label="Increase days"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div style={{
+              background: '#F9F8F6',
+              border: '1px solid #E4E2D9',
+              borderRadius: 10,
+              padding: 16,
+              marginBottom: 16
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#57534E', marginBottom: 6 }}>
+                <span>{daysRequested} day{daysRequested > 1 ? 's' : ''} × ₹{Number(rental.daily_rate)}/day</span>
+                <span style={{ fontWeight: 600, color: '#1C1917' }}>₹{rentalFee}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#57534E', marginBottom: 10 }}>
+                <span>Refundable deposit (15%)</span>
+                <span style={{ fontWeight: 600, color: '#1C1917' }}>₹{rentalDeposit}</span>
+              </div>
+              <div style={{ borderTop: '1px solid #E4E2D9', paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 15 }}>
+                <span style={{ fontWeight: 700, color: '#1C1917' }}>Total commitment</span>
+                <span style={{ fontWeight: 700, color: '#0F766E' }}>₹{rentalTotal}</span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 12.5, color: '#78716C', margin: '0 0 20px', lineHeight: 1.5 }}>
+              Note: Exact pickup and return timing will be coordinated in chat once your request is accepted.
+            </p>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setIsRentalModalOpen(false)}
+                disabled={submittingRental}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary-button"
+                onClick={handleSendRentalRequest}
+                disabled={submittingRental}
+              >
+                {submittingRental ? 'Sending Request...' : 'Send Rental Request'}
+              </button>
+            </div>
           </div>
         </div>
       )}
