@@ -26,7 +26,8 @@ export default function RentalDetailPage() {
   if (loading) return <div className="rental-detail-state"><div className="rental-spinner" /><h2>Loading rental details</h2></div>
   if (error || !rental) return <div className="rental-detail-state rental-detail-error"><Package size={35} /><h2>{error || 'Rental listing not found'}</h2><button type="button" onClick={() => navigate('/renter')}>Back to rentals</button></div>
 
-  const images = Array.isArray(rental.image_urls) ? rental.image_urls : []
+  const images = rental.image_url ? [rental.image_url] : (Array.isArray(rental.image_urls) ? rental.image_urls : [])
+  const title = rental.title || rental.item_name || 'Rental item'
   const status = rental.status === 'available' ? 'Available' : rental.status === 'paused' ? 'Paused' : 'Rented'
 
   return <div className="rental-detail-page">
@@ -34,15 +35,15 @@ export default function RentalDetailPage() {
       <button type="button" className="rental-detail-back" onClick={() => navigate('/renter')}><ChevronLeft size={18} /> Back to rentals</button>
       <div className="rental-detail-layout">
         <div className="rental-detail-media">
-          {images.length ? <><div className="rental-detail-backdrop" style={{ backgroundImage: `url(${images[imageIndex]})` }} /><img src={images[imageIndex]} alt={rental.item_name} /></> : <Package size={48} />}
+          {images.length ? <><div className="rental-detail-backdrop" style={{ backgroundImage: `url(${images[imageIndex]})` }} /><img src={images[imageIndex]} alt={title} /></> : <Package size={48} />}
           {images.length > 1 && <><button type="button" className="rental-detail-arrow left" onClick={() => setImageIndex((imageIndex - 1 + images.length) % images.length)} aria-label="Previous image"><ChevronLeft size={18} /></button><button type="button" className="rental-detail-arrow right" onClick={() => setImageIndex((imageIndex + 1) % images.length)} aria-label="Next image"><ChevronRight size={18} /></button><span className="rental-detail-count">{imageIndex + 1} / {images.length}</span></>}
         </div>
         <section className="rental-detail-copy">
           <div className="rental-detail-badges"><span>{rental.category || 'Other'}</span><strong>{status}</strong></div>
-          <h1>{rental.item_name}</h1>
-          <p className="rental-detail-owner"><User size={15} /> Listed by <Link to={`/rental/profile/${rental.owner_id}`}>{rental.owner_name || 'Owner'}</Link></p>
+          <h1>{title}</h1>
+          <p className="rental-detail-owner"><User size={15} /> Listed by <Link to={`/rental/profile/${rental.owner_id}`}>{rental.owner_username || rental.owner_name || 'Owner'}</Link></p>
           <p className="rental-detail-description">{rental.description || 'No description provided.'}</p>
-          <div className="rental-detail-rate">INR {Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small></div>
+          <div className="rental-detail-rate">INR {Number(rental.daily_rate ?? rental.rate_amount).toLocaleString('en-IN')} <small>/ day</small></div>
           {rental.status === 'available' ? <button type="button" className="rental-detail-rent" onClick={() => setNotice('Rental requests are not available yet. Please check back soon.')}>Rent</button> : <p className="rental-detail-unavailable">This listing is not currently available.</p>}
           {notice && <p className="rental-detail-notice" role="status">{notice}</p>}
         </section>

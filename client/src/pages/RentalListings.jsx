@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, ChevronLeft, ChevronRight, ImagePlus, Package, Pause, Pencil, Play, Plus, Search, Trash2, Upload, X } from 'lucide-react'
 import api from '../services/api'
@@ -7,6 +7,7 @@ import { categoryNames } from '../data/categories'
 import ImageCropModal from '../components/ImageCropModal'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
 import useVerificationStatus from '../hooks/useVerificationStatus'
+import UndoToast from '../components/UndoToast'
 import './RentalListings.css'
 
 const MAX_IMAGES = 3
@@ -32,6 +33,8 @@ export default function RentalListingsPage() {
   const [imagePreviews, setImagePreviews] = useState([])
   const [crop, setCrop] = useState(null)
   const [activeImages, setActiveImages] = useState({})
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const pendingDeleteRef = useRef(null)
 
   const loadListings = async () => {
     setLoading(true)
@@ -74,9 +77,9 @@ export default function RentalListingsPage() {
     if (!canManage()) return
     setEditingId(listing.id)
     setForm({
-      item_name: listing.item_name || '', description: listing.description || '', category: listing.category || '',
-      rate_type: listing.rate_type || 'daily', rate_amount: listing.rate_amount || '', status: listing.status === 'rented' ? 'rented' : listing.status || 'available',
-      images: [], existingImageUrls: Array.isArray(listing.image_urls) ? listing.image_urls : []
+      item_name: listing.item_name || listing.title || '', description: listing.description || '', category: listing.category || '',
+      rate_type: ['hourly', 'daily'].includes(listing.rate_type) ? listing.rate_type : 'daily', rate_amount: listing.rate_amount ?? listing.daily_rate ?? '', status: listing.status || 'available',
+      images: [], existingImageUrls: Array.isArray(listing.image_urls) ? listing.image_urls : (listing.image_url ? [listing.image_url] : [])
     })
     setImagePreviews([])
     setFormError('')
@@ -117,7 +120,8 @@ export default function RentalListingsPage() {
     setFormError('')
     try {
       const uploaded = await Promise.all(form.images.map((file) => uploadImageToSupabase(file)))
-      const payload = { item_name: name, description, category: form.category, image_urls: [...form.existingImageUrls, ...uploaded], rate_type: form.rate_type, rate_amount: amount }
+      const imageUrls = [...form.existingImageUrls, ...uploaded]
+      const payload = { item_name: name, description, category: form.category, rate_type: form.rate_type, rate_amount: amount, image_urls: imageUrls.length ? imageUrls : null }
       if (editingId) {
         if (form.status !== 'rented') payload.status = form.status
         const response = await api.put(`/rentals/${editingId}`, payload)
@@ -143,15 +147,34 @@ export default function RentalListingsPage() {
     } catch (err) { setMessage(err.response?.data?.error || 'Unable to update listing status.') }
   }
 
-  const deleteListing = async () => {
+  const confirmDeleteListing = () => {
     const listing = confirmListing
     setConfirmListing(null)
+    setListings((previous) => previous.filter((item) => item.id !== listing.id))
+    pendingDeleteRef.current = listing
+    setPendingDelete(listing)
+  }
+
+  const undoDelete = () => {
+    const listing = pendingDeleteRef.current
+    pendingDeleteRef.current = null
+    setPendingDelete(null)
+    if (listing) setListings((previous) => [listing, ...previous])
+  }
+
+  const finalizeDelete = useCallback(async () => {
+    const listing = pendingDeleteRef.current
+    pendingDeleteRef.current = null
+    setPendingDelete(null)
+    if (!listing) return
     try {
       await api.delete(`/rentals/${listing.id}`)
-      setListings((previous) => previous.filter((item) => item.id !== listing.id))
       setMessage('Rental listing deleted successfully.')
-    } catch (err) { setMessage(err.response?.data?.error || 'Unable to delete this listing.') }
-  }
+    } catch (err) {
+      setListings((previous) => [listing, ...previous])
+      setMessage(err.response?.data?.error || 'Unable to delete this listing.')
+    }
+  }, [])
 
   const changeImage = (listing, direction) => {
     const images = Array.isArray(listing.image_urls) ? listing.image_urls : []
@@ -190,7 +213,7 @@ export default function RentalListingsPage() {
           <label className="rental-field"><span>Category</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} required><option value="">Select category</option>{categoryNames.map((category) => <option key={category}>{category}</option>)}</select></label>
           <label className="rental-field rental-field-full"><span>Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="What should renters know about this item?" rows="4" required /></label>
           <label className="rental-field"><span>Rate type</span><select value={form.rate_type} onChange={(event) => setForm({ ...form, rate_type: event.target.value })}><option value="hourly">Per hour</option><option value="daily">Per day</option></select></label>
-          <label className="rental-field"><span>Rate amount (INR)</span><input type="number" min="1" step="0.01" value={form.rate_amount} onChange={(event) => setForm({ ...form, rate_amount: event.target.value })} placeholder="250" required /></label>
+          <label className="rental-field"><span>Rate amount (INR)</span><input type="text" inputMode="decimal" pattern="[0-9]*\.?[0-9]+" value={form.rate_amount} onChange={(event) => setForm((previous) => ({ ...previous, rate_amount: event.target.value }))} placeholder="250" required /></label>
           {editingId && form.status !== 'rented' && <label className="rental-field"><span>Listing status</span><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option value="available">Available</option><option value="paused">Paused</option></select></label>}
         </div>
         {form.status === 'rented' && <p className="rented-note">This item is currently rented. Its availability is managed by the booking flow.</p>}
@@ -199,13 +222,14 @@ export default function RentalListingsPage() {
       </form>}
 
       {loading ? <div className="rental-state"><div className="rental-spinner" /><h2>Loading your listings</h2><p>Pulling together your rental shelf...</p></div> : error ? <div className="rental-state rental-state-error"><Package size={35} /><h2>We could not load your listings</h2><p>{error}</p><button className="rental-primary" type="button" onClick={loadListings}>Try again</button></div> : visibleListings.length === 0 ? <div className="rental-state"><Package size={35} /><h2>{listings.length ? 'No matching rentals' : 'No rental listings yet'}</h2><p>{listings.length ? 'Try another search or filter.' : 'List an item you own and let other students rent it.'}</p>{!listings.length && <button className="rental-primary" type="button" onClick={beginCreate}><Plus size={17} /> Add Rental</button>}</div> : <div className="rental-grid">{visibleListings.map((listing) => {
-        const images = Array.isArray(listing.image_urls) ? listing.image_urls : []
+        const images = listing.image_url ? [listing.image_url] : (Array.isArray(listing.image_urls) ? listing.image_urls : [])
         const imageIndex = activeImages[listing.id] || 0
-        const statusLabel = listing.status === 'rented' ? 'Rented' : listing.status === 'paused' ? 'Paused' : 'Available'
-        return <article className="rental-card" key={listing.id}><div className="rental-card-media">{images.length ? <><div className="rental-card-backdrop" style={{ backgroundImage: `url(${images[imageIndex]})` }} /><img src={images[imageIndex]} alt={listing.item_name} /></> : <Package size={35} />}{images.length > 1 && <><button className="image-nav image-nav-left" type="button" onClick={() => changeImage(listing, -1)} aria-label="Previous image"><ChevronLeft size={16} /></button><button className="image-nav image-nav-right" type="button" onClick={() => changeImage(listing, 1)} aria-label="Next image"><ChevronRight size={16} /></button><div className="image-count">{imageIndex + 1} / {images.length}</div></>}</div><div className="rental-card-body"><div className="rental-card-top"><span className="rental-category">{listing.category || 'Other'}</span><span className={`rental-status rental-status-${listing.status}`}>{statusLabel}</span></div><h2>{listing.item_name}</h2><p className="rental-description">{listing.description || 'No description provided.'}</p><div className="rental-rate">INR {Number(listing.rate_amount).toLocaleString('en-IN')} <small>/ {listing.rate_type === 'hourly' ? 'hour' : 'day'}</small></div>{listing.status === 'rented' && <p className="rented-note">Currently rented. Availability is managed by the booking flow.</p>}<div className="rental-card-actions"><button type="button" onClick={() => beginEdit(listing)}><Pencil size={15} /> Edit</button>{listing.status !== 'rented' && <button type="button" onClick={() => updateStatus(listing, listing.status === 'paused' ? 'available' : 'paused')}>{listing.status === 'paused' ? <Play size={15} /> : <Pause size={15} />} {listing.status === 'paused' ? 'Activate' : 'Pause'}</button>}<button className="danger" type="button" onClick={() => setConfirmListing(listing)}><Trash2 size={15} /> Delete</button></div></div></article>
+        const statusLabel = listing.status === 'rented' ? 'Rented' : listing.status === 'requested' ? 'Requested' : listing.status === 'paused' ? 'Paused' : 'Available'
+        return <article className="rental-card" key={listing.id}><div className="rental-card-media">{images.length ? <><div className="rental-card-backdrop" style={{ backgroundImage: `url(${images[imageIndex]})` }} /><img src={images[imageIndex]} alt={listing.title || listing.item_name} /></> : <Package size={35} />}{images.length > 1 && <><button className="image-nav image-nav-left" type="button" onClick={() => changeImage(listing, -1)} aria-label="Previous image"><ChevronLeft size={16} /></button><button className="image-nav image-nav-right" type="button" onClick={() => changeImage(listing, 1)} aria-label="Next image"><ChevronRight size={16} /></button><div className="image-count">{imageIndex + 1} / {images.length}</div></>}</div><div className="rental-card-body"><div className="rental-card-top"><span className="rental-category">{listing.category || 'Other'}</span><span className={`rental-status rental-status-${listing.status}`}>{statusLabel}</span></div><h2>{listing.title || listing.item_name}</h2><p className="rental-description">{listing.description || 'No description provided.'}</p><div className="rental-rate">INR {Number(listing.daily_rate ?? listing.rate_amount).toLocaleString('en-IN')} <small>/ day</small></div>{listing.status === 'rented' && <p className="rented-note">Currently rented. Availability is managed by the booking flow.</p>}<div className="rental-card-actions"><button type="button" onClick={() => beginEdit(listing)}><Pencil size={15} /> Edit</button>{listing.status !== 'rented' && <button type="button" onClick={() => updateStatus(listing, listing.status === 'paused' ? 'available' : 'paused')}>{listing.status === 'paused' ? <Play size={15} /> : <Pause size={15} />} {listing.status === 'paused' ? 'Activate' : 'Pause'}</button>}<button className="danger" type="button" onClick={() => setConfirmListing(listing)}><Trash2 size={15} /> Delete</button></div></div></article>
       })}</div>}
     </main>
-    {confirmListing && <div className="rental-modal-backdrop" onClick={() => setConfirmListing(null)}><div className="rental-confirm" role="alertdialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><button className="icon-button" type="button" onClick={() => setConfirmListing(null)} aria-label="Close"><X size={18} /></button><div className="confirm-icon"><Trash2 size={22} /></div><h2>Delete rental listing?</h2><p>Are you sure you want to delete <strong>"{confirmListing.item_name}"</strong>? This cannot be undone.</p><div className="rental-form-actions"><button className="rental-secondary" type="button" onClick={() => setConfirmListing(null)}>Keep listing</button><button className="rental-delete" type="button" onClick={deleteListing}><Trash2 size={16} /> Delete</button></div></div></div>}
+    {confirmListing && <div className="rental-modal-backdrop" onClick={() => setConfirmListing(null)}><div className="rental-confirm" role="alertdialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><button className="icon-button" type="button" onClick={() => setConfirmListing(null)} aria-label="Close"><X size={18} /></button><div className="confirm-icon"><Trash2 size={22} /></div><h2>Delete rental listing?</h2><p>Are you sure you want to delete <strong>"{confirmListing.title || confirmListing.item_name}"</strong>? This cannot be undone.</p><div className="rental-form-actions"><button className="rental-secondary" type="button" onClick={() => setConfirmListing(null)}>Keep listing</button><button className="rental-delete" type="button" onClick={confirmDeleteListing}><Trash2 size={16} /> Delete</button></div></div></div>}
+    {pendingDelete && <UndoToast message="Rental listing deleted" onUndo={undoDelete} onExpire={finalizeDelete} />}
     {crop && <ImageCropModal imageSrc={crop.src} onCrop={completeCrop} onCancel={() => setCrop(null)} />}
     {verificationModal && <VerificationRequiredModal status={verificationStatus} rejectionReason={rejectionReason} onClose={() => setVerificationModal(false)} />}
   </div>

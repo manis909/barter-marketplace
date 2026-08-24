@@ -46,10 +46,29 @@ function decorate(row) {
 // LISTINGS
 // ══════════════════════════════════════════════════════════════════════════
 
+// ── GET /api/rentals — publicly available rental listings ────────────────
+router.get('/', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT r.*, u.username AS owner_username, u.profile_image AS owner_profile_image
+       FROM rental_listings r
+       JOIN users u ON u.id = r.owner_id
+       WHERE r.status = 'available'
+       ORDER BY r.created_at DESC`
+    );
+    res.json({ success: true, rentals: result.rows });
+  } catch (err) {
+    console.error('GET /rentals error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ── POST /api/rentals — create a rental listing ───────────────────────────
 router.post('/', requireAuth, requireVerified, async (req, res) => {
   try {
-    const { title, description, daily_rate, image_url, item_id } = req.body;
+    const { title: requestTitle, item_name, description, category, daily_rate: requestDailyRate, rate_amount, rate_type, image_url, image_urls, item_id } = req.body;
+    const title = requestTitle ?? item_name;
+    const daily_rate = requestDailyRate ?? rate_amount;
 
     if (!title || !daily_rate) {
       return res.status(400).json({ error: 'title and daily_rate are required' });
@@ -58,10 +77,12 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
     if (!Number.isFinite(rate) || rate <= 0) {
       return res.status(400).json({ error: 'daily_rate must be a positive number' });
     }
-    if (item_id && !isValidUUID(item_id)) {
-      return res.status(400).json({ error: 'Invalid item id' });
-    }
+
+    // ── Legacy branch: item-linked rentals (ItemDetail "Request to Rent") ──
+    // Preserved verbatim on the legacy `rentals` table. Barter module file
+    // ItemDetail.jsx is NOT part of this migration and keeps using this path.
     if (item_id) {
+      if (!isValidUUID(item_id)) return res.status(400).json({ error: 'Invalid item id' });
       const itemCheck = await db.query('SELECT owner_id FROM items WHERE id = $1', [item_id]);
       if (itemCheck.rows.length === 0) {
         return res.status(404).json({ error: 'Linked item not found' });
@@ -69,14 +90,29 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
       if (itemCheck.rows[0].owner_id !== req.userId) {
         return res.status(403).json({ error: 'You can only attach rentals to your own items' });
       }
+      const result = await db.query(
+        `INSERT INTO rentals (owner_id, title, description, category, daily_rate, image_url, item_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [req.userId, title, description || null, category ? String(category).trim() : null, rate, image_url || null, item_id]
+      );
+      return res.status(201).json({ success: true, rental: result.rows[0] });
     }
 
-    const result = await db.query(
-      `INSERT INTO rentals (owner_id, title, description, daily_rate, image_url, item_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [req.userId, title, description || null, rate, image_url || null, item_id || null]
-    );
+    // ── Official branch: standalone listing on `rental_listings` ───────────
+    // Field mapping (legacy -> official):
+    //   title        -> item_name
+    //   daily_rate   -> rate_type + rate_amount
+    //   image_url(s) -> image_urls (multi-image ARRAY, preserved whole)
+    const normalisedRateType = rate_type === 'hourly' ? 'hourly' : 'daily';
+    const normalisedImageUrls = Array.isArray(image_urls)
+      ? image_urls.filter(Boolean)
+      : (image_url ? [image_url] : []);
 
+    const result = await db.query(
+      `INSERT INTO rental_listings (owner_id, item_name, description, category, rate_type, rate_amount, image_urls)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.userId, String(title).trim(), description || null, category ? String(category).trim() : null, normalisedRateType, rate, normalisedImageUrls.length ? normalisedImageUrls : null]
+    );
     res.status(201).json({ success: true, rental: result.rows[0] });
   } catch (err) {
     console.error('POST /rentals error:', err);
@@ -88,12 +124,132 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
 router.get('/mine', requireAuth, async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT r.* FROM rentals r WHERE r.owner_id = $1 ORDER BY r.created_at DESC`,
+      `SELECT r.* FROM rental_listings r WHERE r.owner_id = $1 ORDER BY r.created_at DESC`,
       [req.userId]
     );
     res.json({ success: true, rentals: result.rows });
   } catch (err) {
     console.error('GET /rentals/mine error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── DELETE /api/rentals/:id — delete an owned rental listing ──────────────
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'Invalid rental id' });
+
+    const existing = await db.query(
+      'SELECT owner_id FROM rental_listings WHERE id = $1',
+      [req.params.id]
+    );
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Rental not found' });
+    if (existing.rows[0].owner_id !== req.userId) {
+      return res.status(403).json({ error: 'You can only delete your own rental listings' });
+    }
+
+    await db.query('DELETE FROM rental_listings WHERE id = $1', [req.params.id]);
+    res.json({ success: true, message: 'Rental listing deleted successfully' });
+  } catch (err) {
+    console.error('DELETE /rentals/:id error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+// ── PUT /api/rentals/:id — edit an owned rental listing ──────────────────
+// Supports the two call shapes RentalListings.jsx sends:
+//   full edit  -> { item_name, description, category, rate_type, rate_amount, image_urls, status? }
+//   pause      -> { status: 'available' | 'paused' }
+// Legacy names (title / daily_rate / image_url) are accepted as fallbacks.
+// Only the columns the client actually sends are updated (partial update).
+router.put('/:id', requireAuth, requireVerified, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'Invalid rental id' });
+
+    const existing = await db.query(
+      'SELECT owner_id, status FROM rental_listings WHERE id = $1',
+      [req.params.id]
+    );
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Rental not found' });
+    if (existing.rows[0].owner_id !== req.userId) {
+      return res.status(403).json({ error: 'You can only edit your own rental listings' });
+    }
+
+    const body = req.body || {};
+
+    // Official field names first, legacy names as fallback (title -> item_name,
+    // daily_rate -> rate_amount) so older clients still operate correctly.
+    const hasName = body.item_name !== undefined || body.title !== undefined;
+    const itemName = body.item_name !== undefined
+      ? String(body.item_name).trim()
+      : (body.title !== undefined ? String(body.title).trim() : null);
+    const category = body.category !== undefined ? String(body.category).trim() : null;
+    const description = body.description !== undefined ? body.description : null;
+    const status = body.status !== undefined ? body.status : undefined;
+
+    const rateType = body.rate_type !== undefined ? body.rate_type : undefined;
+    if (rateType !== undefined && !['hourly', 'daily'].includes(rateType)) {
+      return res.status(400).json({ error: "rate_type must be 'hourly' or 'daily'" });
+    }
+
+    let rateAmount = undefined;
+    const rawRate = body.rate_amount !== undefined ? body.rate_amount : body.daily_rate;
+    if (rawRate !== undefined && rawRate !== null && rawRate !== '') {
+      const n = Number(rawRate);
+      if (!Number.isFinite(n) || n <= 0) {
+        return res.status(400).json({ error: 'rate_amount must be a positive number' });
+      }
+      rateAmount = n;
+    }
+
+    // Multi-image array preserved whole: never collapse to a single URL.
+    let imageUrls = undefined;
+    if (body.image_urls !== undefined) {
+      imageUrls = Array.isArray(body.image_urls) ? body.image_urls.filter(Boolean) : null;
+    } else if (body.image_url !== undefined) {
+      imageUrls = body.image_url ? [body.image_url] : null;
+    }
+
+    // item_name is required for full edits; optional on status-only calls.
+    if (hasName && !itemName) {
+      return res.status(400).json({ error: 'item_name is required' });
+    }
+
+    // A rented listing's availability is managed by the booking flow — never
+    // allow this route to change its status while it is rented out.
+    if (existing.rows[0].status === 'rented' && status !== undefined && status !== 'rented') {
+      return res.status(400).json({ error: 'A rented listing cannot be edited until the booking is returned' });
+    }
+
+    // Build the UPDATE dynamically, touching only the columns the client sent.
+    const sets = [];
+    const params = [];
+    const hold = {};
+    if (hasName) { params.push(itemName); sets.push('item_name'); hold.item_name = params.length; }
+    if (body.description !== undefined) { params.push(description || null); sets.push('description'); hold.description = params.length; }
+    if (body.category !== undefined) { params.push(category || null); sets.push('category'); hold.category = params.length; }
+    if (rateType !== undefined) { params.push(rateType); sets.push('rate_type'); hold.rate_type = params.length; }
+    if (rateAmount !== undefined) { params.push(rateAmount); sets.push('rate_amount'); hold.rate_amount = params.length; }
+    if (imageUrls !== undefined) { params.push(imageUrls && imageUrls.length ? imageUrls : null); sets.push('image_urls'); hold.image_urls = params.length; }
+    if (status !== undefined) { params.push(status); sets.push('status'); hold.status = params.length; }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    params.push(req.params.id);
+    const idParam = params.length;
+
+    const result = await db.query(
+      `UPDATE rental_listings
+       SET ${sets.map((col) => `${col} = $${hold[col]}`).join(', ')}, updated_at = NOW()
+       WHERE id = $${idParam}
+       RETURNING *`,
+      params
+    );
+
+    res.json({ success: true, rental: result.rows[0] });
+  } catch (err) {
+    console.error('PUT /rentals/:id error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -544,7 +700,7 @@ router.get('/:id', async (req, res) => {
     if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'Invalid rental id' });
     const result = await db.query(
       `SELECT r.*, u.username AS owner_username, u.profile_image AS owner_profile_image
-       FROM rentals r JOIN users u ON u.id = r.owner_id WHERE r.id = $1`,
+       FROM rental_listings r JOIN users u ON u.id = r.owner_id WHERE r.id = $1`,
       [req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Rental not found' });
