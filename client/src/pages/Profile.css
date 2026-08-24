@@ -417,3 +417,51 @@
   border-radius: 4px;
   display: block;
 }
+
+/* ---------- Full-screen photo viewer (WhatsApp-style tap to zoom) ---------- */
+.profile-photo-clickable {
+  cursor: pointer;
+}
+
+.photo-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: photo-viewer-fade-in 0.15s ease;
+}
+
+@keyframes photo-viewer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.photo-viewer-image {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.photo-viewer-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.photo-viewer-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
