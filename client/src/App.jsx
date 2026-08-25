@@ -40,6 +40,7 @@ import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
 import AdminApplicationReviewPage from './pages/AdminApplicationReview';
+import RenterAdminPage from './pages/RenterAdmin';
 
 // ── Skilter placeholder ───────────────────────────────────────────────────
 // Rendered for Skilter-specific routes whose full page is being built
@@ -115,6 +116,7 @@ function App() {
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
             <Route path="/admin/payment-review" element={<AdminPaymentReviewPage />} />
+            <Route path="/admin/renter" element={<RenterAdminPage />} />
             <Route path="/admin/skill-applications/:id" element={<AdminApplicationReviewPage />} />
             <Route path="/rental/profile/:userId" element={<RentalProfile />} />
             <Route path="/rental/profile" element={<RentalProfile />} />

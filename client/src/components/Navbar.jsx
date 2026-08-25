@@ -384,6 +384,14 @@ export default function Navbar() {
                         >
                           Skilter Admin
                         </Link>
+                        <Link
+                          to="/admin/renter"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Renter Admin
+                        </Link>
                       </motion.div>
                     )}
                   </AnimatePresence>
