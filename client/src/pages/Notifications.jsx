@@ -28,6 +28,14 @@ const ICON_MAP = {
   wishlist:            '💖',
   item_approved:       '✔️',
   profile_update:      '👤',
+  // Rental types
+  new_rental_message:  '💬',
+  rental_request:      '📦',
+  rental_accepted:     '✅',
+  rental_declined:     '❌',
+  rental_cancelled:    '🚫',
+  rental_completed:    '🏆',
+  rental_confirm_half: '⏳',
   // Skilter types
   skill_booking:              '🎓',
   skill_booking_accepted:     '✅',
@@ -59,8 +67,18 @@ function getNavigationPath(n) {
     'payment_rejected',
   ].includes(type);
 
+  const isRentalNotification = [
+    'new_rental_message',
+    'rental_request',
+    'rental_accepted',
+    'rental_declined',
+    'rental_cancelled',
+    'rental_completed',
+    'rental_confirm_half',
+  ].includes(type);
+
   // Barter paths
-  if (!isSkilterNotification) {
+  if (!isSkilterNotification && !isRentalNotification) {
     if (trade_offer_id && (type === 'new_message' || type.startsWith('trade_')))
       return `/chat/${trade_offer_id}`;
     if (n.item_id) return `/item/${n.item_id}`;
@@ -68,6 +86,19 @@ function getNavigationPath(n) {
     if (type === 'trade_offer') return '/trade-requests';
     if (type === 'trade_completed') return '/my-trades';
     if (type === 'wishlist') return '/wishlist';
+  }
+
+  // Rental paths
+  if (isRentalNotification) {
+    if (type === 'new_rental_message') {
+      const targetBookingId = n.booking_id || n.trade_offer_id || n.related_id;
+      return targetBookingId ? `/rental/chat/${targetBookingId}` : '/rental/chat';
+    }
+    if (type === 'rental_request') return '/renter/requests';
+    if (type === 'rental_accepted' || type === 'rental_completed' || type === 'rental_confirm_half')
+      return '/renter/my-rentals';
+    if (type === 'rental_declined' || type === 'rental_cancelled')
+      return '/renter/requests';
   }
 
   // Skilter paths — trade_offer_id column stores booking_id for skill notifications
@@ -413,7 +444,11 @@ export default function Notifications() {
   // The NotificationBell passes { state: { platform } } when it navigates here.
   // If the user arrives via direct URL or browser back/forward without state,
   // we fall back to 'barter' (safe default — Barter is the primary platform).
-  const platform = location.state?.platform === 'skilter' ? 'skilter' : 'barter';
+  const platform = location.state?.platform === 'skilter'
+    ? 'skilter'
+    : location.state?.platform === 'rental' || location.state?.platform === 'renter'
+    ? 'rental'
+    : 'barter';
 
   // Derive the correct API endpoints for this platform.
   const ENDPOINTS = platform === 'skilter'
@@ -421,6 +456,12 @@ export default function Notifications() {
         fetch:    `${API_URL}/api/notifications/skilter`,
         readAll:  `${API_URL}/api/notifications/skilter/read-all`,
         bulk:     `${API_URL}/api/notifications/skilter/bulk`,
+      }
+    : platform === 'rental'
+    ? {
+        fetch:    `${API_URL}/api/notifications/rental`,
+        readAll:  `${API_URL}/api/notifications/rental/read-all`,
+        bulk:     `${API_URL}/api/notifications/rental/bulk`,
       }
     : {
         fetch:    `${API_URL}/api/notifications`,
@@ -444,9 +485,21 @@ export default function Notifications() {
       'payment_rejected',
     ]);
 
-    return items.filter(item => (
-      platform === 'skilter' ? skilterTypes.has(item.type) : !skilterTypes.has(item.type)
-    ));
+    const rentalTypes = new Set([
+      'new_rental_message',
+      'rental_request',
+      'rental_accepted',
+      'rental_declined',
+      'rental_cancelled',
+      'rental_completed',
+      'rental_confirm_half',
+    ]);
+
+    return items.filter(item => {
+      if (platform === 'skilter') return skilterTypes.has(item.type);
+      if (platform === 'rental')  return rentalTypes.has(item.type);
+      return !skilterTypes.has(item.type) && !rentalTypes.has(item.type);
+    });
   }, [platform]);
 
   /* ── fetch ── */

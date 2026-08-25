@@ -25,6 +25,8 @@ const skillProviderApplicationsRoutes = require("./routes/skillProviderApplicati
 const skillProviderRequestsRoutes = require("./routes/skillProviderRequests");
 const skillWishlistRoutes = require("./routes/skillWishlist");
 const rentalRoutes = require("./routes/rentals");
+const rentalBookingsRoutes = require("./routes/rentalBookings");
+const rentalChatRoutes = require("./routes/rentalChat");
 const rateLimit = require("express-rate-limit");
 const authLimiter = rateLimit({ 
   windowMs: 15 * 60 * 1000, 
@@ -57,6 +59,8 @@ app.use("/api/skill-provider-applications", skillProviderApplicationsRoutes);
 app.use("/api/skill-provider-requests", skillProviderRequestsRoutes);
 app.use("/api/skill-wishlist", skillWishlistRoutes);
 app.use("/api/rentals", rentalRoutes);
+app.use("/api/rental-bookings", rentalBookingsRoutes);
+app.use("/api/rental-chat", rentalChatRoutes);
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");
@@ -144,6 +148,7 @@ io.on("connection", (socket) => {
   });
 
   require('./sockets/skillBookingChatHandlers')(io, socket);
+  require('./sockets/rentalBookingChatHandlers')(io, socket);
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);

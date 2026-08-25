@@ -33,6 +33,7 @@ import ChatsLayout from './pages/ChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout'; 
 import SkillsProfile from './pages/SkillsProfile';
 import RentalProfile from './pages/RentalProfile';
+import RentalChatsLayout from './pages/RentalChatsLayout';
 import RentalListingsPage from './pages/RentalListings';
 import RentalDetailPage from './pages/RentalDetail';
 import './App.css';
@@ -117,6 +118,8 @@ function App() {
             <Route path="/admin/skill-applications/:id" element={<AdminApplicationReviewPage />} />
             <Route path="/rental/profile/:userId" element={<RentalProfile />} />
             <Route path="/rental/profile" element={<RentalProfile />} />
+            <Route path="/rental/chat" element={<RentalChatsLayout />} />
+            <Route path="/rental/chat/:bookingId" element={<RentalChatsLayout />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
             <Route path="/skilter/skills"        element={<MySkillsPage />} />

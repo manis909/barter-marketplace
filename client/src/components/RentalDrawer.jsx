@@ -67,7 +67,11 @@ export default function RentalDrawer({ open, onClose }) {
   function handleItemClick(item) {
     setActiveItem(item.label)
     if (item.path) {
-      navigate(item.path)
+      if (item.path === '/notifications') {
+        navigate('/notifications', { state: { platform: 'rental' } })
+      } else {
+        navigate(item.path)
+      }
       onClose()
     } else {
       onClose()
