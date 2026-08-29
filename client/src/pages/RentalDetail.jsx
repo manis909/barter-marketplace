@@ -26,9 +26,10 @@ export default function RentalDetailPage() {
   if (loading) return <div className="rental-detail-state"><div className="rental-spinner" /><h2>Loading rental details</h2></div>
   if (error || !rental) return <div className="rental-detail-state rental-detail-error"><Package size={35} /><h2>{error || 'Rental listing not found'}</h2><button type="button" onClick={() => navigate('/renter')}>Back to rentals</button></div>
 
-  const images = rental.image_url ? [rental.image_url] : (Array.isArray(rental.image_urls) ? rental.image_urls : [])
-  const title = rental.title || rental.item_name || 'Rental item'
+  const images = Array.isArray(rental.image_urls) && rental.image_urls.length ? rental.image_urls : []
+  const title = rental.item_name || 'Rental item'
   const status = rental.status === 'available' ? 'Available' : rental.status === 'paused' ? 'Paused' : 'Rented'
+  const rateUnit = rental.rate_type === 'hourly' ? 'hour' : 'day'
 
   return <div className="rental-detail-page">
     <main className="rental-detail-content">
@@ -43,7 +44,7 @@ export default function RentalDetailPage() {
           <h1>{title}</h1>
           <p className="rental-detail-owner"><User size={15} /> Listed by <Link to={`/rental/profile/${rental.owner_id}`}>{rental.owner_username || rental.owner_name || 'Owner'}</Link></p>
           <p className="rental-detail-description">{rental.description || 'No description provided.'}</p>
-          <div className="rental-detail-rate">INR {Number(rental.daily_rate ?? rental.rate_amount).toLocaleString('en-IN')} <small>/ day</small></div>
+          <div className="rental-detail-rate">INR {Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rateUnit}</small></div>
           {rental.status === 'available' ? <button type="button" className="rental-detail-rent" onClick={() => setNotice('Rental requests are not available yet. Please check back soon.')}>Rent</button> : <p className="rental-detail-unavailable">This listing is not currently available.</p>}
           {notice && <p className="rental-detail-notice" role="status">{notice}</p>}
         </section>
