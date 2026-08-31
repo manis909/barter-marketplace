@@ -49,13 +49,50 @@ function decorate(row) {
 // ── GET /api/rentals — publicly available rental listings ────────────────
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT r.*, u.username AS owner_username, u.profile_image AS owner_profile_image
-       FROM rental_listings r
-       JOIN users u ON u.id = r.owner_id
-       WHERE r.status = 'available'
-       ORDER BY r.created_at DESC`
-    );
+    const { category, search } = req.query;
+    const normalizedSearch = String(search || '').trim();
+
+    let query = `
+      SELECT r.*, u.username AS owner_username, u.profile_image AS owner_profile_image
+      FROM rental_listings r
+      JOIN users u ON u.id = r.owner_id
+      WHERE r.status = 'available'
+    `;
+    const values = [];
+
+    if (category) {
+      const normalizedCategory = String(category).trim();
+      query += ` AND LOWER(r.category) = LOWER($${values.length + 1})`;
+      values.push(normalizedCategory);
+    }
+
+    if (normalizedSearch) {
+      const searchTerms = normalizedSearch
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((term) => term.replace(/[%_]/g, '\\$&'));
+
+      if (searchTerms.length > 0) {
+        const searchClauses = [];
+
+        for (const term of searchTerms) {
+          const pattern = `%${term}%`;
+          const baseIndex = values.length + 1;
+          searchClauses.push(`(
+            LOWER(r.item_name) LIKE LOWER($${baseIndex}) OR
+            LOWER(r.description) LIKE LOWER($${baseIndex + 1}) OR
+            LOWER(r.category) LIKE LOWER($${baseIndex + 2})
+          )`);
+          values.push(pattern, pattern, pattern);
+        }
+
+        query += ` AND (${searchClauses.join(' OR ')})`;
+      }
+    }
+
+    query += ' ORDER BY r.created_at DESC';
+
+    const result = await db.query(query, values);
     res.json({ success: true, rentals: result.rows });
   } catch (err) {
     console.error('GET /rentals error:', err);
