@@ -26,17 +26,21 @@ import MySkillsPage from './pages/MySkillsPage';
 import SkillProviderApplication from './pages/SkillProviderApplication';
 import MySkillsManagement from './pages/MySkillsManagement';
 import RenterPage from './pages/Renter';
+import MyRentalsPage from './pages/MyRentals';
+import RentalRequestsPage from './pages/RentalRequests';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout'; 
 import SkillsProfile from './pages/SkillsProfile';
 import RentalProfile from './pages/RentalProfile';
+import RentalChatsLayout from './pages/RentalChatsLayout';
 import RentalListingsPage from './pages/RentalListings';
 import RentalDetailPage from './pages/RentalDetail';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
 import AdminApplicationReviewPage from './pages/AdminApplicationReview';
+import RenterAdminPage from './pages/RenterAdmin';
 
 // ── Skilter placeholder ───────────────────────────────────────────────────
 // Rendered for Skilter-specific routes whose full page is being built
@@ -104,15 +108,20 @@ function App() {
 
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
+            <Route path="/renter/my-rentals" element={<MyRentalsPage />} />
+            <Route path="/renter/requests" element={<RentalRequestsPage />} />
             <Route path="/renter/listings" element={<RentalListingsPage />} />
             <Route path="/rental/:id" element={<RentalDetailPage />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />
             <Route path="/admin/payment-review" element={<AdminPaymentReviewPage />} />
+            <Route path="/admin/renter" element={<RenterAdminPage />} />
             <Route path="/admin/skill-applications/:id" element={<AdminApplicationReviewPage />} />
             <Route path="/rental/profile/:userId" element={<RentalProfile />} />
             <Route path="/rental/profile" element={<RentalProfile />} />
+            <Route path="/rental/chat" element={<RentalChatsLayout />} />
+            <Route path="/rental/chat/:bookingId" element={<RentalChatsLayout />} />
 
             {/* ── Skilter-specific routes ──────────────────────────────── */}
             <Route path="/skilter/skills"        element={<MySkillsPage />} />

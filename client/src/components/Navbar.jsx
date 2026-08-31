@@ -146,7 +146,7 @@ export default function Navbar() {
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
   const SKILTER_PREFIXES = ['/skilter', '/skills']
-  const RENTER_PREFIXES  = ['/renter', '/rent']
+  const RENTER_PREFIXES  = ['/renter', '/rent', '/rental']
   const BARTER_PREFIXES  = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
                              '/wishlist', '/wallet', '/add-item', '/item/']
 
@@ -432,13 +432,31 @@ export default function Navbar() {
                             </span>
                           )}
                         </Link>
+                        <Link
+                          to="/admin/renter"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Renter Admin
+                        </Link>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
               )}
 
-              {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
+              {currentUser && (
+                <NotificationBell
+                  platform={
+                    currentPlatform === 'Skilter'
+                      ? 'skilter'
+                      : currentPlatform === 'Renter'
+                      ? 'rental'
+                      : 'barter'
+                  }
+                />
+              )}
 
               {currentUser ? (
   <motion.button
@@ -529,7 +547,17 @@ export default function Navbar() {
                 </Link>
 
                 {/* 2. Notification Bell */}
-                {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
+                {currentUser && (
+                  <NotificationBell
+                    platform={
+                      currentPlatform === 'Skilter'
+                        ? 'skilter'
+                        : currentPlatform === 'Renter'
+                        ? 'rental'
+                        : 'barter'
+                    }
+                  />
+                )}
 
                 {/* 3. Mobile Profile Avatar Button / Login */}
                 {currentUser ? (

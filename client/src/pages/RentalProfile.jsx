@@ -48,8 +48,9 @@ export default function RentalProfile() {
         .then(res => setRatingSummary(res.data.summary))
         .catch(() => setRatingSummary(null));
 
-      api.get(`/users/${profileData.id}/rental-listings`)
-        .then(res => setRentalListings(res.data.listings || []))
+      const rentalsEndpoint = isOwnProfile ? '/rentals/mine' : '/rentals'
+      api.get(rentalsEndpoint)
+        .then(res => setRentalListings((res.data.rentals || []).filter(listing => listing.owner_id === profileData.id)))
         .catch(() => setRentalListings([]));
     }
   }, [profileData]);
@@ -194,13 +195,13 @@ export default function RentalProfile() {
                       ? listing.image_urls[0]
                       : 'https://placehold.co/300'
                   }
-                  alt={listing.item_name}
+                  alt={listing.item_name || 'Rental item'}
                   className="rental-listing-card-image"
                 />
                 <div className="rental-listing-card-body">
-                  <span className="rental-listing-title">{listing.item_name}</span>
+                  <span className="rental-listing-title">{listing.item_name || 'Rental item'}</span>
                   <span className="rental-listing-rate">
-                    {listing.rate_amount} / {listing.rate_type || 'day'}
+                    {Number(listing.rate_amount).toLocaleString('en-IN')} / {listing.rate_type === 'hourly' ? 'hour' : 'day'}
                   </span>
                   {listing.category && <p className="rental-listing-category">{listing.category}</p>}
                 </div>

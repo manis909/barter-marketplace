@@ -183,6 +183,19 @@ export default function SkilterDrawer({ open, onClose }) {
                   </span>
                   <span>Skilter Admin</span>
                 </button>
+                <button
+                  type="button"
+                  className={location.pathname === '/admin/renter' ? 'drawer-item active' : 'drawer-item'}
+                  onClick={() => {
+                    navigate('/admin/renter')
+                    onClose()
+                  }}
+                >
+                  <span className="drawer-icon" aria-hidden="true">
+                    <Shield size={18} />
+                  </span>
+                  <span>Renter Admin</span>
+                </button>
               </div>
             </>
           )}

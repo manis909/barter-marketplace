@@ -45,12 +45,29 @@ const ALL_SKILTER_TYPES = [
   ...SKILTER_REPORT_TYPES,
 ];
 
+// Rental notification types
+const RENTAL_TYPES = [
+  "new_rental_message",
+  "rental_request",
+  "rental_accepted",
+  "rental_declined",
+  "rental_cancelled",
+  "rental_completed",
+  "rental_confirm_half",
+];
+
+// All non-Barter notification types (Skilter + Rental)
+const ALL_NON_BARTER_TYPES = [
+  ...ALL_SKILTER_TYPES,
+  ...RENTAL_TYPES,
+];
+
 /*
 |--------------------------------------------------------------------------
 | GET ALL BARTER NOTIFICATIONS
 |--------------------------------------------------------------------------
 |
-| This endpoint intentionally excludes ALL Skilter notifications.
+| This endpoint intentionally excludes ALL Skilter and Rental notifications.
 |
 */
 
@@ -62,7 +79,7 @@ router.get("/", requireAuth, async (req, res) => {
        WHERE user_id = $1
          AND type != ALL($2::text[])
        ORDER BY created_at DESC`,
-      [req.userId, ALL_SKILTER_TYPES]
+      [req.userId, ALL_NON_BARTER_TYPES]
     );
 
     res.json({
@@ -91,7 +108,7 @@ router.patch("/read-all", requireAuth, async (req, res) => {
        WHERE user_id = $1
          AND is_read = FALSE
          AND type != ALL($2::text[])`,
-      [req.userId, ALL_SKILTER_TYPES]
+      [req.userId, ALL_NON_BARTER_TYPES]
     );
 
     res.json({
@@ -203,6 +220,101 @@ router.delete("/skilter/bulk", requireAuth, async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
+| GET ONLY RENTAL NOTIFICATIONS
+|--------------------------------------------------------------------------
+*/
+
+router.get("/rental", requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM notifications
+       WHERE user_id = $1
+         AND type = ANY($2::text[])
+       ORDER BY created_at DESC`,
+      [req.userId, RENTAL_TYPES]
+    );
+
+    res.json({
+      notifications: result.rows,
+    });
+  } catch (error) {
+    console.error("GET /notifications/rental error:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch Rental notifications",
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| MARK ALL RENTAL NOTIFICATIONS AS READ
+|--------------------------------------------------------------------------
+*/
+
+router.patch("/rental/read-all", requireAuth, async (req, res) => {
+  try {
+    await db.query(
+      `UPDATE notifications
+       SET is_read = TRUE
+       WHERE user_id = $1
+         AND is_read = FALSE
+         AND type = ANY($2::text[])`,
+      [req.userId, RENTAL_TYPES]
+    );
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("PATCH /notifications/rental/read-all error:", error);
+
+    res.status(500).json({
+      message: "Failed to mark Rental notifications as read",
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| DELETE SELECTED RENTAL NOTIFICATIONS
+|--------------------------------------------------------------------------
+*/
+
+router.delete("/rental/bulk", requireAuth, async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "ids must be a non-empty array",
+      });
+    }
+
+    await db.query(
+      `DELETE FROM notifications
+       WHERE id = ANY($1::uuid[])
+         AND user_id = $2
+         AND type = ANY($3::text[])`,
+      [ids, req.userId, RENTAL_TYPES]
+    );
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("DELETE /notifications/rental/bulk error:", error);
+
+    res.status(500).json({
+      message: "Failed to delete Rental notifications",
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
 | MARK ONE NOTIFICATION AS READ
 |--------------------------------------------------------------------------
 */
@@ -234,8 +346,8 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
 | DELETE SELECTED BARTER NOTIFICATIONS
 |--------------------------------------------------------------------------
 |
-| Because ALL_SKILTER_TYPES are excluded, this endpoint cannot delete
-| Skilter notifications.
+| Because ALL_NON_BARTER_TYPES are excluded, this endpoint cannot delete
+| Skilter or Rental notifications.
 |
 */
 
@@ -255,7 +367,7 @@ router.delete("/bulk", requireAuth, async (req, res) => {
        WHERE id = ANY($1::uuid[])
          AND user_id = $2
          AND type != ALL($3::text[])`,
-      [ids, req.userId, ALL_SKILTER_TYPES]
+      [ids, req.userId, ALL_NON_BARTER_TYPES]
     );
 
     res.json({

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ShieldCheck, Tag, User } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import { createSkillBooking } from '../services/skillBookingService'
@@ -154,209 +154,215 @@ export default function SkillDetailPage() {
 
   return (
     <>
-    <div className="skill-detail-page">
-      <Link
-        to="/skilter/explore"
-        aria-label="Back to Skilter Explore"
-        className="detail-back"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          borderRadius: '12px'
-        }}
-      >
-        <ArrowLeft size={20} />
-      </Link>
-      <div className="detail-grid">
-        <div className="detail-gallery">
-          <div
-            className="detail-image-shell"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <img src={displayImage} alt={normalizedSkill.skill_name} className="detail-main-image" />
-            <SkillWishlistButton skillId={normalizedSkill.id} />
+      <div className="skill-detail-page">
+        <Link
+          to="/skilter/explore"
+          aria-label="Back to Skilter Explore"
+          className="detail-back"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px'
+          }}
+        >
+          <ArrowLeft size={20} />
+        </Link>
+
+        <div className="detail-grid">
+          <div className="detail-gallery">
+            <div
+              className="detail-image-shell"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img src={displayImage} alt={normalizedSkill.skill_name} className="detail-main-image" />
+              <SkillWishlistButton skillId={normalizedSkill.id} />
+
+              {images.length > 1 && (
+                <>
+                  {showLeftArrow && (
+                    <button
+                      type="button"
+                      className="detail-nav-button detail-nav-button-left"
+                      onClick={goToPreviousImage}
+                      aria-label="View previous image"
+                    >
+                      &lt;
+                    </button>
+                  )}
+
+                  {showRightArrow && (
+                    <button
+                      type="button"
+                      className="detail-nav-button detail-nav-button-right"
+                      onClick={goToNextImage}
+                      aria-label="View next image"
+                    >
+                      &gt;
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
 
             {images.length > 1 && (
-              <>
-                {showLeftArrow && (
+              <div className="detail-thumbs">
+                {images.map((photo, index) => (
                   <button
+                    key={`${photo}-${index}`}
                     type="button"
-                    className="detail-nav-button detail-nav-button-left"
-                    onClick={goToPreviousImage}
-                    aria-label="View previous image"
+                    className={photo === displayImage ? 'thumb-button active' : 'thumb-button'}
+                    onClick={() => setSelectedImage(photo)}
+                    aria-label={`View image ${index + 1}`}
                   >
-                    &lt;
+                    <img src={photo} alt={`${normalizedSkill.skill_name} thumbnail ${index + 1}`} />
                   </button>
-                )}
-
-                {showRightArrow && (
-                  <button
-                    type="button"
-                    className="detail-nav-button detail-nav-button-right"
-                    onClick={goToNextImage}
-                    aria-label="View next image"
-                  >
-                    &gt;
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-          <div className="detail-thumbs">
-            {images.map((photo) => (
-              <button
-                key={photo}
-                type="button"
-                className={photo === displayImage ? 'thumb-button active' : 'thumb-button'}
-                onClick={() => setSelectedImage(photo)}
-              >
-                <img src={photo} alt={normalizedSkill.skill_name} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="detail-copy">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <h1 style={{ margin: 0 }}>{normalizedSkill.skill_name}</h1>
-            {isOwner && (
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '6px 14px',
-                background: '#F3F4F6',
-                color: '#6B7280',
-                border: '1px dashed #D1D5DB',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                fontWeight: '600'
-              }}>
-                Mine
-              </span>
-            )}
-          </div>
-          <p className="detail-description">{normalizedSkill.description}</p>
-          <div className="detail-info-grid">
-            <div>
-              <span className="detail-label">Teacher</span>
-              <p>{normalizedSkill.teacherName}</p>
-            </div>
-            <div>
-              <span className="detail-label">Category</span>
-              <p>{normalizedSkill.category}</p>
-            </div>
-            <div>
-              <span className="detail-label">Session Type</span>
-              <p>{normalizedSkill.session_type === 'one_on_one' ? 'One-on-One' : 'Group'}</p>
-            </div>
-          </div>
-          <div className="detail-info-grid">
-            <div>
-              <span className="detail-label">Price</span>
-              <p>
-                {normalizedSkill.price_type === 'free' && 'Free'}
-                {(normalizedSkill.price_type === 'coins' || normalizedSkill.price_type === 'negotiable') && 
-                  normalizedSkill.price && 
-                  `₹${Number(normalizedSkill.price).toLocaleString('en-IN')} / ${normalizedSkill.price_unit || 'Session'}`
-                }
-              </p>
-            </div>
-            {normalizedSkill.session_type === 'group' && (
-              <div>
-                <span className="detail-label">Max Participants</span>
-                <p>{normalizedSkill.max_participants}</p>
+                ))}
               </div>
             )}
-            <div>
-              <span className="detail-label">Status</span>
-              <p style={{ textTransform: 'capitalize' }}>{normalizedSkill.status || 'Active'}</p>
-            </div>
           </div>
-          <div className="detail-actions">
-            {isOwner ? (
-              <p style={{ color: '#57534E', fontWeight: 600 }}>This is your skill listing.</p>
-            ) : (
-              <>
-                <button
-                  id="btn-book-session"
-                  type="button"
-                  className="primary-button detail-action"
-                  disabled={booking.loading || booking.success}
-                  onClick={async () => {
-                    // Approved Skill Provider applications use the provider booking flow
-                    if (skill?.source === 'application') {
-                      setShowBookingModal(true)
-                      return
-                    }
 
-                    // Regular skill listings require verification before booking
-                    if (!isVerified && !verificationLoading) {
-                      setShowVerificationModal(true)
-                      return
-                    }
+          <div className="detail-copy">
+            <div className="detail-header-card">
+              <div className="detail-badges-row">
+                <span className="detail-chip detail-chip-category"><Tag size={13} /> {normalizedSkill.category}</span>
+                <span className="detail-chip detail-chip-session">
+                  {normalizedSkill.session_type === 'one_on_one' ? 'One-on-One' : 'Group'}
+                </span>
+              </div>
 
-                    setBooking({ loading: true, error: '', success: false })
-                    try {
-                      await createSkillBooking(normalizedSkill.id)
-                      setBooking({ loading: false, error: '', success: true })
-                      setTimeout(() => navigate('/skilter/learning'), 1200)
-                    } catch (err) {
-                      const msg =
-                        err?.response?.data?.error ||
-                        'Something went wrong. Please try again.'
-                      setBooking({ loading: false, error: msg, success: false })
-                    }
-                  }}
-                >
-                  {booking.loading
-                    ? 'Booking…'
-                    : booking.success
-                    ? '✓ Booked! Redirecting…'
-                    : 'Book Session'}
-                </button>
-                {booking.error && (
-                  <p
-                    id="booking-error-msg"
-                    style={{
-                      marginTop: '10px',
-                      color: '#DC2626',
-                      fontSize: '0.875rem',
-                      fontWeight: 500
+              <div className="detail-title-row">
+                <h1>{normalizedSkill.skill_name}</h1>
+                {isOwner && <span className="detail-mine-badge">Mine</span>}
+              </div>
+            </div>
+
+            <div className="detail-description-card">
+              <h3>About this session</h3>
+              <p className="detail-description">{normalizedSkill.description}</p>
+            </div>
+
+            <div className="detail-teacher-card">
+              <div className="detail-teacher-avatar"><User size={22} /></div>
+
+              <div className="detail-teacher-meta">
+                <div className="detail-teacher-row">
+                  <Link to={normalizedSkill.teacherId ? `/profile/${normalizedSkill.teacherId}` : '/profile'}>{normalizedSkill.teacherName}</Link>
+                  <span className="detail-verified-badge"><CheckCircle2 size={12} /> Verified</span>
+                </div>
+                <div className="detail-teacher-rating">
+                  <span>Trusted teacher profile</span>
+                </div>
+              </div>
+
+              <Link className="detail-teacher-link" to={normalizedSkill.teacherId ? `/profile/${normalizedSkill.teacherId}` : '/profile'}>View profile</Link>
+            </div>
+
+            <div className="detail-specs-card">
+              <h3>Session details</h3>
+              <div className="detail-specs-grid">
+                <div className="detail-spec-item">
+                  <span className="detail-spec-label"><Tag size={13} /> Category</span>
+                  <span className="detail-spec-value">{normalizedSkill.category}</span>
+                </div>
+                <div className="detail-spec-item">
+                  <span className="detail-spec-label"><CheckCircle2 size={13} /> Session type</span>
+                  <span className="detail-spec-value">{normalizedSkill.session_type === 'one_on_one' ? 'One-on-One' : 'Group'}</span>
+                </div>
+                <div className="detail-spec-item">
+                  <span className="detail-spec-label"><ShieldCheck size={13} /> Price</span>
+                  <span className="detail-spec-value">
+                    {normalizedSkill.price_type === 'free'
+                      ? 'Free'
+                      : `₹${Number(normalizedSkill.price || 0).toLocaleString('en-IN')}`}
+                  </span>
+                </div>
+                {normalizedSkill.session_type === 'group' && (
+                  <div className="detail-spec-item">
+                    <span className="detail-spec-label"><User size={13} /> Max participants</span>
+                    <span className="detail-spec-value">{normalizedSkill.max_participants || 1}</span>
+                  </div>
+                )}
+                <div className="detail-spec-item">
+                  <span className="detail-spec-label"><CheckCircle2 size={13} /> Status</span>
+                  <span className="detail-spec-value">{normalizedSkill.status || 'Active'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="detail-actions-card">
+              {isOwner ? (
+                <p className="detail-owner-note">This is your skill listing.</p>
+              ) : (
+                <>
+                  <button
+                    id="btn-book-session"
+                    type="button"
+                    className="primary-button detail-action"
+                    disabled={booking.loading || booking.success}
+                    onClick={async () => {
+                      if (skill?.source === 'application') {
+                        setShowBookingModal(true)
+                        return
+                      }
+
+                      if (!isVerified && !verificationLoading) {
+                        setShowVerificationModal(true)
+                        return
+                      }
+
+                      setBooking({ loading: true, error: '', success: false })
+                      try {
+                        await createSkillBooking(normalizedSkill.id)
+                        setBooking({ loading: false, error: '', success: true })
+                        setTimeout(() => navigate('/skilter/learning'), 1200)
+                      } catch (err) {
+                        const msg = err?.response?.data?.error || 'Something went wrong. Please try again.'
+                        setBooking({ loading: false, error: msg, success: false })
+                      }
                     }}
                   >
-                    {booking.error}
-                  </p>
-                )}
-              </>
-            )}
+                    {booking.loading
+                      ? 'Booking…'
+                      : booking.success
+                        ? '✓ Booked! Redirecting…'
+                        : 'Book Session'}
+                  </button>
+
+                  {booking.error && (
+                    <p id="booking-error-msg" className="detail-booking-error">
+                      {booking.error}
+                    </p>
+                  )}
+                </>
+              )}
+
+              <div className="detail-guarantee"><ShieldCheck size={16} /> Protected by Skilter Safe Session Guarantee</div>
+            </div>
           </div>
         </div>
+
+        {showBookingModal && skill?.source === 'application' && (
+          <SkillProviderBookingModal
+            skill={skill}
+            onClose={() => setShowBookingModal(false)}
+            onSuccess={() => {
+              setTimeout(() => navigate('/skilter/learning'), 1000)
+            }}
+          />
+        )}
       </div>
 
-      {/* Booking Modal for Approved Applications */}
-      {showBookingModal && skill?.source === 'application' && (
-        <SkillProviderBookingModal
-          skill={skill}
-          onClose={() => setShowBookingModal(false)}
-          onSuccess={() => {
-            // After successful booking, optionally navigate or show a message
-            setTimeout(() => navigate('/skilter/learning'), 1000)
-          }}
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          status={verificationStatus}
+          rejectionReason={rejectionReason}
+          onClose={() => setShowVerificationModal(false)}
         />
       )}
-    </div>
-
-    {showVerificationModal && (
-      <VerificationRequiredModal
-        status={verificationStatus}
-        rejectionReason={rejectionReason}
-        onClose={() => setShowVerificationModal(false)}
-      />
-    )}
     </>
   )
 }
