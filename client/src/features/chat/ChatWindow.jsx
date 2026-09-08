@@ -93,7 +93,7 @@ const CHAT_CSS = `
 /* ── Bordered container wrapping messages + input ── */
 .cw-container {
   display: flex; flex-direction: column;
-  flex: 1; min-height: 0;
+  flex: 1; min-height: 0; height: 100%;
   border: 1px solid ${T.border}; border-radius: ${T.radiusCard};
   overflow: hidden; background: ${T.surface};
   box-sizing: border-box;
@@ -101,7 +101,7 @@ const CHAT_CSS = `
 }
 @media (max-width: 767px) {
   .cw-container {
-    border-radius: 0; border-left: none; border-right: none; border-top: none;
+    border-radius: 0; border: none;
     margin: 0; width: 100%;
   }
 }
@@ -113,6 +113,7 @@ const CHAT_CSS = `
   width: 100%; box-sizing: border-box; background: ${T.bg};
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
 }
 .cw-messages::-webkit-scrollbar { width: 3px; }
 .cw-messages::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
@@ -506,9 +507,12 @@ export default function ChatWindow({
     const vv = window.visualViewport;
     if (!vv) return;
     const handler = () => {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 50);
+      const c = msgContRef.current;
+      if (!c) return;
+      // Only scroll if we're already near the bottom — don't forcibly jump
+      // if the user has scrolled up to read old messages.
+      const dist = c.scrollHeight - c.scrollTop - c.clientHeight;
+      if (dist < 300) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
     vv.addEventListener('resize', handler);
     return () => vv.removeEventListener('resize', handler);

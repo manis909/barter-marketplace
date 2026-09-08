@@ -25,7 +25,9 @@
   font-weight: 700;
   font-size: 0.82rem;
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
@@ -45,8 +47,10 @@
 .category-icon {
   width: 26px;
   height: 26px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   border-radius: 8px;
   background: #E6F7F6;
   color: #008C99;

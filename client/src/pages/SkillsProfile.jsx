@@ -4,6 +4,8 @@ import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
 import './SkillsProfile.css';
+import usePhotoViewer from '../hooks/usePhotoViewer';
+import PhotoViewerModal from '../components/PhotoViewerModal';
 
 // Skill detail pages live at /skilter/skill/:id (confirmed by Member 2).
 // Editing is not duplicated here — Edit Profile still goes to /profile,
@@ -15,6 +17,7 @@ export default function SkillsProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
+  const photoViewer = usePhotoViewer();
 
   const isOwnProfile = !userId || userId === currentUser?.id;
 
@@ -93,8 +96,13 @@ export default function SkillsProfile() {
 
       <div className="skills-profile-header">
         {displayImage ? (
-          <img src={displayImage} alt="Profile" className="profile-photo" />
-        ) : (
+  <img
+    src={displayImage}
+    alt="Profile"
+    className="profile-photo profile-photo-clickable"
+    onClick={photoViewer.openViewer}
+  />
+) : (
           <div className="profile-photo profile-photo-placeholder">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -196,6 +204,14 @@ export default function SkillsProfile() {
           </div>
         </div>
       )}
+      <PhotoViewerModal
+  src={displayImage}
+  isOpen={photoViewer.isOpen}
+  onClose={photoViewer.closeViewer}
+  dragY={photoViewer.dragY}
+  dragging={photoViewer.dragging}
+  touchHandlers={photoViewer.touchHandlers}
+/>
     </div>
   );
 }

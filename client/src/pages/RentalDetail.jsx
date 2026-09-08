@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Package, User } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, Package, ShieldCheck, ShoppingBag, Star, Tag, User } from 'lucide-react'
 import api from '../services/api'
 import Footer from '../components/Footer'
 import './RentalDetail.css'
@@ -59,17 +59,42 @@ export default function RentalDetailPage() {
   if (loading) return <div className="rental-detail-state"><div className="rental-spinner" /><h2>Loading rental details</h2></div>
   if (error || !rental) return <div className="rental-detail-state rental-detail-error"><Package size={35} /><h2>{error || 'Rental listing not found'}</h2><button type="button" onClick={() => navigate('/renter')}>Back to rentals</button></div>
 
-  const images = Array.isArray(rental.image_urls) ? rental.image_urls : []
+  const images = Array.isArray(rental.image_urls) && rental.image_urls.length ? rental.image_urls : []
+  const title = rental.item_name || 'Rental item'
   const status = rental.status === 'available' ? 'Available' : rental.status === 'paused' ? 'Paused' : 'Rented'
+  const rateUnit = rental.rate_type === 'hourly' ? 'hour' : 'day'
+  const ownerName = rental.owner_username || rental.owner_name || 'Owner'
+  const ownerRating = rental.owner_rating != null ? Number(rental.owner_rating) : null
 
   return <div className="rental-detail-page">
     <main className="rental-detail-content">
       <button type="button" className="rental-detail-back" onClick={() => navigate('/renter')}><ChevronLeft size={18} /> Back to rentals</button>
+
       <div className="rental-detail-layout">
-        <div className="rental-detail-media">
-          {images.length ? <><div className="rental-detail-backdrop" style={{ backgroundImage: `url(${images[imageIndex]})` }} /><img src={images[imageIndex]} alt={rental.item_name} /></> : <Package size={48} />}
-          {images.length > 1 && <><button type="button" className="rental-detail-arrow left" onClick={() => setImageIndex((imageIndex - 1 + images.length) % images.length)} aria-label="Previous image"><ChevronLeft size={18} /></button><button type="button" className="rental-detail-arrow right" onClick={() => setImageIndex((imageIndex + 1) % images.length)} aria-label="Next image"><ChevronRight size={18} /></button><span className="rental-detail-count">{imageIndex + 1} / {images.length}</span></>}
+        <div className="rental-detail-gallery">
+          <div className="rental-detail-image-shell">
+            {images.length ? <><div className="rental-detail-backdrop" style={{ backgroundImage: `url(${images[imageIndex]})` }} /><img src={images[imageIndex]} alt={title} className="rental-detail-main-image" /></> : <Package size={48} />}
+            <span className={`rental-detail-badge rental-detail-badge-${rental.status || 'available'}`}><CheckCircle2 size={13} /> {status}</span>
+            {images.length > 1 && <><button type="button" className="rental-detail-arrow left" onClick={() => setImageIndex((imageIndex - 1 + images.length) % images.length)} aria-label="Previous image"><ChevronLeft size={18} /></button><button type="button" className="rental-detail-arrow right" onClick={() => setImageIndex((imageIndex + 1) % images.length)} aria-label="Next image"><ChevronRight size={18} /></button><span className="rental-detail-count">{imageIndex + 1} / {images.length}</span></>}
+          </div>
+
+          {images.length > 1 && (
+            <div className="rental-detail-thumbs">
+              {images.map((photo, index) => (
+                <button
+                  key={`${photo}-${index}`}
+                  type="button"
+                  className={index === imageIndex ? 'rental-detail-thumb active' : 'rental-detail-thumb'}
+                  onClick={() => setImageIndex(index)}
+                  aria-label={`View image ${index + 1}`}
+                >
+                  <img src={photo} alt={`${title} thumbnail ${index + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
         <section className="rental-detail-copy">
           <div className="rental-detail-badges"><span>{rental.category || 'Other'}</span><strong>{status}</strong></div>
           <h1>{rental.item_name}</h1>

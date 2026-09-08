@@ -6,11 +6,12 @@ import { useAuth } from '../features/auth/AuthContext';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
 import IdVerification from '../features/verification/IdVerification';
 import './Profile.css';
+import usePhotoViewer from '../hooks/usePhotoViewer';
+import PhotoViewerModal from '../components/PhotoViewerModal';
 
-const MAX_IMAGE_SIZE_MB = 5; // raw file, before cropping — cropped output is much smaller
+const MAX_IMAGE_SIZE_MB = 5;
 const COLLEGE_OPTIONS = ["ST. ANN'S COLLEGE FOR WOMEN"];
 
-// Crops the selected image to a square using canvas, returns a Blob.
 async function getCroppedImageBlob(imageSrc, cropPixels) {
   const image = await new Promise((resolve, reject) => {
     const img = new Image();
@@ -69,15 +70,11 @@ export default function Profile() {
   const [recentReviews, setRecentReviews] = useState([]);
   const [listedItems, setListedItems] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
-  const [photoDragY, setPhotoDragY] = useState(0);
-  const [photoDragging, setPhotoDragging] = useState(false);
-  const photoDragStartY = useRef(0);
+  const photoViewer = usePhotoViewer();
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
   const BIO_MAX_LENGTH = 150;
 
-  // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -119,9 +116,6 @@ export default function Profile() {
     }
   }, [profileData]);
 
-  // Pull live verification status from the backend instead of relying on
-  // the possibly-stale currentUser object, so rejections/approvals show
-  // up immediately without needing a fresh login.
   useEffect(() => {
     if (isOwnProfile) {
       api.get('/verification/status')
@@ -154,8 +148,6 @@ export default function Profile() {
       setCropModalOpen(true);
     };
     reader.readAsDataURL(file);
-
-    // reset the input so selecting the same file again still fires onChange
     e.target.value = '';
   }
 
@@ -171,7 +163,6 @@ export default function Profile() {
 
     try {
       const croppedBlob = await getCroppedImageBlob(imageToCrop, croppedAreaPixels);
-
       const formData = new FormData();
       formData.append('photo', croppedBlob, 'profile.jpg');
 
@@ -234,7 +225,6 @@ export default function Profile() {
 
   function handleBioChange(e) {
     setBio(e.target.value.slice(0, BIO_MAX_LENGTH));
-    // Auto-expand: reset height first so it can shrink too, not just grow
     e.target.style.height = 'auto';
     e.target.style.height = `${e.target.scrollHeight}px`;
   }
@@ -251,31 +241,6 @@ export default function Profile() {
     if (!dateString) return null;
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
-
-  // Swipe-down-to-dismiss for the full-screen photo viewer (mobile).
-  // Only downward drags move the image; dragging past 100px closes it,
-  // otherwise it snaps back to center.
-  const SWIPE_CLOSE_THRESHOLD = 100;
-
-  function handlePhotoTouchStart(e) {
-    photoDragStartY.current = e.touches[0].clientY;
-    setPhotoDragging(true);
-  }
-
-  function handlePhotoTouchMove(e) {
-    const delta = e.touches[0].clientY - photoDragStartY.current;
-    if (delta > 0) {
-      setPhotoDragY(delta);
-    }
-  }
-
-  function handlePhotoTouchEnd() {
-    setPhotoDragging(false);
-    if (photoDragY > SWIPE_CLOSE_THRESHOLD) {
-      setPhotoViewerOpen(false);
-    }
-    setPhotoDragY(0);
   }
 
   if (loading || viewedUserLoading) return <p>Loading...</p>;
@@ -305,7 +270,6 @@ export default function Profile() {
       {showVerification ? (
         <IdVerification />
       ) : !isEditing ? (
-        // ---------- VIEW MODE (Instagram-style) ----------
         <div className="profile-view">
           <div className="profile-header-row">
             {displayImage ? (
@@ -313,7 +277,7 @@ export default function Profile() {
                 src={displayImage}
                 alt="Profile"
                 className="profile-photo profile-photo-clickable"
-                onClick={() => setPhotoViewerOpen(true)}
+                onClick={photoViewer.openViewer}
               />
             ) : (
               <div className="profile-photo profile-photo-placeholder">
@@ -433,7 +397,6 @@ export default function Profile() {
           )}
         </div>
       ) : (
-        // ---------- EDIT MODE ----------
         <div className="profile-edit">
           <h2>Edit Profile</h2>
 
@@ -551,40 +514,14 @@ export default function Profile() {
         </div>
       )}
 
-      {photoViewerOpen && displayImage && (
-        <div
-          className="photo-viewer-backdrop"
-          onClick={() => setPhotoViewerOpen(false)}
-          style={{
-            backgroundColor: `rgba(0, 0, 0, ${Math.max(0.9 - photoDragY / 300, 0.3)})`,
-          }}
-        >
-          <button
-            type="button"
-            className="photo-viewer-close"
-            onClick={() => setPhotoViewerOpen(false)}
-            aria-label="Close"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-          <img
-            src={displayImage}
-            alt="Profile"
-            className="photo-viewer-image"
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={handlePhotoTouchStart}
-            onTouchMove={handlePhotoTouchMove}
-            onTouchEnd={handlePhotoTouchEnd}
-            style={{
-              transform: `translateY(${photoDragY}px)`,
-              transition: photoDragging ? 'none' : 'transform 0.2s ease',
-            }}
-          />
-        </div>
-      )}
+      <PhotoViewerModal
+        src={displayImage}
+        isOpen={photoViewer.isOpen}
+        onClose={photoViewer.closeViewer}
+        dragY={photoViewer.dragY}
+        dragging={photoViewer.dragging}
+        touchHandlers={photoViewer.touchHandlers}
+      />
     </div>
   );
 }

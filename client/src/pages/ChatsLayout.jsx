@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMyTrades, submitProof, getTradeProofStatus } from '../services/tradeService';
 import { getHiddenChatIds, deleteChatForMe, deleteChatForEveryone } from '../services/chatService';
@@ -52,15 +52,12 @@ const LAYOUT_CSS = `
 
 /* ── Mobile (< 768px): one panel at a time, full-width ── */
 @media (max-width: 767px) {
-  /* Root just needs to exist; the active panels handle their own positioning */
   .chatslayout-root {
     border-radius: 0 !important; border: none !important;
-    height: calc(100vh - 80px) !important;
-    height: calc(100dvh - 80px) !important;
-    height: calc(var(--vv-height, 100dvh) - 80px) !important;
+    height: 100dvh !important;
+    height: 100vh !important;          /* fallback for browsers without dvh */
     max-width: 100% !important; width: 100% !important;
     margin: 0 !important; overflow: hidden !important;
-    overscroll-behavior: contain !important;
   }
 
   /* Both panels hidden by default */
@@ -73,31 +70,29 @@ const LAYOUT_CSS = `
     width: 100% !important; min-width: 0 !important; max-width: 100% !important;
     height: 100% !important; overflow: hidden !important;
     flex-shrink: 0 !important; border-right: none !important;
-    overscroll-behavior: contain !important;
   }
 
   /*
-   * Chat window: use position:fixed so it covers the ENTIRE viewport
-   * (including the area behind the navbar).  z-index:101 sits above everything
-   * else on the page.  Sized to the visual viewport so the mobile keyboard
-   * never covers the input area.
+   * Chat window pane: covers the entire screen with position:fixed; inset:0.
+   * Height is driven by the flex chain, not a JS-measured CSS variable.
+   * On iOS Safari the keyboard insets the visual viewport — the flex children
+   * reflow naturally: the message area shrinks, the input stays at the bottom.
+   * Using inset:0 means the pane fills 100% of the layout viewport.
+   * The message area (flex:1; overflow-y:auto) absorbs all the shrink.
+   * The input row (flex-shrink:0) stays pinned visually above the keyboard
+   * because the keyboard insets the visual viewport from below.
+   *
+   * On Android Chrome the layout viewport also shrinks when the keyboard
+   * opens (resize event), so flex-based reflowing works correctly there too.
    */
   .chatslayout-mainpane.mobile-show {
     display: flex !important;
     position: fixed !important;
-    top: var(--vv-top, 0px) !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: auto !important;
-    z-index: 101 !important;      /* above the sticky navbar (z-index: 100)   */
+    inset: 0 !important;
+    z-index: 101 !important;
     width: 100% !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    height: var(--vv-height, 100dvh) !important;
-    max-height: var(--vv-height, 100dvh) !important;
-    min-width: 0 !important; max-width: 100% !important;
+    /* height is deliberately left to fill inset:0 — no dvh/vh here */
     overflow: hidden !important;
-    overscroll-behavior: contain !important;
     flex-direction: column !important;
     background: ${T.surface} !important;
   }
@@ -108,7 +103,7 @@ const LAYOUT_CSS = `
     max-width: 100% !important; box-sizing: border-box !important;
   }
 
-  .chatslayout-mobile-back { display: flex !important; }
+  .chatslayout-mobile-back { display: flex !important; flex-shrink: 0 !important; }
 }
 
 /* Ensure the mobile back bar is flush to the top on notched phones */
@@ -274,29 +269,61 @@ export default function ChatsLayout() {
   const [proofSubmitting, setProofSubmitting] = useState(false);
   const [proofError, setProofError] = useState('');
 
-  /* ── mobile visual viewport tracking for on-screen keyboard ── */
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
+  /*
+   * ── Mobile keyboard-aware padding ──────────────────────────────────────────
+   *
+   * Problem: on iOS Safari the layout viewport does NOT shrink when the
+   * keyboard opens — only the visual viewport shrinks. A position:fixed pane
+   * with inset:0 therefore fills the full layout viewport (behind the keyboard)
+   * and the composer ends up hidden under the keyboard.
+   *
+   * Solution: set a CSS custom property --kbd-inset on the pane element equal
+   * to the gap between the bottom of the visual viewport and the bottom of the
+   * layout viewport. Use this as padding-bottom on the pane so the flex column
+   * is pushed up exactly by the keyboard height.
+   *
+   * On Android Chrome the layout viewport shrinks (window.innerHeight changes),
+   * so visualViewport.height ≈ window.innerHeight and --kbd-inset is always 0.
+   *
+   * Formula:
+   *   kbd_inset = window.innerHeight - (visualViewport.offsetTop + visualViewport.height)
+   *
+   * This is 0 when there is no keyboard and positive when the keyboard is open.
+   * We use max(0, ...) to guard against floating-point noise.
+   */
+  const chatPaneRef = useRef(null);
 
-    const handleVV = () => {
-      document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
-      document.documentElement.style.setProperty('--vv-top', `${vv.offsetTop}px`);
+  useEffect(() => {
+    const pane = chatPaneRef.current;
+    if (!pane) return;
+
+    const update = () => {
+      const vv = window.visualViewport;
+      let inset = 0;
+      if (vv) {
+        inset = Math.max(0, window.innerHeight - (vv.offsetTop + vv.height));
+      }
+      pane.style.paddingBottom = inset > 0 ? `${inset}px` : '';
     };
 
-    handleVV();
-    vv.addEventListener('resize', handleVV);
-    vv.addEventListener('scroll', handleVV);
+    update();
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+    }
+    window.addEventListener('resize', update);
 
     return () => {
-      vv.removeEventListener('resize', handleVV);
-      vv.removeEventListener('scroll', handleVV);
-      document.documentElement.style.removeProperty('--vv-height');
-      document.documentElement.style.removeProperty('--vv-top');
+      if (vv) {
+        vv.removeEventListener('resize', update);
+        vv.removeEventListener('scroll', update);
+      }
+      window.removeEventListener('resize', update);
+      if (pane) pane.style.paddingBottom = '';
     };
-  }, []);
-
-  /* ── fetch trades + hidden ids + reports ── */
+  }, [tradeId]);
   const fetchAll = useCallback(async () => {
     setLoading(true); setError('');
     try {
@@ -564,7 +591,11 @@ export default function ChatsLayout() {
       </div>
 
       {/* ══════ RIGHT: chat window ══════ */}
-      <div className={`chatslayout-mainpane${showChatOnMobile ? ' mobile-show' : ''}`} style={s.mainPane}>
+      <div
+        className={`chatslayout-mainpane${showChatOnMobile ? ' mobile-show' : ''}`}
+        style={s.mainPane}
+        ref={chatPaneRef}
+      >
         {!tradeId || !selectedTrade ? (
           <div style={s.emptyMain}>
             <span style={{ fontSize: 42 }}>💬</span>

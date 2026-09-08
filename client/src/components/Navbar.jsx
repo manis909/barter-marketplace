@@ -11,6 +11,8 @@ import { useAuth } from '../features/auth/AuthContext'
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import { SKILTER_CATEGORY_META, normalizeSkilterCategory } from '../data/skilterCategories'
 import './Navbar.css'
+import api from '../services/api';
+import { getAdminPendingPayments } from '../services/skillBookingService';
 
 const CATEGORIES        = CATEGORY_META
 const SKILTER_CATEGORIES = SKILTER_CATEGORY_META
@@ -19,11 +21,9 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false)
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
-  const desktopBrandRef = useRef(null)
-  const mobileBrandRef = useRef(null)
   const desktopAdminRef = useRef(null)
+  const [adminCounts, setAdminCounts] = useState({ barter: 0, skilter: 0 });
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [activeCategory, setActiveCategory] = useState(() => {
     const cat = new URLSearchParams(location.search).get('category')
@@ -46,21 +46,14 @@ export default function Navbar() {
     setSkilterCategory(cat ? normalizeSkilterCategory(cat) : 'All')
   }, [location.search])
 
-  // Close brand dropdown on route change
+  // Close admin dropdown on route change
   useEffect(() => {
-    setBrandDropdownOpen(false)
     setAdminDropdownOpen(false)
   }, [location.pathname])
 
-  // Close brand and admin dropdowns on outside click
+  // Close admin dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        desktopBrandRef.current && !desktopBrandRef.current.contains(event.target) &&
-        mobileBrandRef.current && !mobileBrandRef.current.contains(event.target)
-      ) {
-        setBrandDropdownOpen(false)
-      }
       if (
         desktopAdminRef.current && !desktopAdminRef.current.contains(event.target)
       ) {
@@ -104,6 +97,36 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+  useEffect(() => {
+  if (!currentUser?.is_admin) return;
+
+  function countOpenReports(reports) {
+    return reports.filter(r => !['actioned', 'dismissed'].includes(r.status)).length;
+  }
+
+  async function loadAdminCounts() {
+    try {
+      const [verif, trades, barterReports, skilterReports, payments] = await Promise.all([
+        api.get('/verification/pending'),
+        api.get('/trades/admin/awaiting-verification'),
+        api.get('/reports', { params: { type: 'barter' } }),
+        api.get('/reports', { params: { type: 'skilter' } }),
+        getAdminPendingPayments(),
+      ]);
+
+      setAdminCounts({
+        barter: verif.data.pending.length + trades.data.trades.length + countOpenReports(barterReports.data.reports),
+        skilter: (payments.bookings || []).length + countOpenReports(skilterReports.data.reports),
+      });
+    } catch {
+      // fail silently — badge just won't show a number this cycle
+    }
+  }
+
+  loadAdminCounts();
+  const interval = setInterval(loadAdminCounts, 60000); // refresh every 60s
+  return () => clearInterval(interval);
+}, [currentUser?.is_admin]);
 
   const isExploreActive = location.pathname === '/explore' || location.pathname === '/' || location.pathname === '/skilter/explore' || location.pathname === '/skilter'
   const isSkilterActive = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
@@ -113,7 +136,7 @@ export default function Navbar() {
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
   const SKILTER_PREFIXES = ['/skilter', '/skills']
-  const RENTER_PREFIXES  = ['/renter', '/rent']
+  const RENTER_PREFIXES  = ['/renter', '/rent', '/rental']
   const BARTER_PREFIXES  = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
                              '/wishlist', '/wallet', '/add-item', '/item/']
 
@@ -212,18 +235,20 @@ export default function Navbar() {
     [location.search, navigate]
   )
 
+  const platformTabs = [
+    { key: 'Barter', label: 'Barter', path: '/explore' },
+    { key: 'Skilter', label: 'Skilter', path: '/skilter' },
+    { key: 'Renter', label: 'Renter', path: '/renter' },
+  ]
+
   const handlePlatformSelect = useCallback(
     (platform) => {
-      setBrandDropdownOpen(false)
-      if (platform === 'Barter') {
-        navigate('/explore')
-      } else if (platform === 'Skilter') {
-        navigate('/skilter')
-      } else if (platform === 'Renter') {
-        navigate('/renter')
+      const tab = platformTabs.find((item) => item.key === platform)
+      if (tab) {
+        navigate(tab.path)
       }
     },
-    [navigate]
+    [navigate, platformTabs]
   )
 
   const activeCategoryObj = useMemo(
@@ -239,71 +264,35 @@ export default function Navbar() {
         <div className="navbar-container">
           {/* DESKTOP LAYOUT (768px and above) */}
           <div className="navbar-desktop-row">
-            {/* Desktop Left: Logo Dropdown */}
-            <div className="navbar-left" ref={desktopBrandRef} style={{ position: 'relative' }}>
-              <button
-                type="button"
-                className="navbar-brand navbar-brand-dropdown-trigger"
-                onClick={() => setBrandDropdownOpen((prev) => !prev)}
-                aria-expanded={brandDropdownOpen}
-                aria-label="Select Platform"
-              >
-                <motion.div
-                  className="navbar-mark"
-                  whileHover={{ rotate: 180, scale: 1.08 }}
-                  transition={{ duration: 0.4, ease: 'easeInOut' }}
-                >
-                  ⇄
-                </motion.div>
-                <span className="navbar-logo">{currentPlatform}</span>
-                <ChevronDown
-                  size={16}
-                  className={`brand-dropdown-chevron ${brandDropdownOpen ? 'open' : ''}`}
-                />
-              </button>
+            {/* Desktop Left: Section Tabs */}
+            <div className="navbar-left">
+              <div className="navbar-platform-tabs" aria-label="Platform switcher">
+                {platformTabs.map((tab) => {
+                  const isActive = currentPlatform === tab.key
 
-              <AnimatePresence>
-                {brandDropdownOpen && (
-                  <motion.div
-                    className="brand-dropdown-menu"
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                    transition={{ duration: 0.15, ease: 'easeOut' }}
-                  >
+                  return (
                     <button
+                      key={tab.key}
                       type="button"
-                      className={`brand-dropdown-item ${currentPlatform === 'Barter' ? 'active' : ''}`}
-                      onClick={() => {
-                        setBrandDropdownOpen(false)
-                        navigate('/explore')
-                      }}
+                      className={`platform-tab ${isActive ? 'active' : ''}`}
+                      onClick={() => handlePlatformSelect(tab.key)}
+                      aria-current={isActive ? 'page' : undefined}
                     >
-                      Barter
+                      {isActive && (
+                        <motion.span
+                          className="platform-tab-mark"
+                          aria-hidden="true"
+                          whileHover={{ rotate: 180, scale: 1.08 }}
+                          transition={{ duration: 0.4, ease: 'easeInOut' }}
+                        >
+                          ⇄
+                        </motion.span>
+                      )}
+                      <span className="platform-tab-label">{tab.label}</span>
                     </button>
-                    <button
-                      type="button"
-                      className={`brand-dropdown-item ${currentPlatform === 'Skilter' ? 'active' : ''}`}
-                      onClick={() => {
-                        setBrandDropdownOpen(false)
-                        navigate('/skilter')
-                      }}
-                    >
-                      Skilter
-                    </button>
-                    <button
-                      type="button"
-                      className={`brand-dropdown-item ${currentPlatform === 'Renter' ? 'active' : ''}`}
-                      onClick={() => {
-                        setBrandDropdownOpen(false)
-                        navigate('/renter')
-                      }}
-                    >
-                      Renter
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Desktop Center: Search Bar */}
@@ -336,7 +325,7 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {currentUser?.is_admin && (
+             {currentUser?.is_admin && (
                 <div
                   className="navbar-item-dropdown"
                   ref={desktopAdminRef}
@@ -348,9 +337,14 @@ export default function Navbar() {
                     onClick={() => setAdminDropdownOpen((prev) => !prev)}
                     aria-expanded={adminDropdownOpen}
                     aria-haspopup="true"
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '4px', position: 'relative' }}
                   >
                     Admin
+                    {(adminCounts.barter + adminCounts.skilter) > 0 && (
+                      <span className="admin-count-badge">
+                        {adminCounts.barter + adminCounts.skilter}
+                      </span>
+                    )}
                     <ChevronDown
                       size={14}
                       className={`brand-dropdown-chevron ${adminDropdownOpen ? 'open' : ''}`}
@@ -372,17 +366,35 @@ export default function Navbar() {
                           to="/admin/verification"
                           className="brand-dropdown-item"
                           onClick={() => setAdminDropdownOpen(false)}
-                          style={{ textDecoration: 'none' }}
+                          style={{ textDecoration: 'none', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                         >
                           Barter Admin
+                          {adminCounts.barter > 0 && (
+                            <span className="admin-count-badge admin-count-badge-inline">
+                              {adminCounts.barter}
+                            </span>
+                          )}
                         </Link>
                         <Link
                           to="/admin/payment-review"
                           className="brand-dropdown-item"
                           onClick={() => setAdminDropdownOpen(false)}
-                          style={{ textDecoration: 'none' }}
+                          style={{ textDecoration: 'none', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                         >
                           Skilter Admin
+                          {adminCounts.skilter > 0 && (
+                            <span className="admin-count-badge admin-count-badge-inline">
+                              {adminCounts.skilter}
+                            </span>
+                          )}
+                        </Link>
+                        <Link
+                          to="/admin/renter"
+                          className="brand-dropdown-item"
+                          onClick={() => setAdminDropdownOpen(false)}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          Renter Admin
                         </Link>
                       </motion.div>
                     )}
@@ -390,7 +402,17 @@ export default function Navbar() {
                 </div>
               )}
 
-              {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
+              {currentUser && (
+                <NotificationBell
+                  platform={
+                    currentPlatform === 'Skilter'
+                      ? 'skilter'
+                      : currentPlatform === 'Renter'
+                      ? 'rental'
+                      : 'barter'
+                  }
+                />
+              )}
 
               {currentUser ? (
   <motion.button
@@ -417,57 +439,36 @@ export default function Navbar() {
 
           {/* MOBILE LAYOUT (Below 768px) */}
           <div className={`navbar-mobile-wrapper ${scrolled ? 'mobile-scrolled' : ''}`}>
-            {/* ROW 1: Brand Logo (Left) | Profile Avatar / Login (Right) */}
+            {/* ROW 1: Section Tabs | Profile Avatar / Login (Right) */}
             <div className="mobile-row-1">
-              <div className="mobile-brand-wrapper" ref={mobileBrandRef}>
-                <button
-                  type="button"
-                  className="navbar-brand-dropdown-trigger"
-                  onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-                  aria-expanded={brandDropdownOpen}
-                  aria-label="Select platform"
-                >
-                  <span className="navbar-mark mobile-mark">B</span>
-                  <span className="navbar-logo mobile-logo">{currentPlatform}</span>
-                  <ChevronDown size={14} className={`brand-dropdown-chevron ${brandDropdownOpen ? 'open' : ''}`} />
-                </button>
+              <div className="mobile-platform-tabs-wrapper" aria-label="Platform switcher">
+                <div className="mobile-platform-tabs">
+                  {platformTabs.map((tab) => {
+                    const isActive = currentPlatform === tab.key
 
-                <AnimatePresence>
-                  {brandDropdownOpen && (
-                    <motion.div
-                      className="brand-dropdown-menu mobile-brand-dropdown-menu"
-                      initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                    >
+                    return (
                       <button
+                        key={tab.key}
                         type="button"
-                        className={`brand-dropdown-item ${currentPlatform === 'Barter' ? 'active' : ''}`}
-                        onClick={() => handlePlatformSelect('Barter')}
+                        className={`platform-tab ${isActive ? 'active' : ''}`}
+                        onClick={() => handlePlatformSelect(tab.key)}
+                        aria-current={isActive ? 'page' : undefined}
                       >
-                        <span>Barter (Items)</span>
-                        {currentPlatform === 'Barter' && <span className="brand-dropdown-dot" />}
+                        {isActive && (
+                          <motion.span
+                            className="platform-tab-mark"
+                            aria-hidden="true"
+                            whileHover={{ rotate: 180, scale: 1.08 }}
+                            transition={{ duration: 0.4, ease: 'easeInOut' }}
+                          >
+                            ⇄
+                          </motion.span>
+                        )}
+                        <span className="platform-tab-label">{tab.label}</span>
                       </button>
-                      <button
-                        type="button"
-                        className={`brand-dropdown-item ${currentPlatform === 'Skilter' ? 'active' : ''}`}
-                        onClick={() => handlePlatformSelect('Skilter')}
-                      >
-                        <span>Skilter (Skills)</span>
-                        {currentPlatform === 'Skilter' && <span className="brand-dropdown-dot" />}
-                      </button>
-                      <button
-                        type="button"
-                        className={`brand-dropdown-item ${currentPlatform === 'Renter' ? 'active' : ''}`}
-                        onClick={() => handlePlatformSelect('Renter')}
-                      >
-                        <span>Renter (Rentals)</span>
-                        {currentPlatform === 'Renter' && <span className="brand-dropdown-dot" />}
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    )
+                  })}
+                </div>
               </div>
 
               <div className="mobile-actions-right">
@@ -481,7 +482,17 @@ export default function Navbar() {
                 </Link>
 
                 {/* 2. Notification Bell */}
-                {currentUser && <NotificationBell platform={currentPlatform === 'Skilter' ? 'skilter' : 'barter'} />}
+                {currentUser && (
+                  <NotificationBell
+                    platform={
+                      currentPlatform === 'Skilter'
+                        ? 'skilter'
+                        : currentPlatform === 'Renter'
+                        ? 'rental'
+                        : 'barter'
+                    }
+                  />
+                )}
 
                 {/* 3. Mobile Profile Avatar Button / Login */}
                 {currentUser ? (
@@ -508,10 +519,10 @@ export default function Navbar() {
             </div>
 
             {/* ROW 2: Search Bar */}
-            <div className={`mobile-row-2 ${brandDropdownOpen ? 'dropdown-open' : ''}`}>
+            <div className="mobile-row-2">
               <SearchBar
-                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : 'Search items to trade...'}
-                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : '/items'}
+                placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : currentPlatform === 'Renter' ? 'Search rental items...' : 'Search items to trade...'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rentals' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}

@@ -554,13 +554,13 @@ const ADMIN_CSS = `
 
 // ── Screenshot loader ─────────────────────────────────────────────────────────
 function BookingScreenshot({ bookingId }) {
-  const [blobUrl, setBlobUrl]   = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState('');
 
   useEffect(() => {
     let active = true;
-    let url    = null;
+    let url = null;
 
     async function load() {
       try {
@@ -609,10 +609,10 @@ function BookingScreenshot({ bookingId }) {
 
 // ── Single booking review card ────────────────────────────────────────────────
 function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
-  const [working, setWorking]             = useState(false);
+  const [working, setWorking] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
-  const [rejectReason, setRejectReason]   = useState('');
-  const [localError, setLocalError]       = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [localError, setLocalError] = useState('');
 
   async function handleConfirm() {
     setLocalError('');
@@ -980,10 +980,10 @@ export default function AdminPaymentReview() {
                           <span>
                             {application.submitted_at
                               ? new Date(application.submitted_at).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                })
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })
                               : '—'}
                           </span>
                         </div>

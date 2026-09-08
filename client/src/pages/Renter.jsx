@@ -36,7 +36,7 @@ export default function Renter() {
   const visibleRentals = useMemo(() => rentals.filter((rental) => {
     if (category !== 'All' && normalizeCategory(rental.category).toLowerCase() !== category.toLowerCase()) return false
     const query = search.trim().toLowerCase()
-    return !query || [rental.item_name, rental.category, rental.description, rental.owner_name]
+    return !query || [rental.title, rental.item_name, rental.category, rental.description, rental.owner_name, rental.owner_username]
       .some((value) => String(value || '').toLowerCase().includes(query))
   }), [category, rentals, search])
 

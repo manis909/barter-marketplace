@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+.renter-admin-page {
+  max-width: 1100px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  box-sizing: border-box;
+  color: #10241c;
+  background: #f7f5ee;
+  font-family: 'Inter', sans-serif;
+}
+
+.renter-admin-header {
+  margin-bottom: 32px;
+  padding: 28px 32px;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, #0f3d2e 0%, #1b4d3e 55%, #2f6b52 100%);
+}
+
+.renter-admin-header h1 {
+  margin: 0;
+  color: #fff;
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .renter-admin-page {
+    padding: 24px 16px 56px;
+  }
+
+  .renter-admin-header {
+    padding: 24px;
+    border-radius: 18px;
+  }
+
+  .renter-admin-header h1 {
+    font-size: 24px;
+  }
+}

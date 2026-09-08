@@ -828,6 +828,8 @@ router.post('/:id/dispute', requireAuth, requireVerified, async (req, res) => {
   } catch (err) {
     console.error('POST /rental-bookings/:id/dispute error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });
+  console.error('DELETE /rental-bookings/:bookingId/for-me error:', error);
+  res.status(500).json({ error: 'Failed to hide chat' });
   }
 });
 
