@@ -22,7 +22,7 @@ import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
-import { getRentalByItem, createRentalRequest, createRental } from '../services/rentalService'
+import { createRentalRequest } from '../services/rentalService'
 import useVerificationStatus from '../hooks/useVerificationStatus'
 import JugglingLoader from '../components/JugglingLoader'
 import './ItemDetail.css'
@@ -56,19 +56,14 @@ export default function ItemDetailPage() {
   const [tradeError, setTradeError] = useState('')
   const [loadingMyItems, setLoadingMyItems] = useState(false)
 
-  // Rental state — "Request to Rent" entry point
+  // Rental state — "Request to Rent" — populated if this item has a rental listing
   const [rental, setRental] = useState(null)
   const [isRentalModalOpen, setIsRentalModalOpen] = useState(false)
   const [daysRequested, setDaysRequested] = useState(1)
+  const [startDate, setStartDate] = useState('')
+  const [meetingLocation, setMeetingLocation] = useState('')
   const [rentalError, setRentalError] = useState('')
   const [submittingRental, setSubmittingRental] = useState(false)
-
-  // Owner: "List this item for Rent" state
-  const [isRentListingModalOpen, setIsRentListingModalOpen] = useState(false)
-  const [rentalRateInput, setRentalRateInput] = useState('')
-  const [rentalDescInput, setRentalDescInput] = useState('')
-  const [rentalListingError, setRentalListingError] = useState('')
-  const [submittingRentalListing, setSubmittingRentalListing] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -105,13 +100,27 @@ export default function ItemDetailPage() {
     return () => controller.abort()
   }, [id])
 
-  // Fetch the rental listing attached to this item (if any) — decides
-  // whether the "Request to Rent" action is shown.
+  // Fetch the rental listing for this item (if any) — decides whether
+  // the "Request to Rent" action is shown for non-owners.
   useEffect(() => {
-    if (!id) return
-    getRentalByItem(id)
-      .then((data) => setRental(data.rental || null))
-      .catch(() => setRental(null))
+    const fetchRentalForItem = async () => {
+      if (!id) return;
+      
+      try {
+        const response = await fetch(`${apiBaseUrl}/rentals/by-item/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setRental(data.rental);
+        } else {
+          setRental(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch rental for item:', err);
+        setRental(null);
+      }
+    };
+
+    fetchRentalForItem();
   }, [id])
 
   const normalizedItem = useMemo(() => {
@@ -248,31 +257,44 @@ export default function ItemDetailPage() {
     }
   }
 
-  async function handleCreateRentalListing(e) {
-    e.preventDefault()
-    const rate = Number(rentalRateInput)
-    if (!Number.isFinite(rate) || rate <= 0) {
-      setRentalListingError('Please enter a valid positive daily rate.')
+  function openRentalModal() {
+    if (!currentUser) { navigate('/login'); return }
+    if (!isVerified) { setShowVerificationModal(true); return }
+    setRentalError('')
+    setDaysRequested(1)
+    // Initialize start_date to tomorrow (not today, to allow preparation time)
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    setStartDate(tomorrow.toISOString().split('T')[0])
+    setMeetingLocation('')
+    setIsRentalModalOpen(true)
+  }
+
+  async function handleSendRentalRequest() {
+    if (!rental) return
+    if (!currentUser) { navigate('/login'); return }
+    if (!isVerified) { setShowVerificationModal(true); return }
+    
+    // Validation
+    if (!startDate) {
+      setRentalError('Please select a start date.')
       return
     }
-
-    setSubmittingRentalListing(true)
-    setRentalListingError('')
+    
+    setSubmittingRental(true)
+    setRentalError('')
     try {
-      await createRental({
-        title: normalizedItem.title,
-        description: rentalDescInput.trim() || normalizedItem.description,
-        daily_rate: rate,
-        image_url: images[0] || undefined,
-        item_id: normalizedItem.id,
+      await createRentalRequest(rental.id, {
+        days_requested: daysRequested,
+        start_date: startDate,
+        meeting_location: meetingLocation.trim()
       })
-      setIsRentListingModalOpen(false)
-      const data = await getRentalByItem(normalizedItem.id)
-      setRental(data.rental || null)
+      setIsRentalModalOpen(false)
+      navigate('/renter/requests')
     } catch (err) {
-      setRentalListingError(err.response?.data?.error || 'Failed to list this item for rent.')
+      setRentalError(err.response?.data?.error || 'Failed to send rental request.')
     } finally {
-      setSubmittingRentalListing(false)
+      setSubmittingRental(false)
     }
   }
 
@@ -311,6 +333,13 @@ export default function ItemDetailPage() {
   }
 
   const isOwner = currentUser && (currentUser.id === normalizedItem.ownerId)
+
+  // Rental request breakdown — computed client-side for display only;
+  // server recomputes authoritatively when the request is submitted.
+  const rentalRate = rental ? Number(rental.rate_amount) : 0
+  const rentalFee = Math.round(rentalRate * daysRequested * 100) / 100
+  const rentalDeposit = Math.round(0.15 * rentalFee)
+  const rentalTotal = Math.round((rentalFee + rentalDeposit) * 100) / 100
 
   return (
     <div className="item-detail-page">
@@ -505,7 +534,7 @@ export default function ItemDetailPage() {
                     onClick={openRentalModal}
                   >
                     <KeyRound size={20} />
-                    <span>Request to Rent — ₹{Number(rental.daily_rate)}/day</span>
+                    <span>Request to Rent — ₹{Number(rental.rate_amount)}/{rental.rate_type === 'hourly' ? 'hr' : 'day'}</span>
                   </button>
                 )}
               </>
@@ -515,29 +544,14 @@ export default function ItemDetailPage() {
                   <CheckCircle2 size={18} />
                   <span>This is your listing. You can manage or edit it in My Listings.</span>
                 </div>
-                {!rental ? (
-                  <button
-                    type="button"
-                    className="detail-primary-offer-btn"
-                    style={{ marginTop: 10, background: '#0F766E' }}
-                    onClick={() => {
-                      setRentalListingError('')
-                      setRentalRateInput('')
-                      setRentalDescInput('')
-                      setIsRentListingModalOpen(true)
-                    }}
-                  >
-                    <KeyRound size={20} />
-                    <span>List this item for Rent</span>
-                  </button>
-                ) : (
+                {rental && (
                   <div style={{
                     marginTop: 10, background: '#F0FDFA', border: '1px solid #99F6E4',
                     borderRadius: 10, padding: '12px 14px', fontSize: 13.5, color: '#134E4A',
                     display: 'flex', alignItems: 'center', gap: 8,
                   }}>
                     <KeyRound size={16} />
-                    <span>Listed for rent at ₹{Number(rental.daily_rate)}/day · status: {rental.status}</span>
+                    <span>Listed for rent at ₹{Number(rental.rate_amount)}/{rental.rate_type === 'hourly' ? 'hr' : 'day'} · status: {rental.status}</span>
                   </div>
                 )}
               </>
@@ -688,115 +702,6 @@ export default function ItemDetailPage() {
         </div>
       )}
 
-      {/* List for Rent Modal (owner) */}
-      {isRentListingModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: 18,
-            padding: 28,
-            maxWidth: 480,
-            width: '100%',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
-          }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#1C1917' }}>List this item for Rent</h2>
-            <p style={{ fontSize: 14, color: '#57534E', margin: '0 0 20px' }}>
-              Set a daily rate for <strong>{normalizedItem.title}</strong>. Students can then send you rental requests.
-            </p>
-
-            {rentalListingError && (
-              <div style={{
-                background: '#FEF2F2',
-                border: '1px solid #FCA5A5',
-                color: '#991B1B',
-                padding: '10px 14px',
-                borderRadius: 8,
-                fontSize: 13,
-                marginBottom: 16
-              }}>
-                {rentalListingError}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateRentalListing}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
-                  Daily Rate (₹ per day):
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  value={rentalRateInput}
-                  onChange={e => setRentalRateInput(e.target.value)}
-                  placeholder="e.g. 100"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #E4E2D9',
-                    fontSize: 14,
-                    background: '#F9F8F6'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
-                  Rental Notes (Optional):
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Condition notes, accessories included, pickup instructions..."
-                  value={rentalDescInput}
-                  onChange={e => setRentalDescInput(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #E4E2D9',
-                    fontSize: 14,
-                    background: '#F9F8F6',
-                    resize: 'none'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => setIsRentListingModalOpen(false)}
-                  disabled={submittingRentalListing}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="primary-button"
-                  disabled={submittingRentalListing}
-                >
-                  {submittingRentalListing ? 'Listing...' : 'List for Rent'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Request to Rent Modal */}
       {isRentalModalOpen && rental && (
         <div style={{
@@ -842,6 +747,26 @@ export default function ItemDetailPage() {
 
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
+                Start Date:
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E4E2D9',
+                  fontSize: 14,
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
                 Number of Days:
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -875,6 +800,30 @@ export default function ItemDetailPage() {
               </div>
             </div>
 
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1C1917', marginBottom: 6 }}>
+                Meeting Location (optional):
+              </label>
+              <input
+                type="text"
+                value={meetingLocation}
+                onChange={(e) => setMeetingLocation(e.target.value)}
+                placeholder="e.g., near hostel security gate"
+                maxLength={200}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E4E2D9',
+                  fontSize: 14,
+                  fontFamily: 'inherit'
+                }}
+              />
+              <p style={{ fontSize: 12, color: '#78716C', margin: '4px 0 0' }}>
+                Suggest a convenient pickup/return location
+              </p>
+            </div>
+
             <div style={{
               background: '#F9F8F6',
               border: '1px solid #E4E2D9',
@@ -883,7 +832,7 @@ export default function ItemDetailPage() {
               marginBottom: 16
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#57534E', marginBottom: 6 }}>
-                <span>{daysRequested} day{daysRequested > 1 ? 's' : ''} × ₹{Number(rental.daily_rate)}/day</span>
+                <span>{daysRequested} day{daysRequested > 1 ? 's' : ''} × ₹{rentalRate}/{rental.rate_type === 'hourly' ? 'hr' : 'day'}</span>
                 <span style={{ fontWeight: 600, color: '#1C1917' }}>₹{rentalFee}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#57534E', marginBottom: 10 }}>

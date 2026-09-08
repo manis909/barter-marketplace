@@ -30,6 +30,7 @@ import MyRentalsPage from './pages/MyRentals';
 import RentalRequestsPage from './pages/RentalRequests';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
+import RentalChatsLayout from './pages/RentalChatsLayout';
 import SkillChatsLayout from './pages/SkillChatsLayout'; 
 import SkillsProfile from './pages/SkillsProfile';
 import RentalProfile from './pages/RentalProfile';
@@ -106,10 +107,12 @@ function App() {
 
             <Route path="/renter" element={<RenterPage />} />
             <Route path="/rent" element={<RenterPage />} />
+            <Route path="/renter/listings" element={<RentalListingsPage />} />
             <Route path="/renter/my-rentals" element={<MyRentalsPage />} />
             <Route path="/renter/requests" element={<RentalRequestsPage />} />
-            <Route path="/renter/listings" element={<RentalListingsPage />} />
             <Route path="/rental/:id" element={<RentalDetailPage />} />
+            <Route path="/rental/chat" element={<RentalChatsLayout />} />
+            <Route path="/rental/chat/:bookingId" element={<RentalChatsLayout />} />
             <Route path="/chats" element={<ChatsLayout />} />
             <Route path="/chat/:tradeId" element={<ChatsLayout />} />
             <Route path="/admin/verification" element={<AdminVerificationPage />} />

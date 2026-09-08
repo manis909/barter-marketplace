@@ -9,16 +9,14 @@ import {
   XCircle,
   Clock,
 } from 'lucide-react'
-import {
-  getIncomingRentalRequests,
-  getMyRentalRequests,
-  respondToRentalRequest,
-  cancelRentalRequest,
-} from '../services/rentalService'
+import { useAuth } from '../features/auth/AuthContext'
+import api from '../services/api'
+import { getMyRentalBookings } from '../services/rentalBookingService'
 
 const STATUS_STYLES = {
   pending: { bg: '#FEF3C7', color: '#B45309', label: 'Pending' },
-  accepted: { bg: '#DBEAFE', color: '#1D4ED8', label: 'Accepted' },
+  accepted: { bg: '#DBEAFE', color: '#1D4ED8', label: 'Accepted — Payment Required' },
+  paid: { bg: '#DCFCE7', color: '#15803D', label: 'Paid — Awaiting Pickup' },
   declined: { bg: '#FEE2E2', color: '#B91C1C', label: 'Declined' },
   cancelled: { bg: '#F1F5F9', color: '#64748B', label: 'Withdrawn' },
   returned: { bg: '#DCFCE7', color: '#15803D', label: 'Completed' },
@@ -34,6 +32,12 @@ function daysBetween(start, end) {
   return Math.round((new Date(end) - new Date(start)) / 86400000)
 }
 
+function listingImage(booking) {
+  return Array.isArray(booking.item_image_urls) && booking.item_image_urls.length
+    ? booking.item_image_urls[0]
+    : 'https://via.placeholder.com/120'
+}
+
 function StatusPill({ status }) {
   const s = STATUS_STYLES[status] || { bg: '#F1F5F9', color: '#475569', label: status }
   return (
@@ -47,8 +51,8 @@ function StatusPill({ status }) {
 }
 
 function IncomingRequestCard({ req, onRespond, busyId }) {
-  const days = daysBetween(req.start_date, req.end_date)
-  const fee = Number(req.total_amount)
+  const days = daysBetween(req.start_datetime, req.end_datetime)
+  const fee = Number(req.agreed_total_amount)
   const deposit = Number(req.deposit_amount)
 
   return (
@@ -57,20 +61,20 @@ function IncomingRequestCard({ req, onRespond, busyId }) {
       border: '1px solid #E4E2D9', borderRadius: 14, padding: 16,
     }}>
       <img
-        src={req.image_url || 'https://via.placeholder.com/120'}
-        alt={req.rental_title}
+        src={listingImage(req)}
+        alt={req.item_name}
         style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <h3 style={{ fontSize: 15.5, fontWeight: 700, color: '#1C1917', margin: 0 }}>
-            {req.rental_title}
+            {req.item_name}
           </h3>
           <StatusPill status={req.status} />
         </div>
 
         <p style={{ fontSize: 13, color: '#57534E', margin: '6px 0 0' }}>
-          Requested by <strong style={{ color: '#1C1917' }}>{req.requester_name || req.requester_username}</strong>
+          Requested by <strong style={{ color: '#1C1917' }}>{req.borrower_name || req.borrower_username}</strong>
         </p>
 
         <div style={{
@@ -79,10 +83,16 @@ function IncomingRequestCard({ req, onRespond, busyId }) {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#57534E', marginBottom: 4 }}>
             <span>Duration</span>
-            <span style={{ fontWeight: 600, color: '#1C1917' }}>{days} day{days === 1 ? '' : 's'} ({formatDate(req.start_date)} → {formatDate(req.end_date)})</span>
+            <span style={{ fontWeight: 600, color: '#1C1917' }}>{days} day{days === 1 ? '' : 's'} ({formatDate(req.start_datetime)} → {formatDate(req.end_datetime)})</span>
           </div>
+          {req.meeting_location && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#57534E', marginBottom: 4 }}>
+              <span>Meeting location</span>
+              <span style={{ fontWeight: 600, color: '#1C1917' }}>📍 {req.meeting_location}</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#57534E', marginBottom: 4 }}>
-            <span>Rental fee (₹{Number(req.daily_rate)}/day × {days})</span>
+            <span>Rental fee (₹{Number(req.rate_amount || 0)}/day × {days})</span>
             <span style={{ fontWeight: 600, color: '#1C1917' }}>₹{fee}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#57534E', marginBottom: 4 }}>
@@ -140,19 +150,19 @@ function SentRequestCard({ req, onWithdraw, busyId }) {
       display: 'flex', gap: 16, background: '#FFFFFF',
       border: '1px solid #E4E2D9', borderRadius: 14, padding: 16,
     }}>
-      <img
-        src={req.image_url || 'https://via.placeholder.com/120'}
-        alt={req.rental_title}
+    <img
+      src={listingImage(req)}
+      alt={req.item_name}
         style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1C1917', margin: 0 }}>{req.rental_title}</h3>
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1C1917', margin: 0 }}>{req.item_name}</h3>
           <StatusPill status={req.status} />
         </div>
         <p style={{ fontSize: 13, color: '#57534E', margin: '5px 0 0' }}>
-          Owner: <strong style={{ color: '#1C1917' }}>{req.owner_name || req.owner_username}</strong>
-          {' · '}{daysBetween(req.start_date, req.end_date)} day(s) · Fee ₹{Number(req.total_amount)}
+      Owner: <strong style={{ color: '#1C1917' }}>{req.owner_name || req.owner_username}</strong>
+      {' · '}{daysBetween(req.start_datetime, req.end_datetime)} day(s) · Fee ₹{Number(req.agreed_total_amount)}
         </p>
         {req.status === 'pending' && (
           <button
@@ -175,6 +185,7 @@ function SentRequestCard({ req, onWithdraw, busyId }) {
 }
 
 export default function RentalRequests() {
+  const { currentUser } = useAuth()
   const [tab, setTab] = useState('incoming')
   const [incoming, setIncoming] = useState([])
   const [sent, setSent] = useState([])
@@ -184,12 +195,10 @@ export default function RentalRequests() {
 
   async function load() {
     try {
-      const [inRes, sentRes] = await Promise.all([
-        getIncomingRentalRequests(),
-        getMyRentalRequests(),
-      ])
-      setIncoming(inRes.requests || [])
-      setSent(sentRes.requests || [])
+      const response = await getMyRentalBookings()
+      const bookings = response.bookings || []
+      setIncoming(bookings.filter((booking) => booking.owner_id === currentUser?.id))
+      setSent(bookings.filter((booking) => booking.borrower_id === currentUser?.id))
     } catch {
       setError('Unable to load rental requests right now.')
     } finally {
@@ -197,12 +206,14 @@ export default function RentalRequests() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    if (currentUser?.id) load()
+  }, [currentUser?.id])
 
   async function handleRespond(requestId, status) {
     setBusyId(requestId)
     try {
-      await respondToRentalRequest(requestId, status)
+      await api.patch(`/rental-bookings/${requestId}/status`, { status })
       await load()
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to respond to request.')
@@ -214,7 +225,7 @@ export default function RentalRequests() {
   async function handleWithdraw(requestId) {
     setBusyId(requestId)
     try {
-      await cancelRentalRequest(requestId)
+      await api.delete(`/rental-bookings/${requestId}/for-me`)
       await load()
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to withdraw request.')

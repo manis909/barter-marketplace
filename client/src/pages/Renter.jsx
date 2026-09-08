@@ -22,7 +22,7 @@ export default function Renter() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/rentals')
+      const response = await api.get('/rental-listings')
       setRentals(Array.isArray(response.data.rentals) ? response.data.rentals : [])
     } catch (err) {
       setError(err.response?.data?.error || 'Unable to load rental listings right now.')
@@ -40,7 +40,7 @@ export default function Renter() {
       .some((value) => String(value || '').toLowerCase().includes(query))
   }), [category, rentals, search])
 
-  const handleRent = () => setNotice('Rental requests are not available yet. Please check back soon.')
+  const handleRent = (rentalId) => navigate(`/rental/${rentalId}`)
   const toggleLike = (event, rentalId) => {
     event.stopPropagation()
     setLikedRentals((previous) => {
@@ -73,7 +73,7 @@ export default function Renter() {
       {notice && <div className="renter-notice"><p>{notice}</p></div>}
       {loading ? <div className="renter-state"><div className="renter-spinner" /><h2>Loading rental listings</h2></div> : error ? <div className="renter-state renter-error"><Package size={35} /><h2>We could not load rentals</h2><p>{error}</p><button className="renter-retry" type="button" onClick={loadRentals}>Try again</button></div> : visibleRentals.length === 0 ? <div className="renter-state"><Package size={35} /><h2>{rentals.length ? 'No matching rentals' : 'No rentals available yet'}</h2><p>{rentals.length ? 'Try another search or category.' : 'Check back soon for items shared by your community.'}</p></div> : <><p className="renter-results">{visibleRentals.length} available {visibleRentals.length === 1 ? 'rental' : 'rentals'}</p><div className="renter-grid">{visibleRentals.map((rental) => {
         const image = Array.isArray(rental.image_urls) && rental.image_urls.length ? rental.image_urls[0] : ''
-        return <article className="rental-market-card" key={rental.id} role="link" tabIndex={0} aria-label={`View details for ${rental.item_name}`} onClick={() => navigate(`/rental/${rental.id}`)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(`/rental/${rental.id}`) } }}><div className="rental-market-media">{image && <div className="rental-market-backdrop" style={{ backgroundImage: `url(${image})` }} />} {image ? <img className="rental-market-image" src={image} alt={rental.item_name} /> : <Package size={35} />}<button type="button" className={`rental-like-button${likedRentals.has(rental.id) ? ' liked' : ''}`} aria-label={likedRentals.has(rental.id) ? 'Unlike rental' : 'Like rental'} onClick={(event) => toggleLike(event, rental.id)}><Heart size={18} /></button></div><div className="rental-market-body"><div className="rental-market-badges"><span className="rental-market-badge">{rental.category || 'Other'}</span><span className="rental-market-status">Available</span></div><h2 className="rental-market-title">{rental.item_name}</h2><div className="rental-market-owner"><Link className="rental-market-owner-link" to={`/rental/profile/${rental.owner_id}`} onClick={(event) => event.stopPropagation()}><User size={12} /><span>{rental.owner_name || 'Owner'}</span></Link></div><div className="rental-market-rate">INR {Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small></div><div className="rental-market-actions"><button className="rental-market-rent" type="button" onClick={(event) => { event.stopPropagation(); handleRent() }}>Rent</button></div></div></article>
+        return <article className="rental-market-card" key={rental.id} role="link" tabIndex={0} aria-label={`View details for ${rental.item_name}`} onClick={() => navigate(`/rental/${rental.id}`)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(`/rental/${rental.id}`) } }}><div className="rental-market-media">{image && <div className="rental-market-backdrop" style={{ backgroundImage: `url(${image})` }} />} {image ? <img className="rental-market-image" src={image} alt={rental.item_name} /> : <Package size={35} />}<button type="button" className={`rental-like-button${likedRentals.has(rental.id) ? ' liked' : ''}`} aria-label={likedRentals.has(rental.id) ? 'Unlike rental' : 'Like rental'} onClick={(event) => toggleLike(event, rental.id)}><Heart size={18} /></button></div><div className="rental-market-body"><div className="rental-market-badges"><span className="rental-market-badge">{rental.category || 'Other'}</span><span className="rental-market-status">Available</span></div><h2 className="rental-market-title">{rental.item_name}</h2><div className="rental-market-owner"><Link className="rental-market-owner-link" to={`/rental/profile/${rental.owner_id}`} onClick={(event) => event.stopPropagation()}><User size={12} /><span>{rental.owner_name || 'Owner'}</span></Link></div><div className="rental-market-rate">INR {Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small></div><div className="rental-market-actions"><button className="rental-market-rent" type="button" onClick={(event) => { event.stopPropagation(); handleRent(rental.id) }}>Rent</button></div></div></article>
       })}</div></>}
     </main>
     <Footer />

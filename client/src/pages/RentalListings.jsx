@@ -37,7 +37,7 @@ export default function RentalListingsPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/rentals/mine')
+      const response = await api.get('/rental-listings/mine')
       setListings(Array.isArray(response.data.rentals) ? response.data.rentals : [])
     } catch (err) {
       setError(err.response?.data?.error || 'Unable to load your rental listings.')
@@ -120,11 +120,11 @@ export default function RentalListingsPage() {
       const payload = { item_name: name, description, category: form.category, image_urls: [...form.existingImageUrls, ...uploaded], rate_type: form.rate_type, rate_amount: amount }
       if (editingId) {
         if (form.status !== 'rented') payload.status = form.status
-        const response = await api.put(`/rentals/${editingId}`, payload)
+        const response = await api.put(`/rental-listings/${editingId}`, payload)
         setListings((previous) => previous.map((listing) => listing.id === editingId ? response.data.rental : listing))
         setMessage('Rental listing updated successfully.')
       } else {
-        const response = await api.post('/rentals', payload)
+        const response = await api.post('/rental-listings', payload)
         setListings((previous) => [response.data.rental, ...previous])
         setMessage('Rental listing created successfully.')
       }
@@ -137,7 +137,7 @@ export default function RentalListingsPage() {
   const updateStatus = async (listing, status) => {
     if (listing.status === 'rented') return
     try {
-      const response = await api.put(`/rentals/${listing.id}`, { status })
+      const response = await api.put(`/rental-listings/${listing.id}`, { status })
       setListings((previous) => previous.map((item) => item.id === listing.id ? response.data.rental : item))
       setMessage(status === 'paused' ? 'Listing paused.' : 'Listing is available again.')
     } catch (err) { setMessage(err.response?.data?.error || 'Unable to update listing status.') }
@@ -147,7 +147,7 @@ export default function RentalListingsPage() {
     const listing = confirmListing
     setConfirmListing(null)
     try {
-      await api.delete(`/rentals/${listing.id}`)
+      await api.delete(`/rental-listings/${listing.id}`)
       setListings((previous) => previous.filter((item) => item.id !== listing.id))
       setMessage('Rental listing deleted successfully.')
     } catch (err) { setMessage(err.response?.data?.error || 'Unable to delete this listing.') }
