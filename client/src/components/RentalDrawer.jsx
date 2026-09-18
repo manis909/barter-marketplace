@@ -21,7 +21,7 @@ const primaryItems = [
   { label: 'My Rentals',               icon: KeyRound,         path: '/renter/my-rentals' },
   { label: 'Rental Requests',          icon: BriefcaseBusiness, path: '/renter/requests' },
   { label: 'Notifications',            icon: Bell,             path: '/notifications' },
-  { label: 'Chat',                     icon: MessageCircle,    path: '/chats' },
+  { label: 'Chat',                     icon: MessageCircle,    path: '/rental/chat' },
   { label: 'Wishlist',                 icon: Heart,            path: '/wishlist' },
   { label: 'Payments & Transactions',  icon: CreditCard,       path: '/wallet' },
   { label: 'Feedback',                 icon: Star,             path: '/feedback' },
