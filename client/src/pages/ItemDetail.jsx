@@ -22,7 +22,7 @@ import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
-import { createRentalRequest } from '../services/rentalService'
+import { createRentalBooking } from '../services/rentalBookingService'
 import useVerificationStatus from '../hooks/useVerificationStatus'
 import JugglingLoader from '../components/JugglingLoader'
 import './ItemDetail.css'
@@ -284,9 +284,14 @@ export default function ItemDetailPage() {
     setSubmittingRental(true)
     setRentalError('')
     try {
-      await createRentalRequest(rental.id, {
-        days_requested: daysRequested,
-        start_date: startDate,
+      const startDateTime = new Date(`${startDate}T00:00:00`)
+      const endDateTime = new Date(startDateTime)
+      endDateTime.setDate(endDateTime.getDate() + daysRequested)
+
+      await createRentalBooking({
+        rental_listing_id: rental.id,
+        start_datetime: startDateTime.toISOString(),
+        end_datetime: endDateTime.toISOString(),
         meeting_location: meetingLocation.trim()
       })
       setIsRentalModalOpen(false)
