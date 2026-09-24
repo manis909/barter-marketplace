@@ -48,7 +48,7 @@ export default function RentalProfile() {
         .then(res => setRatingSummary(res.data.summary))
         .catch(() => setRatingSummary(null));
 
-      const rentalsEndpoint = isOwnProfile ? '/rentals/mine' : '/rentals'
+      const rentalsEndpoint = isOwnProfile ? '/rental-listings/mine' : '/rental-listings'
       api.get(rentalsEndpoint)
         .then(res => setRentalListings((res.data.rentals || []).filter(listing => listing.owner_id === profileData.id)))
         .catch(() => setRentalListings([]));

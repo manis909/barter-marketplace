@@ -299,7 +299,7 @@ export default function Navbar() {
             <div className="navbar-center">
               <SearchBar
                 placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : currentPlatform === 'Renter' ? 'Search rental items...' : 'Search items to trade...'}
-                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rentals' : '/items'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rental-listings' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}
@@ -522,7 +522,7 @@ export default function Navbar() {
             <div className="mobile-row-2">
               <SearchBar
                 placeholder={currentPlatform === 'Skilter' ? 'Search skills...' : currentPlatform === 'Renter' ? 'Search rental items...' : 'Search items to trade...'}
-                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rentals' : '/items'}
+                searchEndpoint={currentPlatform === 'Skilter' ? '/skills' : currentPlatform === 'Renter' ? '/rental-listings' : '/items'}
                 value={search}
                 onChange={handleSearchChange}
                 onSearch={handleSearch}

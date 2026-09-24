@@ -1,6 +1,19 @@
 import api from './api';
 
 /**
+ * Create a rental booking request for a listing.
+ */
+export async function createRentalBooking({ rental_listing_id, start_datetime, end_datetime, meeting_location }) {
+  const res = await api.post('/rental-bookings', {
+    rental_listing_id,
+    start_datetime,
+    end_datetime,
+    meeting_location,
+  });
+  return res.data;
+}
+
+/**
  * Fetch all rental bookings for the current user (as borrower or owner).
  */
 export async function getMyRentalBookings() {
