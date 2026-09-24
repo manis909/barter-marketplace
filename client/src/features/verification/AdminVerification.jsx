@@ -305,8 +305,9 @@ function IdVerificationPanel() {
 }
 
 // ── Reports Panel ─────────────────────────────────────────────────────────────
-function ReportsPanel({ type = 'barter' }) {
-  const [reportType, setReportType] = useState(type);
+export function ReportsPanel({ type = 'barter' }) {
+  const moduleType = type || 'barter';
+  const [reportType, setReportType] = useState(moduleType);
   const [reports, setReports] = useState([]);
   const [error, setError] = useState('');
   const [conversations, setConversations] = useState({});
@@ -320,8 +321,8 @@ function ReportsPanel({ type = 'barter' }) {
   const [actionNotes, setActionNotes] = useState('');
 
   useEffect(() => {
-    setReportType(type);
-  }, [type]);
+    setReportType(moduleType);
+  }, [moduleType]);
 
   useEffect(() => {
     api.get('/reports', { params: { type: reportType } })
@@ -519,27 +520,29 @@ function ReportsPanel({ type = 'barter' }) {
   </button>
 </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          {['barter', 'skilter'].map(option => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setReportType(option)}
-              style={{
-                border: reportType === option ? '1px solid #0f766e' : '1px solid #d1d5db',
-                backgroundColor: reportType === option ? '#ecfeff' : '#ffffff',
-                color: reportType === option ? '#115e59' : '#374151',
-                borderRadius: 999,
-                padding: '8px 14px',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              {option === 'barter' ? '🤝 Barter Reports' : '🎓 Skilter Reports'}
-            </button>
-          ))}
-        </div>
+        {!type && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            {['barter', 'skilter'].map(option => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setReportType(option)}
+                style={{
+                  border: reportType === option ? '1px solid #0f766e' : '1px solid #d1d5db',
+                  backgroundColor: reportType === option ? '#ecfeff' : '#ffffff',
+                  color: reportType === option ? '#115e59' : '#374151',
+                  borderRadius: 999,
+                  padding: '8px 14px',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {option === 'barter' ? '🤝 Barter Reports' : '🎓 Skilter Reports'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {reports.length === 0 && !error && (
           <div className="admin-empty-state">
@@ -548,7 +551,7 @@ function ReportsPanel({ type = 'barter' }) {
           </div>
         )}
 
-        {renderReportsList(reports, reportType === 'skilter' ? '🎓 Skilter Reports' : '🤝 Barter Reports')}
+        {renderReportsList(reports, reportType === 'skilter' ? '🎓 Skilter Reports' : reportType === 'rental' ? '📦 Rental Reports' : '🤝 Barter Reports')}
 
         {modalOpen && selectedReport && (
           <div style={{
@@ -828,7 +831,7 @@ export default function AdminVerificationPage() {
       <div className="admin-tab-content">
         {activeTab === 'id'      && <IdVerificationPanel />}
         {activeTab === 'trades'  && <TradeProofPanel />}
-        {activeTab === 'reports' && <ReportsPanel />}
+        {activeTab === 'reports' && <ReportsPanel type="barter" />}
       </div>
     </div>
   );

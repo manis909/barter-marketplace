@@ -14,6 +14,7 @@ import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import { getMyRentalBookings } from '../services/rentalBookingService'
 import PaymentUploadPanelRental from '../components/PaymentUploadPanelRental'
+import RatingForm from '../features/ratings/RatingForm'
 
 const STATUS_STYLES = {
   pending: { bg: '#FEF3C7', color: '#92400E', label: 'Pending' },
@@ -212,9 +213,15 @@ function RentalCard({ rental, role, showPayPanelId, onTogglePayPanel, onConfirmP
         )}
 
         {rental.status === 'completed' && (
-          <p style={{ marginTop: 10, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: '#15803D', fontWeight: 600 }}>
-            <CheckCircle2 size={14} /> Return confirmed by both parties — deposit released
-          </p>
+          <div style={{ marginTop: 10 }}>
+            <p style={{ marginTop: 0, marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: '#15803D', fontWeight: 600 }}>
+              <CheckCircle2 size={14} /> Return confirmed by both parties — deposit released
+            </p>
+            <RatingForm
+              rentalBookingId={rental.id}
+              revieweeId={iAmRenter ? rental.owner_id : rental.borrower_id}
+            />
+          </div>
         )}
 
         {/* Chat button - shows when status is 'paid' or later */}

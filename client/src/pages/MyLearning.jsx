@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { useAuth } from '../features/auth/AuthContext';
 import { getMySkillBookings, updateSkillBookingStatus, submitUpiPayment } from '../services/skillBookingService';
+import RatingForm from '../features/ratings/RatingForm';
 import Footer from '../components/Footer';
 
 const BARTER_CSS = `
@@ -844,6 +845,13 @@ export default function MyLearning() {
                         >
                           💬 Message
                         </Link>
+                      )}
+
+                      {b.status === 'completed' && (
+                        <RatingForm
+                          skillBookingId={b.id}
+                          revieweeId={b.teacher_id}
+                        />
                       )}
 
                     </div>

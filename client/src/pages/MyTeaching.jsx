@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { getMyTeachingBookings, updateSkillBookingStatus } from '../services/skillBookingService';
 import Footer from '../components/Footer';
+import RatingForm from '../features/ratings/RatingForm';
 
 const BARTER_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
@@ -441,6 +442,12 @@ export default function MyTeaching() {
                                   Cancel
                                 </button>
                               </div>
+                            )}
+                            {b.status === 'completed' && (
+                              <RatingForm
+                                skillBookingId={b.id}
+                                revieweeId={b.requester_id}
+                              />
                             )}
                           </div>
                         </div>

@@ -232,6 +232,7 @@ CREATE TABLE reports (
     reported_user_id   UUID NOT NULL,
     trade_offer_id     UUID,
     skill_booking_id   UUID,
+    rental_booking_id  UUID,
     reason             TEXT,
 
     status             VARCHAR(50) DEFAULT 'open',
@@ -251,6 +252,8 @@ CREATE TABLE reports (
         FOREIGN KEY (trade_offer_id) REFERENCES trade_offers(id) ON DELETE CASCADE,
     CONSTRAINT fk_report_booking
         FOREIGN KEY (skill_booking_id) REFERENCES skill_bookings(id) ON DELETE CASCADE,
+    CONSTRAINT fk_report_rental_booking
+        FOREIGN KEY (rental_booking_id) REFERENCES rental_bookings(id) ON DELETE SET NULL,
     CONSTRAINT fk_report_actioned_by
         FOREIGN KEY (actioned_by) REFERENCES users(id) ON DELETE SET NULL
 );
