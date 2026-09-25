@@ -842,16 +842,16 @@ const PAGE_CSS = `
 // HELPERS
 // ─────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  pending:        { bg: '#fef3c7', color: '#92400e', label: 'Pending',           icon: 'clock'  },
-  accepted:       { bg: '#dbeafe', color: '#1d4ed8', label: 'Payment Required',  icon: 'credit' },
-  accepted_pv:    { bg: '#fef3c7', color: '#92400e', label: 'Pending Verification', icon: 'clock' },
-  accepted_paid:  { bg: '#d1fae5', color: '#065f46', label: 'Awaiting Pickup',   icon: 'check'  },
-  active:         { bg: '#d1fae5', color: '#065f46', label: 'Active',            icon: 'pulse'  },
-  return_pending: { bg: '#fef3c7', color: '#b45309', label: 'Return Pending',    icon: 'clock'  },
-  completed:      { bg: '#f0fdf4', color: '#15803d', label: 'Completed',         icon: 'check'  },
-  declined:       { bg: '#fee2e2', color: '#b91c1c', label: 'Declined',          icon: 'alert'  },
-  cancelled:      { bg: '#f3f4f6', color: '#6b7280', label: 'Cancelled',         icon: null     },
-  disputed:       { bg: '#fee2e2', color: '#b91c1c', label: 'Disputed',          icon: 'alert'  },
+  pending: { bg: '#fef3c7', color: '#92400e', label: 'Pending', icon: 'clock' },
+  accepted: { bg: '#dbeafe', color: '#1d4ed8', label: 'Payment Required', icon: 'credit' },
+  accepted_pv: { bg: '#fef3c7', color: '#92400e', label: 'Pending Verification', icon: 'clock' },
+  accepted_paid: { bg: '#d1fae5', color: '#065f46', label: 'Awaiting Pickup', icon: 'check' },
+  active: { bg: '#d1fae5', color: '#065f46', label: 'Active', icon: 'pulse' },
+  return_pending: { bg: '#fef3c7', color: '#b45309', label: 'Return Pending', icon: 'clock' },
+  completed: { bg: '#f0fdf4', color: '#15803d', label: 'Completed', icon: 'check' },
+  declined: { bg: '#fee2e2', color: '#b91c1c', label: 'Declined', icon: 'alert' },
+  cancelled: { bg: '#f3f4f6', color: '#6b7280', label: 'Cancelled', icon: null },
+  disputed: { bg: '#fee2e2', color: '#b91c1c', label: 'Disputed', icon: 'alert' },
 }
 
 function resolveStatus(status, paymentStatus) {
@@ -865,18 +865,18 @@ function resolveStatus(status, paymentStatus) {
 
 function StatusBadge({ status, paymentStatus, overdue }) {
   const resolved = resolveStatus(status, paymentStatus)
-  const cfg   = STATUS_CFG[resolved] || { bg: '#f1f5f9', color: '#475569', label: resolved, icon: null }
-  const bg    = overdue ? '#fee2e2' : cfg.bg
+  const cfg = STATUS_CFG[resolved] || { bg: '#f1f5f9', color: '#475569', label: resolved, icon: null }
+  const bg = overdue ? '#fee2e2' : cfg.bg
   const color = overdue ? '#b91c1c' : cfg.color
-  const label = overdue ? 'Overdue'  : cfg.label
-  const icon  = overdue ? 'alert'    : cfg.icon
+  const label = overdue ? 'Overdue' : cfg.label
+  const icon = overdue ? 'alert' : cfg.icon
 
   return (
     <span className="mr-status-badge" style={{ background: bg, color }}>
-      {icon === 'pulse'  && <span className="mr-pulse-dot" />}
-      {icon === 'alert'  && <AlertTriangle size={11} />}
-      {icon === 'check'  && <CheckCircle2 size={11} />}
-      {icon === 'clock'  && <Clock size={11} />}
+      {icon === 'pulse' && <span className="mr-pulse-dot" />}
+      {icon === 'alert' && <AlertTriangle size={11} />}
+      {icon === 'check' && <CheckCircle2 size={11} />}
+      {icon === 'clock' && <Clock size={11} />}
       {icon === 'credit' && <CreditCard size={11} />}
       {label}
     </span>
@@ -962,13 +962,13 @@ function initials(name) {
 // ─────────────────────────────────────────────────────────────
 function Confetti({ active, onDone }) {
   const canvasRef = useRef(null)
-  const rafRef    = useRef(null)
+  const rafRef = useRef(null)
 
   useEffect(() => {
     if (!active || !canvasRef.current) return
     const canvas = canvasRef.current
-    const ctx    = canvas.getContext('2d')
-    canvas.width  = window.innerWidth
+    const ctx = canvas.getContext('2d')
+    canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
     const COLORS = ['#c6e930', '#0f3d2e', '#fff', '#4ade80', '#fbbf24']
@@ -992,8 +992,8 @@ function Confetti({ active, onDone }) {
       pieces.forEach(p => {
         if (p.y > canvas.height + 20) return
         alive = true
-        p.x  += p.vx
-        p.y  += p.vy
+        p.x += p.vx
+        p.y += p.vy
         p.rot += p.rotV
         p.vy += 0.08 // gravity
         if (frame > 50) p.alpha = Math.max(0, p.alpha - 0.012)
@@ -1025,9 +1025,9 @@ function Confetti({ active, onDone }) {
 // PAYMENT GUIDE (inline, under the pay button)
 // ─────────────────────────────────────────────────────────────
 function PaymentGuide({ rental }) {
-  const fee     = Number(rental.agreed_total_amount || 0)
+  const fee = Number(rental.agreed_total_amount || 0)
   const deposit = Number(rental.deposit_amount || 0)
-  const total   = fee + deposit
+  const total = fee + deposit
 
   return (
     <div className="mr-pay-guide">
@@ -1056,42 +1056,42 @@ function RentalCard({
   onPaymentSuccess,
   onConfirmDialog,
 }) {
-  const urgency      = getRentalUrgency(rental)
-  const overdue      = Boolean(rental.is_overdue || urgency?.isOverdue)
-  const iAmRenter    = role === 'renting'
-  const isDisputed   = rental.status === 'disputed'
-  const isCompleted  = rental.status === 'completed'
+  const urgency = getRentalUrgency(rental)
+  const overdue = Boolean(rental.is_overdue || urgency?.isOverdue)
+  const iAmRenter = role === 'renting'
+  const isDisputed = rental.status === 'disputed'
+  const isCompleted = rental.status === 'completed'
 
-  const myPickup           = iAmRenter ? rental.borrower_confirmed_pickup : rental.owner_confirmed_pickup
-  const theirPickup        = iAmRenter ? rental.owner_confirmed_pickup    : rental.borrower_confirmed_pickup
-  const daysUntilStart     = getDaysUntilDate(rental.start_datetime)
+  const myPickup = iAmRenter ? rental.borrower_confirmed_pickup : rental.owner_confirmed_pickup
+  const theirPickup = iAmRenter ? rental.owner_confirmed_pickup : rental.borrower_confirmed_pickup
+  const daysUntilStart = getDaysUntilDate(rental.start_datetime)
   const isPickupDateReached = daysUntilStart <= 0
-  const canConfirmPickup   = rental.status === 'accepted' && !myPickup && isPickupDateReached
+  const canConfirmPickup = rental.status === 'accepted' && !myPickup && isPickupDateReached
   const isAwaitingPickupDate = rental.status === 'accepted' && !myPickup && !isPickupDateReached
 
-  const myReturn           = iAmRenter
+  const myReturn = iAmRenter
     ? (rental.borrower_confirmed_return ?? rental.renter_confirmed_return)
     : rental.owner_confirmed_return
-  const theirReturn        = iAmRenter
+  const theirReturn = iAmRenter
     ? rental.owner_confirmed_return
     : (rental.borrower_confirmed_return ?? rental.renter_confirmed_return)
-  const daysUntilEnd       = getDaysUntilDate(rental.end_datetime)
+  const daysUntilEnd = getDaysUntilDate(rental.end_datetime)
   const isReturnDateReached = daysUntilEnd <= 0
-  const canConfirmReturn   = ['active', 'return_pending'].includes(rental.status) && !myReturn && isReturnDateReached
+  const canConfirmReturn = ['active', 'return_pending'].includes(rental.status) && !myReturn && isReturnDateReached
   const isAwaitingReturnDate = ['active', 'return_pending'].includes(rental.status) && !myReturn && !isReturnDateReached
 
   const payPanelOpen = showPayPanelId === rental.id
-  const imageUrl     = rental.item_image_urls?.[0] || null
-  const otherName    = rental.other_party_name ||
-                       rental.other_party_username ||
-                       (iAmRenter ? (rental.owner_name || rental.owner_username) : (rental.borrower_name || rental.borrower_username)) ||
-                       'Unknown'
-  const otherAvatar  = rental.other_party_avatar || (iAmRenter ? rental.owner_profile_image : rental.borrower_profile_image)
+  const imageUrl = rental.item_image_urls?.[0] || null
+  const otherName = rental.other_party_name ||
+    rental.other_party_username ||
+    (iAmRenter ? (rental.owner_name || rental.owner_username) : (rental.borrower_name || rental.borrower_username)) ||
+    'Unknown'
+  const otherAvatar = rental.other_party_avatar || (iAmRenter ? rental.owner_profile_image : rental.borrower_profile_image)
 
   const cardClass = [
     'mr-card-wrap',
-    overdue    ? 'overdue'   : '',
-    isDisputed ? 'disputed'  : '',
+    overdue ? 'overdue' : '',
+    isDisputed ? 'disputed' : '',
     isCompleted ? 'completed-card' : '',
   ].filter(Boolean).join(' ')
 
@@ -1380,19 +1380,19 @@ function ConfirmDialog({ open, onOpenChange, data, onConfirm, loading }) {
 // ─────────────────────────────────────────────────────────────
 export default function MyRentals() {
   const { currentUser } = useAuth()
-  const navigate        = useNavigate()
+  const navigate = useNavigate()
 
-  const [tab,           setTab]           = useState('renting')
-  const [filter,        setFilter]        = useState('all')
-  const [data,          setData]          = useState({ renting: [], owned: [] })
-  const [loading,       setLoading]       = useState(true)
-  const [error,         setError]         = useState('')
-  const [confirmingId,  setConfirmingId]  = useState(null)
+  const [tab, setTab] = useState('renting')
+  const [filter, setFilter] = useState('all')
+  const [data, setData] = useState({ renting: [], owned: [] })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [confirmingId, setConfirmingId] = useState(null)
   const [showPayPanelId, setShowPayPanel] = useState(null)
 
   // Confirm dialog state
-  const [dialogOpen,   setDialogOpen]   = useState(false)
-  const [dialogData,   setDialogData]   = useState(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogData, setDialogData] = useState(null)
 
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -1400,18 +1400,18 @@ export default function MyRentals() {
   // ── Load data ──
   const load = useCallback(async () => {
     try {
-      const res      = await getMyRentalBookings()
+      const res = await getMyRentalBookings()
       const bookings = res.bookings || []
       const prevCompleted = data.renting.filter(b => b.status === 'completed').map(b => b.id)
-      const newRenting    = bookings.filter(b => b.borrower_id === currentUser?.id)
-      const newCompleted  = newRenting.filter(b => b.status === 'completed').map(b => b.id)
+      const newRenting = bookings.filter(b => b.borrower_id === currentUser?.id)
+      const newCompleted = newRenting.filter(b => b.status === 'completed').map(b => b.id)
       // Check if any rental just became completed
       const justDone = newCompleted.some(id => !prevCompleted.includes(id))
       if (justDone) setShowConfetti(true)
 
       setData({
         renting: newRenting,
-        owned:   bookings.filter(b => b.owner_id === currentUser?.id),
+        owned: bookings.filter(b => b.owner_id === currentUser?.id),
       })
     } catch {
       setError('Unable to load your rentals right now.')
@@ -1467,22 +1467,22 @@ export default function MyRentals() {
   }
 
   // ── Derived lists ──
-  const list          = tab === 'renting' ? data.renting : data.owned
-  const pendingCount  = data.owned.filter(r => r.status === 'pending').length
-  const actionList    = list.filter(r => requiresAction(r, tab))
-  const activeList    = list.filter(r => ['active', 'return_pending'].includes(r.status))
+  const list = tab === 'renting' ? data.renting : data.owned
+  const pendingCount = data.owned.filter(r => r.status === 'pending').length
+  const actionList = list.filter(r => requiresAction(r, tab))
+  const activeList = list.filter(r => ['active', 'return_pending'].includes(r.status))
   const completedList = list.filter(r => ['completed', 'cancelled', 'declined'].includes(r.status))
-  const filteredList  =
-    filter === 'action'    ? actionList :
-    filter === 'active'    ? activeList :
-    filter === 'completed' ? completedList :
-    list
+  const filteredList =
+    filter === 'action' ? actionList :
+      filter === 'active' ? activeList :
+        filter === 'completed' ? completedList :
+          list
 
   const FILTERS = [
-    { key: 'all',       label: 'All',          count: list.length, urgent: false },
-    { key: 'action',    label: 'Needs Action', count: actionList.length, urgent: actionList.length > 0 },
-    { key: 'active',    label: 'Active',       count: activeList.length, urgent: false },
-    { key: 'completed', label: 'Completed',    count: completedList.length, urgent: false },
+    { key: 'all', label: 'All', count: list.length, urgent: false },
+    { key: 'action', label: 'Needs Action', count: actionList.length, urgent: actionList.length > 0 },
+    { key: 'active', label: 'Active', count: activeList.length, urgent: false },
+    { key: 'completed', label: 'Completed', count: completedList.length, urgent: false },
   ]
 
   return (
@@ -1541,8 +1541,8 @@ export default function MyRentals() {
       <div className="mr-seg-wrap">
         <div className="mr-seg">
           {[
-            { key: 'renting', label: 'Renting',       count: data.renting.length },
-            { key: 'owned',   label: 'My Items Out',  count: data.owned.length   },
+            { key: 'renting', label: 'Renting', count: data.renting.length },
+            { key: 'owned', label: 'My Items Out', count: data.owned.length },
           ].map(t => (
             <button
               key={t.key}
@@ -1595,8 +1595,8 @@ export default function MyRentals() {
             {filter === 'action'
               ? "No rentals need your attention right now — you're all caught up."
               : filter === 'active'
-              ? 'No active rentals in this tab.'
-              : 'No completed rentals yet.'}
+                ? 'No active rentals in this tab.'
+                : 'No completed rentals yet.'}
           </p>
           <button
             type="button"
@@ -1621,8 +1621,8 @@ export default function MyRentals() {
                 role={tab}
                 showPayPanelId={showPayPanelId}
                 onTogglePayPanel={handleTogglePayPanel}
-                onConfirmPickup={() => {}}
-                onConfirmReturn={() => {}}
+                onConfirmPickup={() => { }}
+                onConfirmReturn={() => { }}
                 confirmingId={confirmingId}
                 navigate={navigate}
                 onPaymentSuccess={handlePaymentSuccess}

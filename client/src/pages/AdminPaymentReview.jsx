@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import { ReportsPanel } from '../features/verification/AdminVerification';
 import {
   getAdminPendingPayments,
   adminConfirmPayment,
@@ -1364,6 +1365,13 @@ export default function AdminPaymentReview() {
           >
             Rental Payments {rentalBookings.length > 0 && `(${rentalBookings.length})`}
           </button>
+          <button
+            type="button"
+            className={`apr-tab ${activeTab === 'reports' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reports')}
+          >
+            Reports
+          </button>
         </div>
 
         {globalMsg && (
@@ -1372,7 +1380,9 @@ export default function AdminPaymentReview() {
           </div>
         )}
 
-        {activeTab === 'skill-applications' ? (
+        {activeTab === 'reports' ? (
+          <ReportsPanel type="skilter" />
+        ) : activeTab === 'skill-applications' ? (
           <>
             {providerError && (
               <div className="apr-alert apr-alert-error">{providerError}</div>

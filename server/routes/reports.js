@@ -13,11 +13,11 @@ const ALLOWED_REPORT_REASONS = [
 ];
 
 // POST a new report (any authenticated user)
-// Accepts optional trade_offer_id (Barter) or skill_booking_id (Skilter) for conversation linking.
+// Accepts optional trade_offer_id (Barter), skill_booking_id (Skilter), or rental_booking_id (Rental).
 router.post("/", requireAuth, async (req, res) => {
   try {
     console.log('REPORT POST RECEIVED', { body: req.body, userId: req.userId });
-    const { reported_user_id, reason, description, trade_offer_id = null, skill_booking_id = null } = req.body;
+    const { reported_user_id, reason, description, trade_offer_id = null, skill_booking_id = null, rental_booking_id = null } = req.body;
     const reported_by = req.userId;
 
     if (!reported_user_id) {
@@ -55,19 +55,30 @@ router.post("/", requireAuth, async (req, res) => {
       canonicalSkillBookingId = bookingRes.rows[0]?.id ?? null;
     }
 
+    let canonicalRentalBookingId = null;
+    if (rental_booking_id) {
+      const rentalRes = await db.query(
+        "SELECT id FROM rental_bookings WHERE id = $1",
+        [rental_booking_id]
+      );
+      canonicalRentalBookingId = rentalRes.rows[0]?.id ?? null;
+    }
+
     console.log('INSERT VALUES:', {
       reported_by,
       reported_user_id,
       reason: finalReason,
       trade_offer_id,
       skill_booking_id,
+      rental_booking_id,
       canonicalTradeOfferId,
-      canonicalSkillBookingId
+      canonicalSkillBookingId,
+      canonicalRentalBookingId
     });
 
     const insertRes = await db.query(
-      "INSERT INTO reports (reported_by, reported_user_id, reason, trade_offer_id, skill_booking_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, reported_by, reported_user_id, reason, trade_offer_id, skill_booking_id, created_at",
-      [reported_by, reported_user_id, finalReason, canonicalTradeOfferId, canonicalSkillBookingId]
+      "INSERT INTO reports (reported_by, reported_user_id, reason, trade_offer_id, skill_booking_id, rental_booking_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, reported_by, reported_user_id, reason, trade_offer_id, skill_booking_id, rental_booking_id, created_at",
+      [reported_by, reported_user_id, finalReason, canonicalTradeOfferId, canonicalSkillBookingId, canonicalRentalBookingId]
     );
     const created = insertRes.rows[0];
     console.log('REPORT INSERTED', created);
@@ -126,7 +137,7 @@ router.get("/mine", requireAuth, async (req, res) => {
 router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { type } = req.query;
-    const allowedTypes = ['barter', 'skilter'];
+    const allowedTypes = ['barter', 'skilter', 'rental'];
     const reportType = allowedTypes.includes(type) ? type : null;
 
     const whereClauses = [];
@@ -135,6 +146,9 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
     }
     if (reportType === 'skilter') {
       whereClauses.push('r.skill_booking_id IS NOT NULL');
+    }
+    if (reportType === 'rental') {
+      whereClauses.push('r.rental_booking_id IS NOT NULL');
     }
 
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -146,6 +160,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
          r.created_at,
          r.trade_offer_id,
          r.skill_booking_id,
+         r.rental_booking_id,
          r.reported_by,
          r.reported_user_id,
          reporter.username  AS reporter_username,
@@ -175,7 +190,7 @@ router.get("/:id/conversation", requireAuth, requireAdmin, async (req, res) => {
 
     // Look up the report and its linked conversation (Barter or Skilter)
     const reportRes = await db.query(
-      `SELECT r.trade_offer_id, r.skill_booking_id, r.reported_by, r.reported_user_id,
+      `SELECT r.trade_offer_id, r.skill_booking_id, r.rental_booking_id, r.reported_by, r.reported_user_id,
               reporter.username AS reporter_username,
               reported.username AS reported_username,
               reported.id AS reported_user_id
@@ -234,6 +249,30 @@ router.get("/:id/conversation", requireAuth, requireAdmin, async (req, res) => {
         hasConversation: true,
         type: 'skilter',
         skillBookingId: report.skill_booking_id,
+        reporterUsername: report.reporter_username,
+        reportedUsername: report.reported_username,
+        reportedUserId: report.reported_user_id,
+        messages: msgRes.rows,
+      });
+    }
+
+    // Handle Rental reports (rental_booking_id)
+    if (report.rental_booking_id) {
+      const msgRes = await db.query(
+        `SELECT m.id, m.sender_id, m.message, m.created_at,
+                u.username AS sender_username
+         FROM rental_messages m
+         JOIN users u ON u.id = m.sender_id
+         WHERE m.booking_id = $1
+         ORDER BY m.created_at ASC`,
+        [report.rental_booking_id]
+      );
+      console.log('MESSAGES FETCHED (RENTAL)', { reportId: id, bookingId: report.rental_booking_id, count: msgRes.rows.length });
+      return res.json({
+        success: true,
+        hasConversation: true,
+        type: 'rental',
+        rentalBookingId: report.rental_booking_id,
         reporterUsername: report.reporter_username,
         reportedUsername: report.reported_username,
         reportedUserId: report.reported_user_id,
