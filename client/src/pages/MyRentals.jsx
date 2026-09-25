@@ -26,6 +26,7 @@ import { getMyRentalBookings } from '../services/rentalBookingService'
 import { getDaysUntilDate } from '../utils/helpers'
 import RentalTimeline from '../components/RentalTimeline'
 import PaymentUploadPanelRental from '../components/PaymentUploadPanelRental'
+import RatingForm from '../features/ratings/RatingForm'
 // Card, CardContent, Badge, Button imported for future use / RentalBookingDetail parity
 import { Separator } from '../components/ui/separator.jsx'
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar.jsx'
@@ -1203,14 +1204,21 @@ function RentalCard({
           {/* Completed reward message */}
           {isCompleted && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: '#f0fdf4', borderRadius: 12, padding: '10px 14px',
-              marginBottom: 10, border: '1px solid #bbf7d0',
+              display: 'flex', flexDirection: 'column', gap: 12,
+              background: '#f0fdf4', borderRadius: 12, padding: '14px 16px',
+              marginBottom: 12, border: '1px solid #bbf7d0',
             }}>
-              <Sparkles size={16} color="#15803d" />
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>
-                Rental complete! Deposit will be refunded shortly.
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={16} color="#15803d" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+                  Rental complete! Deposit will be refunded shortly.
+                </span>
+              </div>
+              {/* Rating form */}
+              <RatingForm
+                rentalBookingId={rental.id}
+                revieweeId={iAmRenter ? rental.owner_id : rental.borrower_id}
+              />
             </div>
           )}
 
