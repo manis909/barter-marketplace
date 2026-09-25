@@ -55,3 +55,53 @@ export async function uploadRentalBookingPayment(bookingId, screenshotFile, utr)
   });
   return res.data;
 }
+
+// ── Admin functions ───────────────────────────────────────────────────────────
+
+/**
+ * Admin: fetch all rental bookings with payment_status = 'pending_verification'.
+ */
+export async function getAdminPendingRentalPayments() {
+  const res = await api.get('/rental-bookings/admin/pending-payments');
+  return res.data;
+}
+
+/**
+ * Admin: confirm a rental payment — sets payment_status = 'paid'.
+ */
+export async function adminConfirmRentalPayment(bookingId) {
+  const res = await api.patch(`/rental-bookings/${bookingId}/confirm-payment`);
+  return res.data;
+}
+
+/**
+ * Admin: reject a rental payment submission — resets to unpaid, notifies renter.
+ * @param {string} bookingId
+ * @param {string} [reason] - optional explanation shown to renter
+ */
+export async function adminRejectRentalPayment(bookingId, reason = '') {
+  const res = await api.patch(`/rental-bookings/${bookingId}/reject-payment`, { reason });
+  return res.data;
+}
+
+/**
+ * Admin: confirm payout sent to seller/owner — sets payout_status = 'paid_out'.
+ */
+export async function adminConfirmRentalPayout(bookingId, { payout_utr = '', payout_notes = '' } = {}) {
+  const res = await api.patch(`/rental-bookings/${bookingId}/confirm-payout`, { payout_utr, payout_notes });
+  return res.data;
+}
+
+/**
+ * Fetch the rental payment screenshot through the auth-gated endpoint.
+ * Returns a temporary blob: URL safe to use as an <img> src.
+ * Caller must call URL.revokeObjectURL(url) when no longer needed.
+ */
+export async function getRentalPaymentScreenshotUrl(bookingId) {
+  const res = await api.get(`/rental-bookings/${bookingId}/payment-screenshot`, {
+    responseType: 'blob',
+  });
+  return URL.createObjectURL(res.data);
+}
+
+

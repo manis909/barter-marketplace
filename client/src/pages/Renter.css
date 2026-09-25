@@ -50,6 +50,7 @@
 .rental-market-details { border: 1px solid #c9dbd2; background: #f6f5f0; color: #2f5b4d; }
 .rental-market-rent { border: 0; background: #3d6e63; color: #fff; }
 .rental-market-rent:hover { background: #2f5b4d; }
+.rental-market-mine { display: inline-flex; flex: 1; align-items: center; justify-content: center; height: 36px; min-width: 0; padding: 0 6px; border-radius: 9px; font-size: .82rem; font-weight: 700; background: #F3F4F6; color: #6B7280; border: 1px dashed #D1D5DB; letter-spacing: 0.02em; }
 .renter-notice, .renter-state { display: grid; justify-items: center; gap: 10px; margin: 24px 0 48px; padding: 42px 20px; border: 1px solid #e1e6dd; border-radius: 18px; background: #fbfcf7; color: #367269; text-align: center; }
 .renter-state h2 { margin: 0; color: #283934; font-family: 'Fraunces', serif; }
 .renter-state p, .renter-notice p { max-width: 430px; margin: 0; color: #6e786f; line-height: 1.6; }

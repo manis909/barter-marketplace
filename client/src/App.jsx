@@ -28,6 +28,7 @@ import MySkillsManagement from './pages/MySkillsManagement';
 import RenterPage from './pages/Renter';
 import MyRentalsPage from './pages/MyRentals';
 import RentalRequestsPage from './pages/RentalRequests';
+import RentalWishlistPage from './pages/RentalWishlist';
 import AppLayout from './components/AppLayout';
 import ChatsLayout from './pages/ChatsLayout';
 import RentalChatsLayout from './pages/RentalChatsLayout';
@@ -36,6 +37,7 @@ import SkillsProfile from './pages/SkillsProfile';
 import RentalProfile from './pages/RentalProfile';
 import RentalListingsPage from './pages/RentalListings';
 import RentalDetailPage from './pages/RentalDetail';
+import RentalBookingDetailPage from './pages/RentalBookingDetail';
 import './App.css';
 import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
@@ -111,7 +113,9 @@ function App() {
             <Route path="/renter/listings" element={<RentalListingsPage />} />
             <Route path="/renter/my-rentals" element={<MyRentalsPage />} />
             <Route path="/renter/requests" element={<RentalRequestsPage />} />
+            <Route path="/renter/wishlist" element={<RentalWishlistPage />} />
             <Route path="/rental/:id" element={<RentalDetailPage />} />
+            <Route path="/renter/booking/:id" element={<RentalBookingDetailPage />} />
             <Route path="/rental/chat" element={<RentalChatsLayout />} />
             <Route path="/rental/chat/:bookingId" element={<RentalChatsLayout />} />
             <Route path="/chats" element={<ChatsLayout />} />

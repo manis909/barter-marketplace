@@ -34,6 +34,21 @@ function normalizeDisputeType(value) {
   return mapping[type] || 'other';
 }
 
+function normalizeDateOnly(input) {
+  if (!input) return null;
+  const str = typeof input === 'string' ? input.split('T')[0] : new Date(input).toISOString().split('T')[0];
+  const ms = Date.parse(str + 'T00:00:00.000Z');
+  return Number.isNaN(ms) ? null : new Date(ms);
+}
+
+function calculateRentalDays(startInput, endInput) {
+  const startD = normalizeDateOnly(startInput);
+  const endD = normalizeDateOnly(endInput);
+  if (!startD || !endD) return 1;
+  const diffDays = Math.round((endD.getTime() - startD.getTime()) / 86400000);
+  return Math.max(1, diffDays);
+}
+
 function computeBookingTotals(listing, startIso, endIso) {
   const start = new Date(startIso);
   const end = new Date(endIso);
@@ -44,14 +59,14 @@ function computeBookingTotals(listing, startIso, endIso) {
     throw new Error('end_datetime must be after start_datetime');
   }
 
-  const diffMs = end.getTime() - start.getTime();
   const rateType = normalizeRateType(listing.rate_type);
 
   let durationUnits = 0;
   if (rateType === 'hourly') {
+    const diffMs = end.getTime() - start.getTime();
     durationUnits = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)));
   } else if (rateType === 'daily') {
-    durationUnits = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    durationUnits = calculateRentalDays(startIso, endIso);
   } else {
     throw new Error('Unsupported rental listing rate_type');
   }
@@ -77,6 +92,7 @@ function formatBookingDetail(row) {
     meeting_location: row.meeting_location,
     deposit_amount: Number(row.deposit_amount || 0),
     payment_status: row.payment_status,
+    payment_submitted_at: row.payment_submitted_at || null,
     status: row.status,
     borrower_confirmed_pickup: row.borrower_confirmed_pickup,
     owner_confirmed_pickup: row.owner_confirmed_pickup,
@@ -84,6 +100,14 @@ function formatBookingDetail(row) {
     owner_confirmed_return: row.owner_confirmed_return,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    // Owner info
+    owner_username: row.owner_username || null,
+    owner_name: row.owner_name || null,
+    owner_profile_image: row.owner_profile_image || null,
+    // Borrower info
+    borrower_username: row.borrower_username || null,
+    borrower_name: row.borrower_name || null,
+    borrower_profile_image: row.borrower_profile_image || null,
     listing: row.listing_item_name ? {
       id: row.listing_id,
       item_name: row.listing_item_name,
@@ -134,9 +158,17 @@ async function fetchBookingWithListing(bookingId) {
             l.rate_type AS listing_rate_type,
             l.rate_amount AS listing_rate_amount,
             l.status AS listing_status,
-            l.owner_id AS listing_owner_id
+            l.owner_id AS listing_owner_id,
+            u_owner.username AS owner_username,
+            u_owner.full_name AS owner_name,
+            u_owner.profile_image AS owner_profile_image,
+            u_borrower.username AS borrower_username,
+            u_borrower.full_name AS borrower_name,
+            u_borrower.profile_image AS borrower_profile_image
      FROM rental_bookings b
      JOIN rental_listings l ON l.id = b.rental_listing_id
+     LEFT JOIN users u_owner ON u_owner.id = b.owner_id
+     LEFT JOIN users u_borrower ON u_borrower.id = b.borrower_id
      WHERE b.id = $1`,
     [bookingId]
   );
@@ -181,12 +213,24 @@ router.get('/mine', requireAuth, async (req, res) => {
               u_borrower.profile_image AS borrower_profile_image,
               u_owner.username AS owner_username,
               u_owner.full_name AS owner_name,
-              u_owner.profile_image AS owner_profile_image
+              u_owner.profile_image AS owner_profile_image,
+              CASE
+                WHEN rb.borrower_id = $1 THEN COALESCE(NULLIF(u_owner.full_name, ''), u_owner.username)
+                ELSE COALESCE(NULLIF(u_borrower.full_name, ''), u_borrower.username)
+              END AS other_party_name,
+              CASE
+                WHEN rb.borrower_id = $1 THEN u_owner.username
+                ELSE u_borrower.username
+              END AS other_party_username,
+              CASE
+                WHEN rb.borrower_id = $1 THEN u_owner.profile_image
+                ELSE u_borrower.profile_image
+              END AS other_party_avatar
        FROM rental_bookings rb
        LEFT JOIN rental_listings rl ON rl.id = rb.rental_listing_id
-       JOIN users u_borrower ON u_borrower.id = rb.borrower_id
-       JOIN users u_owner ON u_owner.id = rb.owner_id
-       WHERE rb.borrower_id = $1 OR rb.owner_id = $1
+       LEFT JOIN users u_borrower ON u_borrower.id = rb.borrower_id
+       LEFT JOIN users u_owner ON u_owner.id = COALESCE(rb.owner_id, rl.owner_id)
+       WHERE rb.borrower_id = $1 OR rb.owner_id = $1 OR rl.owner_id = $1
        ORDER BY rb.created_at DESC`,
       [req.userId]
     );
@@ -279,16 +323,6 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
       return res.status(400).json({ error: 'start_datetime and end_datetime are required' });
     }
 
-    const start = new Date(start_datetime);
-    const end = new Date(end_datetime);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return res.status(400).json({ error: 'Invalid datetime format' });
-    }
-
-    if (start <= new Date()) {
-      return res.status(400).json({ error: 'start_datetime cannot be in the past' });
-    }
-
     const listingResult = await db.query(
       `SELECT * FROM rental_listings WHERE id = $1`,
       [rental_listing_id]
@@ -299,6 +333,36 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
     }
 
     const listing = listingResult.rows[0];
+
+    const rateType = normalizeRateType(listing.rate_type);
+    let start, end;
+    if (rateType === 'daily') {
+      start = normalizeDateOnly(start_datetime);
+      end = normalizeDateOnly(end_datetime);
+      if (!start || !end) {
+        return res.status(400).json({ error: 'Invalid date format' });
+      }
+      const todayDate = normalizeDateOnly(new Date());
+      if (start < todayDate) {
+        return res.status(400).json({ error: 'start_datetime cannot be in the past' });
+      }
+      if (end <= start) {
+        return res.status(400).json({ error: 'end_datetime must be after start_datetime' });
+      }
+    } else {
+      start = new Date(start_datetime);
+      end = new Date(end_datetime);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return res.status(400).json({ error: 'Invalid datetime format' });
+      }
+      if (start <= new Date()) {
+        return res.status(400).json({ error: 'start_datetime cannot be in the past' });
+      }
+      if (end <= start) {
+        return res.status(400).json({ error: 'end_datetime must be after start_datetime' });
+      }
+    }
+
     if (listing.owner_id === req.userId) {
       return res.status(400).json({ error: "You can't rent your own listing" });
     }
@@ -368,7 +432,7 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
 router.patch('/:id/status', requireAuth, requireVerified, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, upi_id, account_holder_name } = req.body;
 
     if (!isValidUUID(id)) {
       return res.status(400).json({ error: 'Invalid booking id' });
@@ -389,6 +453,23 @@ router.patch('/:id/status', requireAuth, requireVerified, async (req, res) => {
 
     if (booking.status !== 'pending') {
       return res.status(400).json({ error: `Only pending bookings can be accepted or declined. Current status: ${booking.status}` });
+    }
+
+    if (status === 'accepted') {
+      if (!upi_id || typeof upi_id !== 'string' || !upi_id.includes('@') || upi_id.trim().length < 3) {
+        return res.status(400).json({ error: 'A valid payout UPI ID (e.g. username@bank) is required to accept this rental request' });
+      }
+
+      const cleanUpi = upi_id.trim();
+      const cleanName = (account_holder_name || '').trim();
+
+      await db.query(
+        `INSERT INTO seller_payout_details (user_id, entity_type, entity_id, upi_id, account_holder_name, updated_at)
+         VALUES ($1, 'rental_booking', $2, $3, $4, CURRENT_TIMESTAMP)
+         ON CONFLICT (entity_type, entity_id)
+         DO UPDATE SET upi_id = EXCLUDED.upi_id, account_holder_name = EXCLUDED.account_holder_name, updated_at = CURRENT_TIMESTAMP`,
+        [req.userId, id, cleanUpi, cleanName || null]
+      );
     }
 
     const update = await db.query(
@@ -576,6 +657,7 @@ router.patch('/:id/confirm-payment', requireAuth, requireAdmin, async (req, res)
     const update = await db.query(
       `UPDATE rental_bookings
        SET payment_status = 'paid',
+           payout_status = 'pending_payout',
            status = 'accepted',
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
@@ -602,6 +684,65 @@ router.patch('/:id/confirm-payment', requireAuth, requireAdmin, async (req, res)
     return res.json({ success: true, booking: formatBookingDetail(updated) });
   } catch (err) {
     console.error('PATCH /rental-bookings/:id/confirm-payment error:', err);
+    return res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+router.patch('/:id/confirm-payout', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { payout_utr, payout_notes } = req.body || {};
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
+
+    const booking = await fetchBookingWithListing(id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.payment_status !== 'paid') {
+      return res.status(400).json({ error: `Cannot send payout — buyer payment status is '${booking.payment_status}', expected 'paid'.` });
+    }
+
+    const update = await db.query(
+      `UPDATE rental_bookings
+       SET payout_status = 'paid_out',
+           payout_sent_at = NOW(),
+           payout_utr = $1,
+           payout_notes = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3
+       RETURNING *`,
+      [payout_utr ? String(payout_utr).trim() : null, payout_notes ? String(payout_notes).trim() : null, id]
+    );
+
+    const payoutDetailsRes = await db.query(
+      `SELECT upi_id, account_holder_name FROM seller_payout_details WHERE entity_type = 'rental_booking' AND entity_id = $1`,
+      [id]
+    );
+
+    createNotification(
+      booking.owner_id,
+      'rental_payout_sent',
+      'Payout Sent',
+      `Your payout for "${booking.listing_item_name}" has been processed by admin.`
+    ).catch((err) => console.error('Notification error (rental_payout_sent):', err));
+
+    return res.json({
+      success: true,
+      booking: {
+        ...formatBookingDetail(update.rows[0]),
+        payout_status: update.rows[0].payout_status,
+        payout_sent_at: update.rows[0].payout_sent_at,
+        payout_utr: update.rows[0].payout_utr,
+        seller_payout_upi: payoutDetailsRes.rows[0]?.upi_id || null,
+        seller_payout_name: payoutDetailsRes.rows[0]?.account_holder_name || null,
+      }
+    });
+  } catch (err) {
+    console.error('PATCH /rental-bookings/:id/confirm-payout error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });
   }
 });
@@ -669,6 +810,15 @@ router.post('/:id/confirm-pickup', requireAuth, requireVerified, async (req, res
       return res.status(400).json({ error: 'Pickup can only be confirmed while the booking is accepted' });
     }
 
+    const todayOnly = normalizeDateOnly(new Date());
+    const startOnly = normalizeDateOnly(booking.start_datetime);
+    if (startOnly && todayOnly && todayOnly.getTime() < startOnly.getTime()) {
+      const diffDays = Math.round((startOnly.getTime() - todayOnly.getTime()) / 86400000);
+      return res.status(400).json({
+        error: `Pickup can only be confirmed on or after the start date (${booking.start_datetime ? new Date(booking.start_datetime).toISOString().split('T')[0] : ''}). Starts in ${diffDays} day${diffDays === 1 ? '' : 's'}.`,
+      });
+    }
+
     const borrowerConfirmed = booking.borrower_id === req.userId ? true : booking.borrower_confirmed_pickup;
     const ownerConfirmed = booking.owner_id === req.userId ? true : booking.owner_confirmed_pickup;
     const nextBorrower = booking.borrower_id === req.userId ? true : booking.borrower_confirmed_pickup;
@@ -732,6 +882,15 @@ router.post('/:id/confirm-return', requireAuth, requireVerified, async (req, res
 
     if (!['active', 'return_pending'].includes(booking.status)) {
       return res.status(400).json({ error: 'Return confirmation is only valid for active bookings' });
+    }
+
+    const todayOnly = normalizeDateOnly(new Date());
+    const endOnly = normalizeDateOnly(booking.end_datetime);
+    if (endOnly && todayOnly && todayOnly.getTime() < endOnly.getTime()) {
+      const diffDays = Math.round((endOnly.getTime() - todayOnly.getTime()) / 86400000);
+      return res.status(400).json({
+        error: `Return can only be confirmed on or after the end date (${booking.end_datetime ? new Date(booking.end_datetime).toISOString().split('T')[0] : ''}). ${diffDays} day${diffDays === 1 ? '' : 's'} left until return.`,
+      });
     }
 
     const borrowerConfirmed = booking.borrower_id === req.userId ? true : booking.borrower_confirmed_return;
@@ -824,12 +983,111 @@ router.post('/:id/dispute', requireAuth, requireVerified, async (req, res) => {
       [id]
     );
 
+    const otherUserId = req.userId === booking.borrower_id ? booking.owner_id : booking.borrower_id;
+    createNotification(
+      otherUserId,
+      'rental_booking_disputed',
+      'Dispute Raised',
+      `A dispute was raised for "${booking.listing_item_name || 'rental item'}": ${description || 'Issue reported.'}`
+    ).catch((err) => console.error('Notification error (rental_booking_disputed):', err));
+
     return res.status(201).json({ success: true, dispute });
   } catch (err) {
     console.error('POST /rental-bookings/:id/dispute error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });
-  console.error('DELETE /rental-bookings/:bookingId/for-me error:', error);
-  res.status(500).json({ error: 'Failed to hide chat' });
+  }
+});
+
+// ── GET /api/rental-bookings/admin/pending-payments ─────────────────────────
+// Admin-only: list all rental bookings with payment and seller payout details.
+router.get('/admin/pending-payments', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT rb.id,
+              rb.payment_status,
+              rb.payment_utr,
+              rb.payment_submitted_at,
+              rb.payment_screenshot_url,
+              rb.payment_rejection_reason,
+              rb.payment_rejected_at,
+              rb.payout_status,
+              rb.payout_sent_at,
+              rb.payout_utr,
+              rb.payout_notes,
+              spd.upi_id         AS seller_payout_upi,
+              spd.account_holder_name AS seller_payout_name,
+              rb.agreed_total_amount,
+              rb.deposit_amount,
+              rb.start_datetime,
+              rb.end_datetime,
+              rb.created_at,
+              rl.item_name,
+              u_bor.id         AS borrower_id,
+              u_bor.username   AS borrower_username,
+              u_bor.full_name  AS borrower_name,
+              u_bor.email      AS borrower_email,
+              u_own.username   AS owner_username,
+              u_own.full_name  AS owner_name
+       FROM rental_bookings rb
+       JOIN rental_listings rl ON rl.id = rb.rental_listing_id
+       JOIN users u_bor ON u_bor.id = rb.borrower_id
+       JOIN users u_own ON u_own.id = rb.owner_id
+       LEFT JOIN seller_payout_details spd ON spd.entity_type = 'rental_booking' AND spd.entity_id = rb.id
+       WHERE rb.payment_status IN ('pending_verification', 'paid')
+       ORDER BY CASE WHEN rb.payment_status = 'pending_verification' THEN 0 WHEN rb.payout_status = 'pending_payout' THEN 1 ELSE 2 END,
+                rb.payment_submitted_at DESC NULLS LAST, rb.updated_at DESC`
+    );
+
+    res.json({ success: true, bookings: result.rows });
+  } catch (err) {
+    console.error('GET /rental-bookings/admin/pending-payments error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── GET /api/rental-bookings/:id/payment-screenshot ─────────────────────────
+// Auth-gated file stream. Allowed: admin OR the borrower who owns this booking.
+router.get('/:id/payment-screenshot', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  if (!isValidUUID(id)) {
+    return res.status(400).json({ error: 'Invalid booking id' });
+  }
+
+  try {
+    const bookingRes = await db.query(
+      'SELECT borrower_id, payment_screenshot_url FROM rental_bookings WHERE id = $1',
+      [id]
+    );
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const booking = bookingRes.rows[0];
+
+    const adminCheck = await db.query(
+      'SELECT is_admin FROM users WHERE id = $1',
+      [req.userId]
+    );
+    const isAdmin = adminCheck.rows[0]?.is_admin === true;
+    const isOwner = booking.borrower_id === req.userId;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Not authorised to view this screenshot' });
+    }
+
+    if (!booking.payment_screenshot_url) {
+      return res.status(404).json({ error: 'No screenshot on file for this booking' });
+    }
+
+    const filePath = path.join(__dirname, '..', booking.payment_screenshot_url);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Screenshot file not found on disk' });
+    }
+
+    res.sendFile(path.resolve(filePath));
+  } catch (err) {
+    console.error('GET /rental-bookings/:id/payment-screenshot error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

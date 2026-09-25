@@ -181,3 +181,41 @@ export function getErrorMessage(error) {
     'Something went wrong. Please try again.'
   );
 }
+
+export function normalizeDateOnly(input) {
+  if (!input) return null;
+  const str = typeof input === 'string' ? input.split('T')[0] : new Date(input).toISOString().split('T')[0];
+  const ms = Date.parse(str + 'T00:00:00.000Z');
+  return Number.isNaN(ms) ? null : new Date(ms);
+}
+
+/**
+ * Returns integer day difference from today to target date (targetDate - today).
+ * Positive if targetDate is in future, 0 if today, negative if in past.
+ * Uses date-only normalization to avoid time-of-day drift.
+ */
+export function getDaysUntilDate(targetDateInput) {
+  if (!targetDateInput) return 0;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayMs = Date.parse(todayStr + 'T00:00:00.000Z');
+
+  const targetStr = typeof targetDateInput === 'string' ? targetDateInput.split('T')[0] : new Date(targetDateInput).toISOString().split('T')[0];
+  const targetMs = Date.parse(targetStr + 'T00:00:00.000Z');
+
+  if (Number.isNaN(todayMs) || Number.isNaN(targetMs)) return 0;
+  return Math.round((targetMs - todayMs) / 86400000);
+}
+
+/**
+ * Calculates rental duration in whole days based on 24-hour / duration blocks (Option A).
+ * Normalizes input dates to date-only (midnight UTC) to prevent minute/hour drift.
+ */
+export function calculateRentalDays(startInput, endInput) {
+  const startD = normalizeDateOnly(startInput);
+  const endD = normalizeDateOnly(endInput);
+  if (!startD || !endD) return null;
+  const diffDays = Math.round((endD.getTime() - startD.getTime()) / 86400000);
+  return Math.max(1, diffDays);
+}
+

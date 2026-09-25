@@ -22,7 +22,7 @@ const primaryItems = [
   { label: 'Rental Requests',          icon: BriefcaseBusiness, path: '/renter/requests' },
   { label: 'Notifications',            icon: Bell,             path: '/notifications' },
   { label: 'Chat',                     icon: MessageCircle,    path: '/rental/chat' },
-  { label: 'Wishlist',                 icon: Heart,            path: '/wishlist' },
+  { label: 'Wishlist',                 icon: Heart,            path: '/renter/wishlist' },
   { label: 'Payments & Transactions',  icon: CreditCard,       path: '/wallet' },
   { label: 'Feedback',                 icon: Star,             path: '/feedback' },
 ]

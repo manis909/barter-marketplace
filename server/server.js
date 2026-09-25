@@ -8,6 +8,8 @@ const jwt = require("jsonwebtoken");
 console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Loaded" : "Missing");
 
 const db = require("./models/db");
+const initPayoutSchema = require("./models/initPayoutSchema");
+initPayoutSchema();
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const itemRoutes = require("./routes/items");
@@ -27,6 +29,7 @@ const skillWishlistRoutes = require("./routes/skillWishlist");
 const rentalRoutes = require("./routes/rentals");
 const rentalListingsRoutes = require("./routes/rentalListings");
 const rentalBookingsRoutes = require("./routes/rentalBookings");
+const rentalWishlistRoutes = require("./routes/rentalWishlist");
 const rentalChatRoutes = require("./routes/rentalChat");
 const rateLimit = require("express-rate-limit");
 const authLimiter = rateLimit({ 
@@ -62,6 +65,7 @@ app.use("/api/skill-wishlist", skillWishlistRoutes);
 app.use("/api/rentals", rentalRoutes);
 app.use("/api/rental-listings", rentalListingsRoutes);
 app.use("/api/rental-bookings", rentalBookingsRoutes);
+app.use("/api/rental-wishlist", rentalWishlistRoutes);
 app.use("/api/rental-chat", rentalChatRoutes);
 app.get("/", async (req, res) => {
   try {
