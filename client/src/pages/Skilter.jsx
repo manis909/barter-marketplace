@@ -20,17 +20,26 @@ import './Skilter.css'
 //   - Only shows active skills publicly (status === 'active')
 // ---------------------------------------------------------------------------
 
+// ── Client-side cache to avoid loading delays on return navigation ───────
+let skilterCache = {
+  skills: null,
+  searchKey: null,
+}
+
 export default function SkilterExplorePage() {
   const location = useLocation()
   const navigate  = useNavigate()
+
+  const currentSearchKey = new URLSearchParams(location.search).get('search') || ''
+  const hasCache = skilterCache.skills !== null && skilterCache.searchKey === currentSearchKey
 
   const [activeCategory, setActiveCategory] = useState(() =>
     normalizeSkilterCategory(
       new URLSearchParams(location.search).get('category')
     ) || ''
   )
-  const [skills, setSkills] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [skills, setSkills] = useState(() => (hasCache ? skilterCache.skills : []))
+  const [loading, setLoading] = useState(() => !hasCache)
   const [error, setError] = useState(null)
 
   // Sync state when URL changes (e.g. browser back/forward)
@@ -45,17 +54,22 @@ export default function SkilterExplorePage() {
   useEffect(() => {
     async function fetchSkills() {
       try {
-        setLoading(true)
-        setError(null)
         const params = new URLSearchParams(location.search)
+        const searchVal = params.get('search') || ''
+        if (!skilterCache.skills || skilterCache.searchKey !== searchVal) {
+          setLoading(true)
+        }
+        setError(null)
         const response = await api.get('/skills', {
-          params: { search: params.get('search') || undefined },
+          params: { search: searchVal || undefined },
         })
-        // Backend already filters for status === 'active'
-        setSkills(response.data.skills || [])
+        const fetchedSkills = response.data.skills || []
+        setSkills(fetchedSkills)
+        skilterCache.skills = fetchedSkills
+        skilterCache.searchKey = searchVal
       } catch (err) {
         console.error('Error fetching skills:', err)
-        setError(err.response?.data?.error || err.message || 'Failed to fetch skills')
+        if (!skilterCache.skills) setError(err.response?.data?.error || err.message || 'Failed to fetch skills')
       } finally {
         setLoading(false)
       }

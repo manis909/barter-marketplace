@@ -90,7 +90,7 @@
   width: 100%;
   border-radius: 24px;
   overflow: hidden;
-  background: #F0FAF9;
+  background: #EAF4EE;
   border: 1px solid #D0ECE9;
   box-shadow: 0 8px 30px rgba(0, 92, 102, 0.08);
   display: flex;
@@ -102,6 +102,7 @@
   width: 100%;
   height: auto;
   object-fit: contain;
+  mix-blend-mode: multiply;
   transition: opacity 0.25s ease;
 }
 

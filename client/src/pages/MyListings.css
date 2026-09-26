@@ -604,7 +604,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  background: linear-gradient(135deg, #f5f4f0 0%, #e7efe9 100%);
+  background: #EAF4EE;
   min-height: 210px;
 }
 
@@ -625,6 +625,7 @@
   width: 100%;
   height: 210px;
   object-fit: contain;
+  mix-blend-mode: multiply;
   display: block;
   border-radius: 14px;
   transition: transform 0.2s ease;

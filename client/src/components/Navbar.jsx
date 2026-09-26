@@ -14,8 +14,14 @@ import './Navbar.css'
 import api from '../services/api';
 import { getAdminPendingPayments } from '../services/skillBookingService';
 
-const CATEGORIES        = CATEGORY_META
+const CATEGORIES = CATEGORY_META
 const SKILTER_CATEGORIES = SKILTER_CATEGORY_META
+
+const platformTabs = [
+  { key: 'Barter', label: 'Barter', path: '/explore' },
+  { key: 'Skilter', label: 'Skilter', path: '/skilter' },
+  { key: 'Renter', label: 'Renter', path: '/renter' },
+]
 
 export default function Navbar() {
   const location = useLocation()
@@ -98,59 +104,60 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
   useEffect(() => {
-  if (!currentUser?.is_admin) return;
+    if (!currentUser?.is_admin) return;
 
-  function countOpenReports(reports) {
-    return reports.filter(r => !['actioned', 'dismissed'].includes(r.status)).length;
-  }
-
-  async function loadAdminCounts() {
-    try {
-      const [verif, trades, barterReports, skilterReports, payments] = await Promise.all([
-        api.get('/verification/pending'),
-        api.get('/trades/admin/awaiting-verification'),
-        api.get('/reports', { params: { type: 'barter' } }),
-        api.get('/reports', { params: { type: 'skilter' } }),
-        getAdminPendingPayments(),
-      ]);
-
-      setAdminCounts({
-        barter: verif.data.pending.length + trades.data.trades.length + countOpenReports(barterReports.data.reports),
-        skilter: (payments.bookings || []).length + countOpenReports(skilterReports.data.reports),
-      });
-    } catch {
-      // fail silently — badge just won't show a number this cycle
+    function countOpenReports(reports) {
+      return reports.filter(r => !['actioned', 'dismissed'].includes(r.status)).length;
     }
-  }
 
-  loadAdminCounts();
-  const interval = setInterval(loadAdminCounts, 60000); // refresh every 60s
-  return () => clearInterval(interval);
-}, [currentUser?.is_admin]);
+    async function loadAdminCounts() {
+      try {
+        const [verif, trades, barterReports, skilterReports, payments] = await Promise.all([
+          api.get('/verification/pending'),
+          api.get('/trades/admin/awaiting-verification'),
+          api.get('/reports', { params: { type: 'barter' } }),
+          api.get('/reports', { params: { type: 'skilter' } }),
+          getAdminPendingPayments(),
+        ]);
 
-  const isExploreActive = location.pathname === '/explore' || location.pathname === '/' || location.pathname === '/skilter/explore' || location.pathname === '/skilter'
+        setAdminCounts({
+          barter: verif.data.pending.length + trades.data.trades.length + countOpenReports(barterReports.data.reports),
+          skilter: (payments.bookings || []).length + countOpenReports(skilterReports.data.reports),
+        });
+      } catch {
+        // fail silently — badge just won't show a number this cycle
+      }
+    }
+
+    loadAdminCounts();
+    const interval = setInterval(loadAdminCounts, 60000); // refresh every 60s
+    return () => clearInterval(interval);
+  }, [currentUser?.is_admin]);
+
+  const isExploreActive = location.pathname === '/explore' || location.pathname === '/'
   const isSkilterActive = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
-  // Show the mobile category row on both Barter Explore and Skilter Explore
-  const showCategoryRow = isExploreActive || isSkilterActive
+  const isRenterActive = location.pathname.startsWith('/renter') || location.pathname.startsWith('/rent')
+  // Show the mobile category row on Barter, Skilter, and Renter explore pages
+  const showCategoryRow = isExploreActive || isSkilterActive || isRenterActive
 
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
   const SKILTER_PREFIXES = ['/skilter', '/skills']
-  const RENTER_PREFIXES  = ['/renter', '/rent', '/rental']
-  const BARTER_PREFIXES  = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
-                             '/wishlist', '/wallet', '/add-item', '/item/']
+  const RENTER_PREFIXES = ['/renter', '/rent', '/rental']
+  const BARTER_PREFIXES = ['/explore', '/my-listings', '/my-trades', '/trade-requests',
+    '/wishlist', '/wallet', '/add-item', '/item/']
 
   // Paths that are platform-neutral (shared pages like Profile, Feedback, etc.)
   // When navigating to these, we keep whichever platform was active before.
   const isNeutralPath = (p) =>
     p.startsWith('/profile') ||
-    p === '/feedback'        ||
-    p === '/help'            ||
-    p === '/notifications'   ||
-    p === '/privacy'         ||
-    p === '/terms'           ||
-    p === '/chats'           ||
-    p.startsWith('/chat/')   ||
+    p === '/feedback' ||
+    p === '/help' ||
+    p === '/notifications' ||
+    p === '/privacy' ||
+    p === '/terms' ||
+    p === '/chats' ||
+    p.startsWith('/chat/') ||
     p === '/logout'
 
   // Remember the last explicitly-set platform so neutral pages don't reset it
@@ -177,7 +184,7 @@ export default function Navbar() {
     // Fallback for any other path (landing, login, etc.)
     lastPlatformRef.current = 'Barter'
     return 'Barter'
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 
   const handleSearchChange = useCallback((event) => {
@@ -235,11 +242,18 @@ export default function Navbar() {
     [location.search, navigate]
   )
 
-  const platformTabs = [
-    { key: 'Barter', label: 'Barter', path: '/explore' },
-    { key: 'Skilter', label: 'Skilter', path: '/skilter' },
-    { key: 'Renter', label: 'Renter', path: '/renter' },
-  ]
+  const handleRenterCategoryClick = useCallback(
+    (categoryName) => {
+      const params = new URLSearchParams(location.search)
+      if (!categoryName || categoryName === 'All') {
+        params.delete('category')
+      } else {
+        params.set('category', categoryName)
+      }
+      navigate({ pathname: '/renter', search: params.toString() ? `?${params.toString()}` : '' })
+    },
+    [location.search, navigate]
+  )
 
   const handlePlatformSelect = useCallback(
     (platform) => {
@@ -309,9 +323,9 @@ export default function Navbar() {
 
             {/* Desktop Right: Actions */}
             <div className="navbar-right">
-              <Link 
-                to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'} 
-                className="navbar-link" 
+              <Link
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'}
+                className="navbar-link"
                 style={{ position: 'relative' }}
               >
                 Explore
@@ -325,7 +339,7 @@ export default function Navbar() {
                 )}
               </Link>
 
-             {currentUser?.is_admin && (
+              {currentUser?.is_admin && (
                 <div
                   className="navbar-item-dropdown"
                   ref={desktopAdminRef}
@@ -408,28 +422,28 @@ export default function Navbar() {
                     currentPlatform === 'Skilter'
                       ? 'skilter'
                       : currentPlatform === 'Renter'
-                      ? 'rental'
-                      : 'barter'
+                        ? 'rental'
+                        : 'barter'
                   }
                 />
               )}
 
               {currentUser ? (
-  <motion.button
-    type="button"
-    className="profile-button"
-    onClick={() => setDrawerOpen(true)}
-    aria-label="Open profile drawer"
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.96 }}
-  >
-    {currentUser.profile_image ? (
-      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
-    ) : (
-      <User className="profile-icon" size={20} />
-    )}
-  </motion.button>
-) : (
+                <motion.button
+                  type="button"
+                  className="profile-button"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label="Open profile drawer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  {currentUser.profile_image ? (
+                    <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
+                  ) : (
+                    <User className="profile-icon" size={20} />
+                  )}
+                </motion.button>
+              ) : (
                 <Link to="/login" className="navbar-link navbar-login-btn">
                   Login
                 </Link>
@@ -488,8 +502,8 @@ export default function Navbar() {
                       currentPlatform === 'Skilter'
                         ? 'skilter'
                         : currentPlatform === 'Renter'
-                        ? 'rental'
-                        : 'barter'
+                          ? 'rental'
+                          : 'barter'
                     }
                   />
                 )}
@@ -537,8 +551,8 @@ export default function Navbar() {
                   <div className="categories-track">
                     {(isSkilterActive ? SKILTER_CATEGORIES : CATEGORIES).map((cat) => {
                       const activeCat = isSkilterActive ? skilterCategory : activeCategory
-                      const isActive  = activeCat === cat.name
-                      const IconComp  = cat.icon
+                      const isActive = activeCat === cat.name
+                      const IconComp = cat.icon
                       return (
                         <button
                           key={cat.id}
@@ -547,7 +561,9 @@ export default function Navbar() {
                           onClick={() =>
                             isSkilterActive
                               ? handleSkilterCategoryClick(cat.name)
-                              : handleCategoryClick(cat.name)
+                              : isRenterActive
+                                ? handleRenterCategoryClick(cat.name)
+                                : handleCategoryClick(cat.name)
                           }
                           aria-label={`Category ${cat.name}`}
                         >

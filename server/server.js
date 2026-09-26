@@ -174,4 +174,12 @@ app.set("io", io);
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ Error: Port ${PORT} is already in use by another process.`);
+    console.error(`👉 Stop the existing Node process or change the PORT in your server .env file.\n`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', err);
+  }
 });
