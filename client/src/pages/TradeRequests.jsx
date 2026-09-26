@@ -52,48 +52,45 @@ const BARTER_CSS = `
   .tr-container { box-shadow: 0 0 60px rgba(15,61,46,0.08); }
 }
 
-.hero {
-  background: linear-gradient(135deg, var(--dark) 0%, var(--green) 42%, var(--light-green) 78%, #4f8a67 100%);
-  padding: 40px 24px 80px;
-  position: relative;
-  overflow: hidden;
+/* ── Top bar (Apple × Duolingo — no green headboard) ── */
+.page-top-bar {
+  padding: 24px 20px 0;
 }
 @media (min-width: 768px) {
-  .hero { padding: 52px 40px 90px; }
+  .page-top-bar { padding: 32px 36px 0; }
 }
-.hero::after {
-  content: "";
-  position: absolute;
-  right: -40px; top: -60px;
-  width: 220px; height: 220px;
-  border-radius: 50%;
-  background: var(--lime);
-  opacity: 0.14;
-}
-.hero-back {
+.page-back-btn {
   display: inline-flex;
-  align-items: center; justify-content: center;
-  width: 38px; height: 38px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,0.28);
-  background: rgba(255,255,255,0.14);
-  color: #fff; cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: background 0.18s;
-  font-size: 18px; line-height: 1;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,61,46,0.15);
+  background: #ffffff;
+  color: var(--dark);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-.hero-back:hover { background: rgba(255,255,255,0.26); }
+.page-back-btn:hover {
+  background: #f0f4f1;
+  border-color: rgba(15,61,46,0.25);
+}
 
 .title-card {
   background: var(--paper);
-  margin: -40px 16px 0;
+  margin: 16px 16px 0;
   border-radius: 22px;
   padding: 24px 22px;
   position: relative; z-index: 2;
-  box-shadow: 0 12px 30px rgba(15,61,46,0.10);
+  border: 1px solid rgba(15,61,46,0.08);
+  box-shadow: 0 4px 20px rgba(15,61,46,0.05);
 }
 @media (min-width: 768px) {
-  .title-card { margin: -44px 32px 0; padding: 28px 32px; border-radius: 26px; }
+  .title-card { margin: 18px 36px 0; padding: 28px 32px; border-radius: 26px; }
 }
 .title-card h1 {
   font-family: 'Fraunces', serif;
@@ -253,9 +250,7 @@ export default function TradeRequestsPage() {
       <div style={{ background: 'var(--cream)', minHeight: '100vh', width: '100%' }}>
         <div className="tr-container">
           <style>{BARTER_CSS}</style>
-          <div className="hero">
-            <button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">←</button>
-          </div>
+          <div className="page-top-bar"><button type="button" className="page-back-btn" onClick={() => navigate(-1)} aria-label="Go back">← Back</button></div>
           <div className="title-card">
             <h1>Trade Requests</h1>
             <p style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16, margin: '8px 0 4px' }}>You're not logged in</p>
@@ -272,9 +267,7 @@ export default function TradeRequestsPage() {
       <div style={{ background: 'var(--cream)', minHeight: '100vh', width: '100%' }}>
         <div className="tr-container" aria-busy="true" aria-label="Loading trade requests">
           <style>{BARTER_CSS}</style>
-          <div className="hero">
-            <button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">←</button>
-          </div>
+          <div className="page-top-bar"><button type="button" className="page-back-btn" onClick={() => navigate(-1)} aria-label="Go back">← Back</button></div>
           <div className="title-card">
             <h1>Trade Requests</h1>
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>Loading incoming offers…</p>
@@ -294,9 +287,7 @@ export default function TradeRequestsPage() {
       <div style={{ background: 'var(--cream)', minHeight: '100vh', width: '100%' }}>
         <div className="tr-container">
           <style>{BARTER_CSS}</style>
-          <div className="hero">
-            <button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">←</button>
-          </div>
+          <div className="page-top-bar"><button type="button" className="page-back-btn" onClick={() => navigate(-1)} aria-label="Go back">← Back</button></div>
           <div className="title-card">
             <h1>Trade Requests</h1>
             <p style={{ fontWeight: 600, color: '#dc2626', margin: '8px 0 4px' }}>Could not load trade requests</p>

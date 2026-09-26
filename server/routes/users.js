@@ -159,11 +159,13 @@ router.get('/:id/skills', async (req, res) => {
   res.json({ skills: result.rows });
 });
 // ---- Get all rental listings owned by a specific user (for their Rental Profile page) ----
-// Add this anywhere before module.exports = router; in users.js
+// Updated to use actual 'rentals' table instead of non-existent 'rental_listings'
 router.get('/:id/rental-listings', async (req, res) => {
   const result = await db.query(
-    `SELECT id, item_name, description, category, image_urls, rate_type, rate_amount, status
-     FROM rental_listings
+    `SELECT id, title as item_name, description, category, 
+            CASE WHEN image_url IS NOT NULL THEN ARRAY[image_url] ELSE ARRAY[]::text[] END as image_urls,
+            'daily' as rate_type, daily_rate as rate_amount, status
+     FROM rentals
      WHERE owner_id = $1
      ORDER BY created_at DESC`,
     [req.params.id]

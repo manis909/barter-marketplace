@@ -15,7 +15,13 @@ const T = {
   radiusCtrl: '9px',
 };
 
-export default function RatingForm({ tradeOfferId, revieweeId, onSubmitted }) {
+export default function RatingForm({
+  tradeOfferId,
+  skillBookingId,
+  rentalBookingId,
+  revieweeId,
+  onSubmitted,
+}) {
   const [rating,     setRating]     = useState(0);
   const [review,     setReview]     = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -29,25 +35,50 @@ export default function RatingForm({ tradeOfferId, revieweeId, onSubmitted }) {
     setSubmitting(true);
     setError('');
 
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${API_URL}/api/ratings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ trade_offer_id: tradeOfferId, reviewee_id: revieweeId, rating, review }),
-    });
+    try {
+      const transactions = [
+        tradeOfferId && { key: 'trade_offer_id', id: tradeOfferId, label: 'trade' },
+        skillBookingId && { key: 'skill_booking_id', id: skillBookingId, label: 'skill booking' },
+        rentalBookingId && { key: 'rental_booking_id', id: rentalBookingId, label: 'rental booking' },
+      ].filter(Boolean);
 
-    setSubmitting(false);
+      if (transactions.length !== 1) {
+        setError('A single transaction is required to submit a rating.');
+        return;
+      }
 
-    if (res.status === 409) {
-      // Already rated — treat as success so the UI moves forward
+      const transaction = transactions[0];
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/ratings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          [transaction.key]: transaction.id,
+          reviewee_id: revieweeId,
+          rating,
+          review,
+        }),
+      });
+
+      if (res.status === 409) {
+        // Already rated or no longer eligible — let the parent refresh its state.
+        const data = await res.json().catch(() => ({}));
+        const duplicateMessage = `You already rated this ${transaction.label}`;
+        if (data.message === duplicateMessage && onSubmitted) onSubmitted();
+        else setError(data.message || 'This trade is not eligible for rating yet.');
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || 'Something went wrong. Please try again.');
+        return;
+      }
       if (onSubmitted) onSubmitted();
-      return;
+    } catch {
+      setError('Unable to submit rating. Please check your connection and try again.');
+    } finally {
+      setSubmitting(false);
     }
-    if (!res.ok) {
-      setError('Something went wrong. Please try again.');
-      return;
-    }
-    if (onSubmitted) onSubmitted();
   };
 
   return (
@@ -61,7 +92,7 @@ export default function RatingForm({ tradeOfferId, revieweeId, onSubmitted }) {
       width: '100%',
     }}>
       <p style={{ margin: '0 0 10px', fontSize: 13.5, fontWeight: 600, color: T.text }}>
-        Rate your trade experience
+        Rate your {tradeOfferId ? 'trade' : rentalBookingId ? 'rental' : 'skill booking'} experience
       </p>
 
       {/* Star selector */}

@@ -98,6 +98,15 @@ export async function adminRejectPayment(bookingId, reason = '') {
 }
 
 /**
+ * Admin: confirm payout sent to teacher — sets payout_status = 'paid_out'.
+ */
+export async function adminConfirmSkillPayout(bookingId, { payout_utr = '', payout_notes = '' } = {}) {
+  const res = await api.patch(`/skill-bookings/${bookingId}/confirm-payout`, { payout_utr, payout_notes });
+  return res.data;
+}
+
+
+/**
  * Fetch hidden skill booking chat IDs for the current user.
  * Returns an array of booking IDs that have been hidden.
  */

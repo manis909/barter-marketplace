@@ -266,6 +266,9 @@ export default function SkillChatsLayout() {
       {/* LEFT: chat list */}
       <div className={`skillchatslayout-sidebar${!showChatOnMobile ? ' mobile-show' : ''}`} style={s.sidebar}>
         <div style={s.sidebarHeader}>
+          <button type="button" onClick={() => navigate('/skilter/explore')} style={s.iconBtn} aria-label="Back to Skilter Explore">
+            <BackArrow />
+          </button>
           <h2 style={s.sidebarTitle}>Skill Chats</h2>
         </div>
         <div className="skillchatslayout-sidebar-scroll" style={s.sidebarScroll}>
@@ -331,7 +334,7 @@ export default function SkillChatsLayout() {
         ) : (
           <>
             <div className="skillchatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/skilter/chat')} style={s.iconBtn} aria-label="Back to chats">
+              <button type="button" onClick={() => navigate('/skilter/explore')} style={s.iconBtn} aria-label="Back to Skilter Explore">
                 <BackArrow />
               </button>
               <button

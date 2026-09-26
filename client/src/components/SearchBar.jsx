@@ -60,7 +60,11 @@ export default function SearchBar({
           signal: abortRef.current.signal,
         })
 
-        const allItems = searchEndpoint === '/rentals' && Array.isArray(response.data?.rentals)
+        const isRentalEndpoint =
+          searchEndpoint === '/rentals' ||
+          searchEndpoint === '/rental-listings'
+
+        const allItems = isRentalEndpoint && Array.isArray(response.data?.rentals)
           ? response.data.rentals
           : Array.isArray(response.data?.items)
           ? response.data.items

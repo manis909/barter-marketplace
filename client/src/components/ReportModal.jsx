@@ -15,6 +15,7 @@ export default function ReportModal({
   reportedUserId,
   tradeOfferId = null,
   skillBookingId = null,
+  rentalBookingId = null,
   userName = '',
   onSuccess,
 }) {
@@ -89,6 +90,7 @@ export default function ReportModal({
           description: isOther ? cleanDesc : '',
           trade_offer_id: tradeOfferId || null,
           skill_booking_id: skillBookingId || null,
+          rental_booking_id: rentalBookingId || null,
         }),
       });
 

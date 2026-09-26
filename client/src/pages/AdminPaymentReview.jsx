@@ -2,12 +2,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import { ReportsPanel } from '../features/verification/AdminVerification';
 import {
   getAdminPendingPayments,
   adminConfirmPayment,
   adminRejectPayment,
+  adminConfirmSkillPayout,
   getPaymentScreenshotUrl,
 } from '../services/skillBookingService';
+import {
+  getAdminPendingRentalPayments,
+  adminConfirmRentalPayment,
+  adminRejectRentalPayment,
+  adminConfirmRentalPayout,
+  getRentalPaymentScreenshotUrl,
+} from '../services/rentalBookingService';
 
 const ADMIN_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
@@ -527,6 +536,21 @@ const ADMIN_CSS = `
 .btn-reject:hover    { background: var(--danger-bg); }
 .btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.btn-payout {
+  background: var(--lime);
+  color: var(--dark);
+  border: none;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+.btn-payout:hover    { opacity: 0.9; transform: translateY(-1px); }
+.btn-payout:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .btn-reject-confirm {
   background: var(--danger);
   color: #fff;
@@ -552,7 +576,277 @@ const ADMIN_CSS = `
 }
 `;
 
-// ── Screenshot loader ─────────────────────────────────────────────────────────
+// ── Rental booking screenshot loader ──────────────────────────────────────────
+function RentalBookingScreenshot({ bookingId }) {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    let url = null;
+    async function load() {
+      try {
+        url = await getRentalPaymentScreenshotUrl(bookingId);
+        if (active) setBlobUrl(url);
+      } catch (err) {
+        if (active) setImgError(err.response?.data?.error || 'Could not load screenshot');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => { active = false; if (url) URL.revokeObjectURL(url); };
+  }, [bookingId]);
+
+  if (loading) return <div className="apr-screenshot-placeholder">Loading screenshot…</div>;
+  if (imgError || !blobUrl) return <div className="apr-screenshot-placeholder" style={{ color: '#991b1b' }}>{imgError || 'No screenshot available'}</div>;
+  return <img src={blobUrl} alt="Payment screenshot" className="apr-screenshot" />;
+}
+
+// ── Rental payment review card ────────────────────────────────────────────────
+function RentalReviewCard({ booking, onRefresh, setGlobalMsg }) {
+  const [working, setWorking] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showPayoutForm, setShowPayoutForm] = useState(false);
+  const [payoutUtr, setPayoutUtr] = useState('');
+  const [payoutNotes, setPayoutNotes] = useState('');
+  const [localError, setLocalError] = useState('');
+
+  async function handleConfirm() {
+    setLocalError('');
+    setWorking(true);
+    try {
+      await adminConfirmRentalPayment(booking.id);
+      setGlobalMsg({ type: 'success', text: `✓ Rental payment confirmed for ${booking.borrower_name} — ${booking.item_name}` });
+      onRefresh();
+    } catch (err) {
+      setLocalError(err.response?.data?.error || 'Confirmation failed');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleReject() {
+    setLocalError('');
+    setWorking(true);
+    try {
+      await adminRejectRentalPayment(booking.id, rejectReason);
+      setGlobalMsg({ type: 'success', text: 'Rejected — renter has been notified to re-submit.' });
+      onRefresh();
+    } catch (err) {
+      setLocalError(err.response?.data?.error || 'Rejection failed');
+    } finally {
+      setWorking(false);
+      setShowRejectForm(false);
+    }
+  }
+
+  async function handlePayout() {
+    setLocalError('');
+    setWorking(true);
+    try {
+      await adminConfirmRentalPayout(booking.id, { payout_utr: payoutUtr, payout_notes: payoutNotes });
+      setGlobalMsg({ type: 'success', text: `✓ Payout marked as sent to ${booking.owner_name || booking.owner_username}` });
+      setShowPayoutForm(false);
+      onRefresh();
+    } catch (err) {
+      setLocalError(err.response?.data?.error || 'Payout confirmation failed');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function copyUtr(val) {
+    navigator.clipboard.writeText(val || '').then(() => {
+      setGlobalMsg({ type: 'success', text: `Copied: ${val}` });
+      setTimeout(() => setGlobalMsg(null), 2500);
+    });
+  }
+
+  const submittedAt = booking.payment_submitted_at
+    ? new Date(booking.payment_submitted_at).toLocaleString()
+    : '—';
+  const totalDue = Number(booking.agreed_total_amount || 0) + Number(booking.deposit_amount || 0);
+  const isPaid = booking.payment_status === 'paid';
+  const isPaidOut = booking.payout_status === 'paid_out';
+
+  return (
+    <div className="apr-card">
+      <div className="apr-card-header">
+        <div className="apr-card-header-left">
+          <h2>{booking.item_name}</h2>
+          <p>Owner: @{booking.owner_username} {booking.owner_name ? `(${booking.owner_name})` : ''}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <span className="apr-badge" style={{ background: isPaid ? '#d1fae5' : '#fef3c7', color: isPaid ? '#065f46' : '#92400e' }}>
+            {isPaid ? '✓ Buyer Paid' : '⏳ Buyer Payment Pending'}
+          </span>
+          {isPaid && (
+            <span className="apr-badge" style={{ background: isPaidOut ? '#d1fae5' : '#e0e7ff', color: isPaidOut ? '#065f46' : '#3730a3' }}>
+              {isPaidOut ? '✓ Payout Sent' : '⏳ Payout Pending'}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="apr-card-body">
+        <div className="apr-meta-row">
+          <div className="apr-meta-item">
+            <strong>Renter</strong>
+            <span>{booking.borrower_name} (@{booking.borrower_username})</span>
+          </div>
+          <div className="apr-meta-item">
+            <strong>Amount</strong>
+            <span>₹{totalDue.toLocaleString('en-IN')} (fee ₹{Number(booking.agreed_total_amount||0).toLocaleString('en-IN')} + deposit ₹{Number(booking.deposit_amount||0).toLocaleString('en-IN')})</span>
+          </div>
+          <div className="apr-meta-item">
+            <strong>Submitted</strong>
+            <span>{submittedAt}</span>
+          </div>
+          <div className="apr-meta-item">
+            <strong>Buyer UTR</strong>
+            {booking.payment_utr ? (
+              <span id={`rental-utr-copy-${booking.id}`} className="apr-utr" onClick={() => copyUtr(booking.payment_utr)} title="Click to copy">
+                {booking.payment_utr}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--muted)' }}>—</span>
+            )}
+          </div>
+        </div>
+
+        {/* Seller Payout Contact Section */}
+        <div style={{
+          background: '#f8f7f2', border: '1px solid rgba(15,61,46,0.12)',
+          borderRadius: 12, padding: '12px 16px', marginTop: 10,
+        }}>
+          <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--dark)' }}>
+            🏦 Seller Payout Contact
+          </p>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 13.5 }}>
+            <div>
+              <span style={{ color: 'var(--muted)', marginRight: 4 }}>Payout UPI:</span>
+              {booking.seller_payout_upi ? (
+                <strong
+                  style={{ color: 'var(--dark)', cursor: 'pointer', textDecoration: 'underline' }}
+                  onClick={() => copyUtr(booking.seller_payout_upi)}
+                  title="Click to copy UPI ID"
+                >
+                  {booking.seller_payout_upi} 📋
+                </strong>
+              ) : (
+                <span style={{ color: 'var(--muted)' }}>Not provided yet</span>
+              )}
+            </div>
+            {booking.seller_payout_name && (
+              <div>
+                <span style={{ color: 'var(--muted)', marginRight: 4 }}>Account Name:</span>
+                <strong style={{ color: 'var(--dark)' }}>{booking.seller_payout_name}</strong>
+              </div>
+            )}
+            <div>
+              <span style={{ color: 'var(--muted)', marginRight: 4 }}>Payout Status:</span>
+              <strong style={{ color: isPaidOut ? '#15803d' : '#b45309' }}>
+                {isPaidOut ? 'Paid Out' : booking.payout_status === 'pending_payout' ? 'Pending Payout' : 'Unpaid'}
+              </strong>
+            </div>
+          </div>
+          {isPaidOut && booking.payout_utr && (
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+              Payout Ref / UTR: <strong style={{ color: 'var(--dark)' }}>{booking.payout_utr}</strong>
+            </p>
+          )}
+        </div>
+
+        <div className="apr-screenshot-wrap">
+          <RentalBookingScreenshot bookingId={booking.id} />
+        </div>
+
+        {localError && <div className="apr-alert apr-alert-error">{localError}</div>}
+
+        {showRejectForm && (
+          <div className="apr-reject-form">
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--danger)' }}>
+              Rejection reason (optional — shown to renter)
+            </p>
+            <textarea
+              id={`rental-reject-reason-${booking.id}`}
+              className="apr-reject-input"
+              rows={3}
+              placeholder="e.g. Screenshot unclear, UTR not matching, wrong amount…"
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              disabled={working}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button id={`rental-reject-confirm-${booking.id}`} className="btn-reject-confirm" onClick={handleReject} disabled={working}>
+                {working ? 'Rejecting…' : 'Confirm Rejection'}
+              </button>
+              <button className="btn-cancel-reject" onClick={() => { setShowRejectForm(false); setRejectReason(''); }} disabled={working}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showPayoutForm && (
+          <div className="apr-reject-form" style={{ background: '#f7fee7', borderColor: '#bef264' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--dark)' }}>
+              Mark Payout as Sent to Seller
+            </p>
+            <p style={{ margin: '4px 0 8px', fontSize: 12, color: 'var(--muted)' }}>
+              Pay fee ₹{Number(booking.agreed_total_amount||0).toLocaleString('en-IN')} to UPI: <strong>{booking.seller_payout_upi || '—'}</strong>
+            </p>
+            <input
+              type="text"
+              className="apr-reject-input"
+              placeholder="Enter Payout Transaction Ref / UTR (optional)"
+              value={payoutUtr}
+              onChange={e => setPayoutUtr(e.target.value)}
+              disabled={working}
+              style={{ marginBottom: 8 }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-payout" onClick={handlePayout} disabled={working}>
+                {working ? 'Saving…' : '✓ Confirm Payout Sent'}
+              </button>
+              <button className="btn-cancel-reject" onClick={() => setShowPayoutForm(false)} disabled={working}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="apr-actions">
+        {!isPaid ? (
+          <>
+            <button id={`rental-confirm-${booking.id}`} className="btn-confirm" onClick={handleConfirm} disabled={working || showRejectForm}>
+              {working && !showRejectForm ? 'Confirming…' : '✓ Verify Buyer Payment'}
+            </button>
+            {!showRejectForm && (
+              <button id={`rental-reject-open-${booking.id}`} className="btn-reject" onClick={() => setShowRejectForm(true)} disabled={working}>
+                ✗ Reject
+              </button>
+            )}
+          </>
+        ) : !isPaidOut ? (
+          <button className="btn-payout" onClick={() => setShowPayoutForm(true)} disabled={working || showPayoutForm}>
+            💸 Mark Payout as Sent to Seller
+          </button>
+        ) : (
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d', padding: '10px 0' }}>
+            ✓ Both Legs Completed (Buyer Paid & Seller Paid Out)
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Skill booking screenshot loader ───────────────────────────────────────────
 function BookingScreenshot({ bookingId }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -607,11 +901,15 @@ function BookingScreenshot({ bookingId }) {
   );
 }
 
+
 // ── Single booking review card ────────────────────────────────────────────────
 function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
   const [working, setWorking] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [showPayoutForm, setShowPayoutForm] = useState(false);
+  const [payoutUtr, setPayoutUtr] = useState('');
+  const [payoutNotes, setPayoutNotes] = useState('');
   const [localError, setLocalError] = useState('');
 
   async function handleConfirm() {
@@ -623,12 +921,7 @@ function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
       onRefresh();
     } catch (err) {
       const msg = err.response?.data?.error || 'Confirmation failed';
-      // 409 = session full — surface prominently
-      setLocalError(
-        err.response?.status === 409
-          ? `⚠️ ${msg}`
-          : msg
-      );
+      setLocalError(err.response?.status === 409 ? `⚠️ ${msg}` : msg);
     } finally {
       setWorking(false);
     }
@@ -649,9 +942,24 @@ function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
     }
   }
 
-  function copyUtr() {
-    navigator.clipboard.writeText(booking.payment_utr || '').then(() => {
-      setGlobalMsg({ type: 'success', text: `UTR copied: ${booking.payment_utr}` });
+  async function handlePayout() {
+    setLocalError('');
+    setWorking(true);
+    try {
+      await adminConfirmSkillPayout(booking.id, { payout_utr: payoutUtr, payout_notes: payoutNotes });
+      setGlobalMsg({ type: 'success', text: `✓ Payout marked as sent to teacher ${booking.teacher_name || booking.teacher_username}` });
+      setShowPayoutForm(false);
+      onRefresh();
+    } catch (err) {
+      setLocalError(err.response?.data?.error || 'Payout confirmation failed');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function copyUtr(val) {
+    navigator.clipboard.writeText(val || '').then(() => {
+      setGlobalMsg({ type: 'success', text: `Copied: ${val}` });
       setTimeout(() => setGlobalMsg(null), 2500);
     });
   }
@@ -659,15 +967,26 @@ function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
   const submittedAt = booking.payment_submitted_at
     ? new Date(booking.payment_submitted_at).toLocaleString()
     : '—';
+  const isPaid = booking.payment_status === 'paid';
+  const isPaidOut = booking.payout_status === 'paid_out';
 
   return (
     <div className="apr-card">
       <div className="apr-card-header">
         <div className="apr-card-header-left">
           <h2>{booking.skill_name}</h2>
-          <p>Teacher: @{booking.teacher_username}</p>
+          <p>Teacher: @{booking.teacher_username} {booking.teacher_name ? `(${booking.teacher_name})` : ''}</p>
         </div>
-        <span className="apr-badge">⏳ Pending</span>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <span className="apr-badge" style={{ background: isPaid ? '#d1fae5' : '#fef3c7', color: isPaid ? '#065f46' : '#92400e' }}>
+            {isPaid ? '✓ Learner Paid' : '⏳ Learner Payment Pending'}
+          </span>
+          {isPaid && (
+            <span className="apr-badge" style={{ background: isPaidOut ? '#d1fae5' : '#e0e7ff', color: isPaidOut ? '#065f46' : '#3730a3' }}>
+              {isPaidOut ? '✓ Payout Sent' : '⏳ Payout Pending'}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="apr-card-body">
@@ -678,16 +997,20 @@ function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
             <span>{booking.learner_name} (@{booking.learner_username})</span>
           </div>
           <div className="apr-meta-item">
+            <strong>Price</strong>
+            <span>{booking.price_type === 'free' ? 'Free' : `₹${Number(booking.price || 0).toLocaleString('en-IN')}`}</span>
+          </div>
+          <div className="apr-meta-item">
             <strong>Submitted</strong>
             <span>{submittedAt}</span>
           </div>
           <div className="apr-meta-item">
-            <strong>UTR</strong>
+            <strong>Learner UTR</strong>
             {booking.payment_utr ? (
               <span
                 id={`utr-copy-${booking.id}`}
                 className="apr-utr"
-                onClick={copyUtr}
+                onClick={() => copyUtr(booking.payment_utr)}
                 title="Click to copy"
               >
                 {booking.payment_utr}
@@ -696,6 +1019,49 @@ function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
               <span style={{ color: 'var(--muted)' }}>—</span>
             )}
           </div>
+        </div>
+
+        {/* Teacher Payout Contact Section */}
+        <div style={{
+          background: '#f8f7f2', border: '1px solid rgba(15,61,46,0.12)',
+          borderRadius: 12, padding: '12px 16px', marginTop: 10,
+        }}>
+          <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--dark)' }}>
+            🏦 Teacher Payout Contact
+          </p>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 13.5 }}>
+            <div>
+              <span style={{ color: 'var(--muted)', marginRight: 4 }}>Payout UPI:</span>
+              {booking.seller_payout_upi ? (
+                <strong
+                  style={{ color: 'var(--dark)', cursor: 'pointer', textDecoration: 'underline' }}
+                  onClick={() => copyUtr(booking.seller_payout_upi)}
+                  title="Click to copy UPI ID"
+                >
+                  {booking.seller_payout_upi} 📋
+                </strong>
+              ) : (
+                <span style={{ color: 'var(--muted)' }}>Not provided yet</span>
+              )}
+            </div>
+            {booking.seller_payout_name && (
+              <div>
+                <span style={{ color: 'var(--muted)', marginRight: 4 }}>Account Name:</span>
+                <strong style={{ color: 'var(--dark)' }}>{booking.seller_payout_name}</strong>
+              </div>
+            )}
+            <div>
+              <span style={{ color: 'var(--muted)', marginRight: 4 }}>Payout Status:</span>
+              <strong style={{ color: isPaidOut ? '#15803d' : '#b45309' }}>
+                {isPaidOut ? 'Paid Out' : booking.payout_status === 'pending_payout' ? 'Pending Payout' : 'Unpaid'}
+              </strong>
+            </div>
+          </div>
+          {isPaidOut && booking.payout_utr && (
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+              Payout Ref / UTR: <strong style={{ color: 'var(--dark)' }}>{booking.payout_utr}</strong>
+            </p>
+          )}
         </div>
 
         {/* Screenshot — loaded via auth-gated endpoint, displayed as blob: URL */}
@@ -741,26 +1107,66 @@ function ReviewCard({ booking, onRefresh, setGlobalMsg }) {
             </div>
           </div>
         )}
+
+        {showPayoutForm && (
+          <div className="apr-reject-form" style={{ background: '#f7fee7', borderColor: '#bef264' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--dark)' }}>
+              Mark Payout as Sent to Teacher
+            </p>
+            <p style={{ margin: '4px 0 8px', fontSize: 12, color: 'var(--muted)' }}>
+              Pay fee ₹{Number(booking.price || 0).toLocaleString('en-IN')} to UPI: <strong>{booking.seller_payout_upi || '—'}</strong>
+            </p>
+            <input
+              type="text"
+              className="apr-reject-input"
+              placeholder="Enter Payout Transaction Ref / UTR (optional)"
+              value={payoutUtr}
+              onChange={e => setPayoutUtr(e.target.value)}
+              disabled={working}
+              style={{ marginBottom: 8 }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-payout" onClick={handlePayout} disabled={working}>
+                {working ? 'Saving…' : '✓ Confirm Payout Sent'}
+              </button>
+              <button className="btn-cancel-reject" onClick={() => setShowPayoutForm(false)} disabled={working}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="apr-actions">
-        <button
-          id={`confirm-${booking.id}`}
-          className="btn-confirm"
-          onClick={handleConfirm}
-          disabled={working || showRejectForm}
-        >
-          {working && !showRejectForm ? 'Confirming…' : '✓ Confirm Payment'}
-        </button>
-        {!showRejectForm && (
-          <button
-            id={`reject-open-${booking.id}`}
-            className="btn-reject"
-            onClick={() => setShowRejectForm(true)}
-            disabled={working}
-          >
-            ✗ Reject
+        {!isPaid ? (
+          <>
+            <button
+              id={`confirm-${booking.id}`}
+              className="btn-confirm"
+              onClick={handleConfirm}
+              disabled={working || showRejectForm}
+            >
+              {working && !showRejectForm ? 'Confirming…' : '✓ Verify Learner Payment'}
+            </button>
+            {!showRejectForm && (
+              <button
+                id={`reject-open-${booking.id}`}
+                className="btn-reject"
+                onClick={() => setShowRejectForm(true)}
+                disabled={working}
+              >
+                ✗ Reject
+              </button>
+            )}
+          </>
+        ) : !isPaidOut ? (
+          <button className="btn-payout" onClick={() => setShowPayoutForm(true)} disabled={working || showPayoutForm}>
+            💸 Mark Payout as Sent to Teacher
           </button>
+        ) : (
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d', padding: '10px 0' }}>
+            ✓ Both Legs Completed (Learner Paid & Teacher Paid Out)
+          </span>
         )}
       </div>
     </div>
@@ -785,6 +1191,10 @@ export default function AdminPaymentReview() {
   const [reviewAction, setReviewAction] = useState(null);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [videoDeleting, setVideoDeleting] = useState(false);
+  // Rental payments state
+  const [rentalBookings, setRentalBookings] = useState([]);
+  const [rentalLoading, setRentalLoading] = useState(false);
+  const [rentalError, setRentalError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -819,6 +1229,23 @@ export default function AdminPaymentReview() {
       setProviderLoading(false);
     }
   }, [token]);
+
+  const loadRentalPayments = useCallback(async () => {
+    setRentalLoading(true);
+    setRentalError('');
+    try {
+      const data = await getAdminPendingRentalPayments();
+      setRentalBookings(data.bookings || []);
+    } catch (err) {
+      setRentalError(
+        err.response?.status === 403
+          ? 'Access denied — admin privileges required.'
+          : err.response?.data?.error || 'Failed to load rental payments.'
+      );
+    } finally {
+      setRentalLoading(false);
+    }
+  }, []);
 
   const handleDeleteDemoVideo = useCallback(async () => {
     if (!token || !selectedApplication) return;
@@ -892,8 +1319,10 @@ export default function AdminPaymentReview() {
   useEffect(() => {
     if (activeTab === 'skill-applications') {
       loadSkillProviderApplications();
+    } else if (activeTab === 'rental-payments') {
+      loadRentalPayments();
     }
-  }, [activeTab, loadSkillProviderApplications]);
+  }, [activeTab, loadSkillProviderApplications, loadRentalPayments]);
 
   useEffect(() => {
     if (!globalMsg) return;
@@ -927,7 +1356,21 @@ export default function AdminPaymentReview() {
             className={`apr-tab ${activeTab === 'payment-review' ? 'active' : ''}`}
             onClick={() => setActiveTab('payment-review')}
           >
-            Payment Review
+            Skill Payments
+          </button>
+          <button
+            type="button"
+            className={`apr-tab ${activeTab === 'rental-payments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('rental-payments')}
+          >
+            Rental Payments {rentalBookings.length > 0 && `(${rentalBookings.length})`}
+          </button>
+          <button
+            type="button"
+            className={`apr-tab ${activeTab === 'reports' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reports')}
+          >
+            Reports
           </button>
         </div>
 
@@ -937,7 +1380,9 @@ export default function AdminPaymentReview() {
           </div>
         )}
 
-        {activeTab === 'skill-applications' ? (
+        {activeTab === 'reports' ? (
+          <ReportsPanel type="skilter" />
+        ) : activeTab === 'skill-applications' ? (
           <>
             {providerError && (
               <div className="apr-alert apr-alert-error">{providerError}</div>
@@ -1143,6 +1588,31 @@ export default function AdminPaymentReview() {
                     </>
                   )}
                 </div>
+              </div>
+            )}
+          </>
+        ) : activeTab === 'rental-payments' ? (
+          <>
+            {rentalError && (
+              <div className="apr-alert apr-alert-error">{rentalError}</div>
+            )}
+            {rentalLoading ? (
+              <div className="apr-empty">Loading rental payments…</div>
+            ) : rentalBookings.length === 0 && !rentalError ? (
+              <div className="apr-empty">
+                <p style={{ fontSize: 24, margin: '0 0 8px' }}>🎉</p>
+                <p>No rental payments pending review.</p>
+              </div>
+            ) : (
+              <div className="apr-grid">
+                {rentalBookings.map(b => (
+                  <RentalReviewCard
+                    key={b.id}
+                    booking={b}
+                    onRefresh={loadRentalPayments}
+                    setGlobalMsg={setGlobalMsg}
+                  />
+                ))}
               </div>
             )}
           </>

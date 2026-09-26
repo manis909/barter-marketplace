@@ -605,7 +605,7 @@ export default function ChatsLayout() {
           <>
             {/* ── Mobile back bar (hidden on desktop via CSS) ── */}
             <div className="chatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/chats')} style={s.iconBtn} aria-label="Back to chats">
+              <button type="button" onClick={() => navigate('/explore')} style={s.iconBtn} aria-label="Back to explore">
                 <BackArrow />
               </button>
               <div
@@ -699,7 +699,7 @@ export default function ChatsLayout() {
               )}
 
               {/* Rate User — shown once proof is submitted AND user hasn't rated yet */}
-              {iHaveSubmittedProof && !iHaveRated && (
+              {tradeIsCompleted && iHaveSubmittedProof && !iHaveRated && (
                 <button
                   type="button"
                   onClick={() => setShowRating(r => !r)}
@@ -732,7 +732,7 @@ export default function ChatsLayout() {
             </div>
 
             {/* Inline rating form — shown after proof submitted, before rating done */}
-            {iHaveSubmittedProof && showRating && !iHaveRated && (
+            {tradeIsCompleted && iHaveSubmittedProof && showRating && !iHaveRated && (
               <div style={s.ratingWrap}>
                 <RatingForm
                   tradeOfferId={tradeId}

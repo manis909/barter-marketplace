@@ -255,6 +255,9 @@ export default function RentalChatsLayout() {
       {/* LEFT: chat list */}
       <div className={`rentalchatslayout-sidebar${!showChatOnMobile ? ' mobile-show' : ''}`} style={s.sidebar}>
         <div style={s.sidebarHeader}>
+          <button type="button" onClick={() => navigate('/renter')} style={s.iconBtn} aria-label="Back to Rental Explore">
+            <BackArrow />
+          </button>
           <h2 style={s.sidebarTitle}>Rental Chats</h2>
         </div>
         <div className="rentalchatslayout-sidebar-scroll" style={s.sidebarScroll}>
@@ -344,9 +347,9 @@ export default function RentalChatsLayout() {
             <div className="rentalchatslayout-mobile-back" style={s.mobileBackBar}>
               <button
                 type="button"
-                onClick={() => navigate(basePath)}
+                onClick={() => navigate('/renter')}
                 style={s.iconBtn}
-                aria-label="Back to chats"
+                aria-label="Back to Rental Explore"
               >
                 <BackArrow />
               </button>

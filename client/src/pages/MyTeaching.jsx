@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { getMyTeachingBookings, updateSkillBookingStatus } from '../services/skillBookingService';
 import Footer from '../components/Footer';
+import RatingForm from '../features/ratings/RatingForm';
 
 const BARTER_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
@@ -33,46 +34,50 @@ const BARTER_CSS = `
   color: var(--ink);
 }
 
-.hero {
-  background: linear-gradient(135deg, var(--dark) 0%, var(--green) 42%, var(--light-green) 78%, #4f8a67 100%);
-  padding: 40px 24px 80px;
-  position: relative;
-  overflow: hidden;
+/* ── Top bar (Apple × Duolingo — no green headboard) ── */
+.page-top-bar {
+  padding: 24px 20px 0;
+}
+@media (min-width: 768px) {
+  .page-top-bar { padding: 32px 36px 0; }
 }
 
-.hero-back {
+.page-back-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,0.28);
-  background: rgba(255,255,255,0.14);
-  color: #fff;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,61,46,0.15);
+  background: #ffffff;
+  color: var(--dark);
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: background 0.18s;
+  transition: all 0.15s ease;
   text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-
-.hero-back:hover {
-  background: rgba(255,255,255,0.26);
+.page-back-btn:hover {
+  background: #f0f4f1;
+  border-color: rgba(15,61,46,0.25);
 }
 
 .title-card {
   background: var(--paper);
-  margin: -40px 16px 0;
+  margin: 16px 16px 0;
   border-radius: 22px;
   padding: 24px 22px;
   position: relative;
   z-index: 2;
-  box-shadow: 0 12px 30px rgba(15,61,46,0.10);
+  border: 1px solid rgba(15,61,46,0.08);
+  box-shadow: 0 4px 20px rgba(15,61,46,0.05);
 }
 
 @media (min-width: 768px) {
   .title-card {
-    margin: -44px 32px 0;
+    margin: 18px 32px 0;
     padding: 28px 32px;
     border-radius: 26px;
   }
@@ -312,8 +317,8 @@ export default function MyTeaching() {
       <div className="myteaching-container">
         <style>{BARTER_CSS}</style>
 
-        <div className="hero">
-          <button type="button" className="hero-back" onClick={() => navigate(-1)} aria-label="Go back">←</button>
+        <div className="page-top-bar">
+          <button type="button" className="page-back-btn" onClick={() => navigate(-1)} aria-label="Go back">← Back</button>
         </div>
 
         <div className="title-card">
@@ -441,6 +446,12 @@ export default function MyTeaching() {
                                   Cancel
                                 </button>
                               </div>
+                            )}
+                            {b.status === 'completed' && (
+                              <RatingForm
+                                skillBookingId={b.id}
+                                revieweeId={b.requester_id}
+                              />
                             )}
                           </div>
                         </div>

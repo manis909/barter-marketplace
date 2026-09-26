@@ -198,7 +198,7 @@ router.get("/teaching", requireAuth, async (req, res) => {
 });
 
 // ── GET /api/skill-bookings/admin/pending-payments ───────────────────────────
-// Admin-only: list all bookings awaiting payment verification.
+// Admin-only: list all bookings awaiting payment verification or seller payout.
 router.get("/admin/pending-payments", requireAuth, requireAdmin, async (req, res) => {
   try {
     const result = await db.query(
@@ -209,9 +209,16 @@ router.get("/admin/pending-payments", requireAuth, requireAdmin, async (req, res
               b.payment_screenshot_url,
               b.payment_rejection_reason,
               b.payment_rejected_at,
+              b.payout_status,
+              b.payout_sent_at,
+              b.payout_utr,
+              b.payout_notes,
+              spd.upi_id         AS seller_payout_upi,
+              spd.account_holder_name AS seller_payout_name,
               b.created_at,
               sl.skill_name,
               sl.price_type,
+              sl.price,
               u_req.id         AS learner_id,
               u_req.username   AS learner_username,
               u_req.full_name  AS learner_name,
@@ -222,8 +229,10 @@ router.get("/admin/pending-payments", requireAuth, requireAdmin, async (req, res
        JOIN skill_listings sl ON sl.id = b.skill_listing_id
        JOIN users u_req   ON u_req.id  = b.requester_id
        JOIN users u_teach ON u_teach.id = b.teacher_id
-       WHERE b.payment_status = 'pending_verification'
-       ORDER BY b.payment_submitted_at ASC`,
+       LEFT JOIN seller_payout_details spd ON spd.entity_type = 'skill_booking' AND spd.entity_id = b.id
+       WHERE b.payment_status IN ('pending_verification', 'paid')
+       ORDER BY CASE WHEN b.payment_status = 'pending_verification' THEN 0 WHEN b.payout_status = 'pending_payout' THEN 1 ELSE 2 END,
+                b.payment_submitted_at DESC NULLS LAST, b.updated_at DESC`,
     );
 
     res.json({ success: true, bookings: result.rows });
@@ -429,6 +438,17 @@ router.patch("/:id/status", requireAuth, requireVerified, async (req, res) => {
     }
 
     if (status === "accepted") {
+      const { upi_id, account_holder_name } = req.body;
+      if (upi_id && typeof upi_id === 'string' && upi_id.includes('@')) {
+        await pgClient.query(
+          `INSERT INTO seller_payout_details (user_id, entity_type, entity_id, upi_id, account_holder_name, updated_at)
+           VALUES ($1, 'skill_booking', $2, $3, $4, CURRENT_TIMESTAMP)
+           ON CONFLICT (entity_type, entity_id)
+           DO UPDATE SET upi_id = EXCLUDED.upi_id, account_holder_name = EXCLUDED.account_holder_name, updated_at = CURRENT_TIMESTAMP`,
+          [req.userId, bookingId, upi_id.trim(), (account_holder_name || '').trim() || null]
+        );
+      }
+
       const countRes = await pgClient.query(
         "SELECT COUNT(*) FROM skill_bookings WHERE skill_listing_id = $1 AND status = 'accepted'",
         [booking.skill_listing_id]
@@ -637,10 +657,11 @@ router.patch("/:id/confirm-payment", requireAuth, requireAdmin, async (req, res)
       });
     }
 
-    // Confirm: set paid + accepted
+    // Confirm: set paid + accepted + pending_payout
     const updatedRes = await pgClient.query(
       `UPDATE skill_bookings
        SET payment_status = 'paid',
+           payout_status  = 'pending_payout',
            status         = 'accepted',
            updated_at     = CURRENT_TIMESTAMP
        WHERE id = $1
@@ -673,6 +694,58 @@ router.patch("/:id/confirm-payment", requireAuth, requireAdmin, async (req, res)
     res.status(500).json({ error: "Server error" });
   } finally {
     pgClient.release();
+  }
+});
+
+// ── PATCH /api/skill-bookings/:id/confirm-payout ────────────────────────────
+router.patch("/:id/confirm-payout", requireAuth, requireAdmin, async (req, res) => {
+  const bookingId = req.params.id;
+  if (!isValidUUID(bookingId)) {
+    return res.status(400).json({ error: "Invalid booking id" });
+  }
+
+  const { payout_utr, payout_notes } = req.body || {};
+
+  try {
+    const bookingRes = await db.query(
+      `SELECT b.*, sl.skill_name FROM skill_bookings b
+       JOIN skill_listings sl ON sl.id = b.skill_listing_id
+       WHERE b.id = $1`,
+      [bookingId]
+    );
+
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingRes.rows[0];
+    if (booking.payment_status !== "paid") {
+      return res.status(400).json({ error: `Cannot send payout — learner payment status is '${booking.payment_status}', expected 'paid'.` });
+    }
+
+    const updateRes = await db.query(
+      `UPDATE skill_bookings
+       SET payout_status = 'paid_out',
+           payout_sent_at = NOW(),
+           payout_utr = $1,
+           payout_notes = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3
+       RETURNING *`,
+      [payout_utr ? String(payout_utr).trim() : null, payout_notes ? String(payout_notes).trim() : null, bookingId]
+    );
+
+    createNotification(
+      booking.teacher_id,
+      "skill_payout_sent",
+      "Payout Sent",
+      `Your payout for "${booking.skill_name}" has been processed by admin.`
+    ).catch(err => console.error("Notification error (skill_payout_sent):", err));
+
+    res.json({ success: true, booking: updateRes.rows[0] });
+  } catch (err) {
+    console.error("PATCH /skill-bookings/:id/confirm-payout error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
