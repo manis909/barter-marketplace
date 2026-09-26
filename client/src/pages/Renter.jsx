@@ -9,6 +9,11 @@ import { addRentalWishlist, removeRentalWishlist, getRentalWishlistIds } from '.
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import './Renter.css'
 
+// ── Client-side cache to avoid loading delays on return navigation ───────
+let renterCache = {
+  rentals: null,
+}
+
 export default function Renter() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -16,13 +21,13 @@ export default function Renter() {
   const [rentals, setRentals] = useState([])
   const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
   const [category, setCategory] = useState(() => normalizeCategory(new URLSearchParams(location.search).get('category')) || 'All')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !renterCache.rentals)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [likedRentals, setLikedRentals] = useState(new Set())
 
   const loadRentals = async () => {
-    setLoading(true)
+    if (!renterCache.rentals) setLoading(true)
     setError('')
     try {
       const params = new URLSearchParams(location.search)
@@ -34,9 +39,11 @@ export default function Renter() {
           ...(categoryQuery && categoryQuery !== 'All' ? { category: categoryQuery } : {}),
         },
       })
-      setRentals(Array.isArray(response.data.rentals) ? response.data.rentals : [])
+      const fetchedRentals = Array.isArray(response.data.rentals) ? response.data.rentals : []
+      renterCache.rentals = fetchedRentals
+      setRentals(fetchedRentals)
     } catch (err) {
-      setError(err.response?.data?.error || 'Unable to load rental listings right now.')
+      if (!renterCache.rentals) setError(err.response?.data?.error || 'Unable to load rental listings right now.')
     } finally {
       setLoading(false)
     }

@@ -32,87 +32,45 @@
   }
 }
 
-/* ── Marketplace Hero Banner Card (Clean White with Turquoise Accents) ── */
-.market-promo-banner {
-  position: relative;
-  background: #FFFFFF;
-  border: 1px solid #D0ECE9;
-  border-radius: 20px;
-  padding: 12px 18px;
-  color: #005C66;
+/* ── Clean Subheader Row & Inline Outlined Swipe Mode Button ── */
+.explore-subhead-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  box-shadow: 0 2px 10px rgba(0, 92, 102, 0.05);
-  overflow: hidden;
-  margin-top: 0px;
+  gap: 12px;
+  padding: 4px 4px;
+  margin-top: 2px;
 }
 
-.market-promo-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 620px;
-  z-index: 1;
-}
-
-.market-promo-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: #E6F7F6;
-  color: #007885;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  width: fit-content;
-}
-
-.market-promo-heading {
-  margin: 0;
-  font-family: 'Fraunces', serif;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #005C66;
-  line-height: 1.25;
-}
-
-.market-promo-subtext {
-  margin: 0;
-  font-size: 0.86rem;
-  color: #3D7880;
-}
-
-.market-promo-action {
-  z-index: 1;
-  flex-shrink: 0;
+.explore-count-text {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #64748B;
 }
 
 .swipe-mode-trigger-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 999px;
-  background: #005C66;
-  color: #FFFFFF;
-  border: none;
-  font-size: 0.88rem;
-  font-weight: 700;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: #005C66;
+  border: 1px solid #005C66;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 92, 102, 0.2);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .swipe-mode-trigger-btn:hover {
-  background: #007885;
-  transform: scale(1.03);
+  background: #E6F7F6;
+  color: #004D55;
+  border-color: #004D55;
 }
 
 .swipe-mode-trigger-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.98);
 }
 
 .section-label {

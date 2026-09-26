@@ -115,14 +115,15 @@
   position: relative;
   width: 100%;
   height: 310px;
-  background: #F3F4F6;
+  background: #EAF4EE;
   overflow: hidden;
 }
 
 .swipe-card-img-wrap img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  mix-blend-mode: multiply;
   display: block;
 }
 

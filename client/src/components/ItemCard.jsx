@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { User } from 'lucide-react'
+import { User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from './WishlistButton'
@@ -9,16 +9,55 @@ import VerificationRequiredModal from './VerificationRequiredModal'
 import useVerificationStatus from '../hooks/useVerificationStatus'
 import './ItemCard.css'
 
+function formatConditionLabel(str) {
+  if (!str) return 'Good'
+  return String(str)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
 export default function ItemCard({ item }) {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
   const { verificationStatus, rejectionReason, isVerified, loading: verificationLoading } = useVerificationStatus()
   const [showVerificationModal, setShowVerificationModal] = useState(false)
 
-  const image = item.image || item.image_urls?.[0] || 'https://via.placeholder.com/300x220?text=Barter'
-  const condition = item.condition || item.item_condition || 'Good'
-  const category = item.category || 'General'
+  const images = (Array.isArray(item.image_urls) && item.image_urls.length > 0)
+    ? item.image_urls
+    : (Array.isArray(item.images) && item.images.length > 0)
+      ? item.images
+      : [item.image || 'https://via.placeholder.com/300x220?text=Barter']
 
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
+
+  // Auto-cycle image on hover if item has multiple images
+  useEffect(() => {
+    if (!isHovered || images.length <= 1) return
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length)
+    }, 1500)
+
+    return () => clearInterval(interval)
+  }, [isHovered, images.length])
+
+  const handlePrevImage = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  const handleNextImage = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCurrentImageIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const currentImage = images[currentImageIndex] || images[0]
+  const rawCondition = item.condition || item.item_condition || 'Good'
+  const condition = formatConditionLabel(rawCondition)
+  const category = item.category || 'General'
 
   const ownerName = item.ownerName || item.owner_name || 'Owner'
 
@@ -106,28 +145,63 @@ export default function ItemCard({ item }) {
         whileHover={{ y: -3 }}
         whileTap={{ scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false)
+          setCurrentImageIndex(0)
+        }}
       >
         {/* Image Media Container */}
         <div className="card-media-wrapper">
-          <div className="card-media-backdrop" style={{ backgroundImage: `url(${image})` }} />
-          <img src={image} alt={item.title} className="card-image" />
+          <img src={currentImage} alt={item.title} className="card-image" />
           <WishlistButton itemId={item.id} />
+
+          {images.length > 1 && (
+            <div className="card-image-dots">
+              {images.map((_, index) => (
+                <span
+                  key={index}
+                  className={`image-dot ${index === currentImageIndex ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCurrentImageIndex(index)
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {images.length > 1 && isHovered && (
+            <>
+              <button
+                type="button"
+                className="image-nav-btn prev-btn"
+                onClick={handlePrevImage}
+                aria-label="Previous image"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                className="image-nav-btn next-btn"
+                onClick={handleNextImage}
+                aria-label="Next image"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Compact Content Density */}
+        {/* Compact Content Density (Amazon/Flipkart E-Commerce Style) */}
         <div className="card-body">
-          {/* Row 1: Category & Condition Pill Badges */}
-          <div className="card-badges-row">
-            <span className="pill-badge category-pill">{category}</span>
-            <span className="pill-badge condition-pill">{condition}</span>
-          </div>
-
-          {/* Row 2: 2-Line Truncated Title */}
+          {/* 1. Item Title (Single Bold Line) */}
           <h3 className="card-title" title={item.title}>
             {item.title}
           </h3>
 
-          {/* Row 3: Owner & Rating (Single Compact Row) */}
+          {/* 2. Owner Info Line */}
           <div className="card-owner-rating-row">
             <div className="owner-box">
               <User size={12} className="meta-icon" />
@@ -139,27 +213,26 @@ export default function ItemCard({ item }) {
                 {ownerName}
               </Link>
             </div>
-
           </div>
 
-          {/* Row 4: Clean Icon-Free Equal-Width Buttons */}
+          {/* 3. Action Buttons */}
           <div className="card-actions-row">
             {!isOwner && item.status === 'available' ? (
               <button
                 type="button"
                 className="btn-compact btn-compact-primary"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleOfferTradeClick()
-                }}
+                onClick={handleOfferTradeClick}
               >
                 Trade
               </button>
             ) : isOwner ? (
-              <span className="card-status-pill owner-pill">Mine</span>
+              <span className="card-status-badge owner-badge">Mine</span>
             ) : (
-              <span className="card-status-pill unavailable-pill">Unavailable</span>
+              <span className="card-status-badge unavailable-badge">Unavailable</span>
             )}
+            <Link to={`/item/${item.id}`} className="btn-compact btn-compact-secondary">
+              Details
+            </Link>
           </div>
         </div>
       </motion.article>
