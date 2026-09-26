@@ -142,7 +142,7 @@ export default function RentalProfile() {
           )}
 
           {isOwnProfile && (
-            <button type="button" className="edit-profile-btn" onClick={() => navigate('/profile')}>
+            <button type="button" className="edit-profile-btn" onClick={() => navigate('/profile', { state: { openEdit: true } })}>
               Edit Profile
             </button>
           )}
