@@ -133,7 +133,7 @@ export default function SkillsProfile() {
           )}
 
           {isOwnProfile && (
-            <button type="button" className="edit-profile-btn" onClick={() => navigate('/profile', { state: { openEdit: true } })}>
+            <button type="button" className="edit-profile-btn" onClick={() => navigate('/profile', { state: { openEdit: true, returnTo: '/skilter/profile' } })}>
               Edit Profile
             </button>
           )}

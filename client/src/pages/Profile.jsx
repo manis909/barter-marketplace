@@ -205,6 +205,17 @@ export default function Profile() {
     }
   }
 
+  // Returns to wherever the user came from when they entered edit mode
+  // (e.g. Skilter or Rental profile), or just switches back to view mode
+  // if they arrived here normally (e.g. from Barter's own Edit Profile).
+  function exitEdit() {
+    if (location.state?.returnTo) {
+      navigate(location.state.returnTo);
+    } else {
+      setIsEditing(false);
+    }
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     setSaved(false);
@@ -220,7 +231,7 @@ export default function Profile() {
       });
       setSaved(true);
       await refreshUser();
-      setTimeout(() => setIsEditing(false), 600);
+      setTimeout(() => exitEdit(), 600);
     } catch (err) {
       setError(err.response?.data?.error || 'Save failed');
     }
@@ -293,7 +304,7 @@ export default function Profile() {
         className="profile-back-btn"
         onClick={() => {
           if (showVerification) setShowVerification(false);
-          else if (isEditing) setIsEditing(false);
+          else if (isEditing) exitEdit();
           else navigate('/explore');
         }}
         aria-label={showVerification || isEditing ? 'Back to Profile' : 'Back to Explore'}
@@ -505,7 +516,7 @@ export default function Profile() {
               <span className="profile-bio-counter">{bio.length}/{BIO_MAX_LENGTH}</span>
             </label>
             <div className="profile-edit-actions">
-              <button type="button" className="profile-cancel" onClick={() => setIsEditing(false)}>
+              <button type="button" className="profile-cancel" onClick={exitEdit}>
                 Cancel
               </button>
               <button type="submit" className="profile-save">Save</button>
