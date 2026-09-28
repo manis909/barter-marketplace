@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { User, ChevronLeft, ChevronRight } from 'lucide-react'
+import { User, ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from './WishlistButton'
@@ -70,7 +70,11 @@ export default function ItemCard({ item }) {
   const [submitting, setSubmitting] = useState(false)
   const [tradeError, setTradeError] = useState('')
 
-  async function handleOfferTradeClick() {
+  async function handleOfferTradeClick(e) {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     if (!currentUser) {
       navigate('/login')
       return
@@ -220,17 +224,23 @@ export default function ItemCard({ item }) {
             {!isOwner && item.status === 'available' ? (
               <button
                 type="button"
-                className="btn-compact btn-compact-primary"
+                className="btn-trade-primary"
                 onClick={handleOfferTradeClick}
+                aria-label={`Propose trade for ${item.title}`}
               >
-                Trade
+                <ArrowLeftRight size={13} className="btn-action-icon" />
+                <span>Trade</span>
               </button>
             ) : isOwner ? (
               <span className="card-status-badge owner-badge">Mine</span>
             ) : (
               <span className="card-status-badge unavailable-badge">Unavailable</span>
             )}
-            <Link to={`/item/${item.id}`} className="btn-compact btn-compact-secondary">
+            <Link
+              to={`/item/${item.id}`}
+              className="btn-details-secondary"
+              onClick={(e) => e.stopPropagation()}
+            >
               Details
             </Link>
           </div>

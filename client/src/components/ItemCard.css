@@ -237,17 +237,19 @@
 }
 
 /* Primary Action: Solid Turquoise High-Contrast Pill Button */
-.btn-trade-primary {
+.btn-trade-primary,
+.btn-compact-primary {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   height: 36px;
   min-height: 36px;
   padding: 0 12px;
   border-radius: 999px;
   background: #005C66;
-  color: #FFFFFF;
+  color: #FFFFFF !important;
   border: none;
   font-size: 0.84rem;
   font-weight: 700;
@@ -257,30 +259,41 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  user-select: none;
 }
 
-.btn-trade-primary:hover {
+.btn-trade-primary:hover,
+.btn-compact-primary:hover {
   background: #007885;
+  color: #FFFFFF !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(0, 92, 102, 0.25);
 }
 
-.btn-trade-primary:active {
+.btn-trade-primary:active,
+.btn-compact-primary:active {
   transform: translateY(0);
 }
 
+.btn-action-icon {
+  flex-shrink: 0;
+  display: inline-block;
+}
+
 /* Secondary Action: Plain Outlined Button */
-.btn-details-secondary {
+.btn-details-secondary,
+.btn-compact-secondary {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   height: 36px;
   min-height: 36px;
   padding: 0 10px;
   border-radius: 8px;
-  background: transparent;
-  color: #3F3F46;
+  background: #FFFFFF;
+  color: #3F3F46 !important;
   border: 1px solid #E4E4E7;
   font-size: 0.84rem;
   font-weight: 600;
@@ -291,11 +304,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   box-sizing: border-box;
+  user-select: none;
 }
 
-.btn-details-secondary:hover {
+.btn-details-secondary:hover,
+.btn-compact-secondary:hover {
   background: #F4F4F5;
-  color: #18181B;
+  color: #18181B !important;
   border-color: #D4D4D8;
 }
 
@@ -475,10 +490,14 @@
     padding: 2px 6px;
   }
 
-  .btn-compact {
+  .btn-trade-primary,
+  .btn-details-secondary,
+  .btn-compact,
+  .btn-compact-primary,
+  .btn-compact-secondary {
     height: 34px;
     min-height: 34px;
-    padding: 0 4px;
+    padding: 0 6px;
     font-size: 0.8rem;
     border-radius: 8px;
     font-weight: 600;
