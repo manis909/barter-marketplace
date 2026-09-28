@@ -7,13 +7,13 @@ const API_URL = api.defaults.baseURL.replace(/\/api\/?$/, '');
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
 const T = {
-  bg:         '#F6F5F0',
+  bg:         '#F7FAF8',
   surface:    '#FFFFFF',
-  text:       '#24231F',
-  muted:      '#5F5B52',
-  border:     '#E4E2D9',
-  accent:     '#3D6E63',
-  accentStrong: '#2F5B4D',
+  text:       '#0f3d2e',
+  muted:      '#52645e',
+  border:     '#dce7e1',
+  accent:     '#1b4d3e',
+  accentStrong: '#2f6b52',
   danger:     '#dc2626',
   radiusCard: 16,
 };
@@ -55,65 +55,49 @@ const getIcon = type => ICON_MAP[type] || ICON_MAP.default;
 /* ─── Navigation by type ─────────────────────────────────────────────────── */
 function getNavigationPath(n) {
   const { type, trade_offer_id } = n;
-  const isSkilterNotification = [
+
+  if (type === 'new_message')
+    return trade_offer_id ? `/chat/${trade_offer_id}` : '/chats';
+  if (type === 'trade_offer') return '/trade-requests';
+  if ([
+    'trade_offer_updated',
+    'trade_counter',
+    'trade_cancelled',
+    'trade_accepted',
+    'trade_declined',
+    'trade_proof_submitted',
+    'trade_verified',
+    'trade_confirmed_half',
+    'trade_completed',
+  ].includes(type)) return '/my-trades';
+
+  if (type === 'new_skill_message')
+    return trade_offer_id ? `/skilter/chat/${trade_offer_id}` : '/skilter/chat';
+  if (type === 'skill_booking_paid_teacher' || type === 'payment_submitted')
+    return '/skilter/teaching';
+  if (type === 'skill_booking_paid_learner' || type === 'payment_rejected')
+    return '/skilter/learning';
+  if ([
     'skill_booking',
     'skill_booking_accepted',
     'skill_booking_declined',
     'skill_booking_completed',
     'skill_booking_cancelled',
-    'new_skill_message',
-    'payment_submitted',
-    'skill_booking_paid_teacher',
-    'skill_booking_paid_learner',
-    'payment_rejected',
-  ].includes(type);
+  ].includes(type))
+    return trade_offer_id ? `/skilter/chat/${trade_offer_id}` : '/skilter/chat';
 
-  const isRentalNotification = [
-    'new_rental_message',
-    'rental_request',
-    'rental_accepted',
-    'rental_declined',
-    'rental_cancelled',
-    'rental_completed',
-    'rental_confirm_half',
-  ].includes(type);
-
-  // Barter paths
-  if (!isSkilterNotification && !isRentalNotification) {
-    if (trade_offer_id && (type === 'new_message' || type.startsWith('trade_')))
-      return `/chat/${trade_offer_id}`;
-    if (n.item_id) return `/item/${n.item_id}`;
-    if (n.user_id && type === 'profile_update') return `/profile/${n.user_id}`;
-    if (type === 'trade_offer') return '/trade-requests';
-    if (type === 'trade_completed') return '/my-trades';
-    if (type === 'wishlist') return '/wishlist';
+  if (type === 'new_rental_message') {
+    const targetBookingId = n.booking_id || trade_offer_id || n.related_id;
+    return targetBookingId ? `/rental/chat/${targetBookingId}` : '/rental/chat';
   }
+  if (type === 'rental_request' || type === 'rental_declined' || type === 'rental_cancelled')
+    return '/renter/requests';
+  if (type === 'rental_accepted' || type === 'rental_completed' || type === 'rental_confirm_half')
+    return '/renter/my-rentals';
 
-  // Rental paths
-  if (isRentalNotification) {
-    if (type === 'new_rental_message') {
-      const targetBookingId = n.booking_id || n.trade_offer_id || n.related_id;
-      return targetBookingId ? `/rental/chat/${targetBookingId}` : '/rental/chat';
-    }
-    if (type === 'rental_request') return '/renter/requests';
-    if (type === 'rental_accepted' || type === 'rental_completed' || type === 'rental_confirm_half')
-      return '/renter/my-rentals';
-    if (type === 'rental_declined' || type === 'rental_cancelled')
-      return '/renter/requests';
-  }
-
-  // Skilter paths — trade_offer_id column stores booking_id for skill notifications
-  if (isSkilterNotification) {
-    if (type === 'new_skill_message' && trade_offer_id)
-      return `/skilter/chat/${trade_offer_id}`;
-    if (type.startsWith('skill_booking') && trade_offer_id)
-      return `/skilter/chat/${trade_offer_id}`;
-    if (type === 'skill_booking_paid_learner' || type === 'payment_rejected')
-      return '/skilter/learning';
-    if (type === 'payment_submitted' || type === 'skill_booking_paid_teacher')
-      return '/skilter/teaching';
-    if (type === 'skill_booking') return '/skilter/skills';
-  }
+  if (n.item_id) return `/item/${n.item_id}`;
+  if (n.user_id && type === 'profile_update') return `/profile/${n.user_id}`;
+  if (type === 'wishlist') return '/wishlist';
 
   return null;
 }
@@ -223,12 +207,10 @@ const NOTIF_CSS = `
   gap: 14px;
   padding: 16px 18px;
   border-radius: ${T.radiusCard}px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(228, 226, 217, 0.75);
+  background: ${T.surface};
+  border: 1px solid ${T.border};
   cursor: pointer;
-  transition: transform 0.18s ease, filter 0.18s ease, border-color 0.18s ease, background 0.15s;
+  transition: border-color 0.18s ease, background 0.15s;
   position: relative;
   box-sizing: border-box;
   user-select: none;
@@ -236,9 +218,8 @@ const NOTIF_CSS = `
 }
 
 .notif-card:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.03);
-  border-color: ${T.accent};
+  background: #f7faf8;
+  border-color: #b3d426;
 }
 
 /* Unread left strip */
@@ -248,21 +229,19 @@ const NOTIF_CSS = `
   left: 0; top: 12px; bottom: 12px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: ${T.accent};
+  background: #c6e930;
 }
 
 /* Selection mode */
 .notif-card.selected {
-  background: rgba(61, 110, 99, 0.10);
-  border-color: ${T.accent};
-  transform: none;
-  filter: none;
+  background: rgba(47, 107, 82, 0.07);
+  border-color: ${T.accentStrong};
 }
 
 .notif-card.non-clickable { cursor: default; }
 .notif-card.non-clickable:hover {
-  transform: none; filter: none;
-  border-color: rgba(228, 226, 217, 0.75);
+  background: ${T.surface};
+  border-color: ${T.border};
 }
 
 /* Checkbox overlay — shown in selection mode */
@@ -275,14 +254,15 @@ const NOTIF_CSS = `
   background: ${T.surface};
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  box-sizing: border-box;
   transition: background 0.12s, border-color 0.12s;
 }
 .notif-card.selected .notif-checkbox {
-  background: ${T.accent};
-  border-color: ${T.accent};
+  background: #c6e930;
+  border-color: ${T.accentStrong};
 }
 .notif-checkbox-tick {
-  color: #fff;
+  color: ${T.text};
   font-size: 11px;
   line-height: 1;
 }
@@ -291,7 +271,9 @@ const NOTIF_CSS = `
 .notif-icon {
   width: 40px; height: 40px; min-width: 40px;
   border-radius: 50%;
-  background: rgba(61, 110, 99, 0.10);
+  background: #1b4d3e;
+  border: 1px solid #2f6b52;
+  box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
