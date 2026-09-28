@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Crop } from 'lucide-react'
 import api from '../services/api'
-import { uploadImageToSupabase } from '../services/supabase'
+import { uploadImageToSupabase, uploadSkillVideoToSupabase } from '../services/supabase'
 import ImageCropModal from './ImageCropModal'
 import './AddEditSkillModal.css'
 
@@ -39,11 +39,14 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
     teaching_language: '',
     availability: [],
     max_participants: '',
+    demo_video_urls: [],
     images: [],
   })
 
   const [existingImageUrls, setExistingImageUrls] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
+  const [demoVideoFiles, setDemoVideoFiles] = useState([])
+  const [demoVideoPreviewUrls, setDemoVideoPreviewUrls] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   // Crop modal state
@@ -68,6 +71,9 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
         teaching_language: editSkill.teaching_language || '',
         availability: editSkill.availability ? editSkill.availability.split(', ') : [],
         max_participants: editSkill.max_participants || '',
+        demo_video_urls: Array.isArray(editSkill.demo_video_urls)
+          ? editSkill.demo_video_urls
+          : (editSkill.demo_video_url ? [editSkill.demo_video_url] : []),
         images: [],
       })
       setExistingImageUrls(editSkill.image_urls || [])
@@ -87,11 +93,14 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
         teaching_language: '',
         availability: [],
         max_participants: '',
+        demo_video_urls: [],
         images: [],
       })
       setExistingImageUrls([])
     }
     setImagePreviews([])
+    setDemoVideoFiles([])
+    setDemoVideoPreviewUrls([])
     setError('')
   }, [isEditMode, editSkill, isOpen])
 
@@ -134,6 +143,49 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
 
     // Clear the file input so the same file can be selected again
     e.target.value = ''
+  }
+
+  const handleDemoVideoChange = (e) => {
+    const selectedFiles = Array.from(e.target.files || [])
+    if (selectedFiles.length === 0) return
+
+    const videoFiles = selectedFiles.filter((file) => file.type.startsWith('video/'))
+    if (videoFiles.length !== selectedFiles.length) {
+      setError('Please select video files only for Skill Reels.')
+    }
+
+    const remainingSlots = 3 - form.demo_video_urls.length - demoVideoFiles.length
+    if (remainingSlots <= 0) {
+      setError('You can upload up to 3 Skill Reels.')
+      e.target.value = ''
+      return
+    }
+
+    const filesToAdd = videoFiles.slice(0, remainingSlots)
+    if (videoFiles.length > remainingSlots) {
+      setError(`You can upload up to 3 Skill Reels. Only ${remainingSlots} more was added.`)
+    }
+
+    setDemoVideoFiles((previous) => [...previous, ...filesToAdd])
+    setDemoVideoPreviewUrls((previous) => [
+      ...previous,
+      ...filesToAdd.map((file) => URL.createObjectURL(file))
+    ])
+    e.target.value = ''
+  }
+
+  const removeDemoVideo = (index, isExisting = false) => {
+    if (isExisting) {
+      setForm((previous) => ({
+        ...previous,
+        demo_video_urls: previous.demo_video_urls.filter((_, itemIndex) => itemIndex !== index)
+      }))
+      return
+    }
+
+    URL.revokeObjectURL(demoVideoPreviewUrls[index])
+    setDemoVideoFiles((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
+    setDemoVideoPreviewUrls((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
   }
 
   const handleCropImage = (index) => {
@@ -211,6 +263,10 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
 
       // Combine existing and new image URLs
       const allImageUrls = [...existingImageUrls, ...uploadedImageUrls]
+      const newDemoVideoUrls = demoVideoFiles.length > 0
+        ? await Promise.all(demoVideoFiles.map((file) => uploadSkillVideoToSupabase(file)))
+        : []
+      const demoVideoUrls = [...form.demo_video_urls, ...newDemoVideoUrls]
 
       // Prepare payload
       const payload = {
@@ -228,6 +284,7 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
         teaching_language: form.teaching_language || null,
         availability: form.availability.length > 0 ? form.availability.join(', ') : null,
         max_participants: form.session_type === 'group' ? Number(form.max_participants) : 1,
+        demo_video_urls: demoVideoUrls,
       }
 
       if (isEditMode) {
@@ -358,6 +415,37 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="form-field skill-reel-field">
+              <label htmlFor="modal-skill-demo-video">Skill Reels / Demo Videos (Optional)</label>
+              <small>Add up to 3 short videos</small>
+              <input
+                type="file"
+                id="modal-skill-demo-video"
+                accept="video/*"
+                multiple
+                onChange={handleDemoVideoChange}
+                disabled={form.demo_video_urls.length + demoVideoFiles.length >= 3}
+              />
+              <div className="skill-reel-preview-list">
+                {form.demo_video_urls.map((url, index) => (
+                  <div className="skill-reel-preview" key={url}>
+                    <video src={url} controls preload="metadata" />
+                    <button type="button" onClick={() => removeDemoVideo(index, true)} aria-label={`Remove demo video ${index + 1}`}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {demoVideoPreviewUrls.map((url, index) => (
+                  <div className="skill-reel-preview" key={url}>
+                    <video src={url} controls preload="metadata" />
+                    <button type="button" onClick={() => removeDemoVideo(index)} aria-label={`Remove selected demo video ${index + 1}`}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
