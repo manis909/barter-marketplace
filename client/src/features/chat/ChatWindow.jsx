@@ -133,7 +133,9 @@ const CHAT_CSS = `
 /* ── Message row ── */
 .cw-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
 .cw-row.mine   { align-self: flex-end;  align-items: flex-end;  }
-.cw-row.theirs { align-self: flex-start; align-items: flex-start; }
+.cw-row.theirs { align-self: flex-start; align-items: flex-end; flex-direction: row; gap: 8px; }
+.cw-message-content { display: flex; flex: 1; flex-direction: column; align-items: flex-start; min-width: 0; }
+.cw-row.mine .cw-message-content { display: contents; }
 @media (max-width: 767px) { .cw-row { max-width: 75%; } }
 
 .cw-sender { font-size: 11px; font-weight: 500; color: ${T.muted}; margin-bottom: 2px; margin-left: 4px; }
@@ -340,12 +342,12 @@ const CHAT_CSS = `
 /* ── Chat locked banner (replaces input when trade is completed) ── */
 .cw-chat-locked {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 14px 16px; flex-shrink: 0;
-  background: ${T.bg}; border-top: 1px solid ${T.border};
-  font-size: 13px; color: ${T.muted}; font-family: var(--font-body);
-  text-align: center;
+  margin: 8px 12px; padding: 10px 16px; flex-shrink: 0;
+  background: #f3f4f1; border: 1px solid #dce5dd; border-radius: 12px;
+  font-size: 14px; font-weight: 500; color: #5f6b63;
+  font-family: var(--font-body); text-align: center;
 }
-.cw-chat-locked-icon { font-size: 15px; flex-shrink: 0; }
+.cw-chat-locked-icon { font-size: 16px; flex-shrink: 0; }
 `;
 
 /* ─── Trade completed system message (renders inside .cw-messages scroll area) ── */
@@ -356,24 +358,21 @@ function TradeCompletedSystemMsg({ completedAt }) {
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '14px 4px', alignSelf: 'stretch',
     }}>
-      <div style={{ flex: 1, height: 1, background: '#C9E5D8' }} />
+      <div style={{ flex: 1, height: 1, background: '#d7e8dc' }} />
       <div style={{
-        textAlign: 'center', padding: '10px 18px',
-        background: '#EEF7F2', border: '1px solid #C9E5D8',
-        borderRadius: '999px', fontFamily: 'var(--font-body)',
+        textAlign: 'center', padding: '14px 22px', maxWidth: 'min(100%, 320px)',
+        background: '#e6f4ea', border: '1px solid #ceead6',
+        borderRadius: 24, fontFamily: 'var(--font-body)',
       }}>
-        <div style={{ fontSize: 15 }}>✅</div>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#3D6E63', marginTop: 2 }}>
+        <div style={{ fontSize: 18, lineHeight: 1.2 }}>✅</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f3d2e', marginTop: 3 }}>
           Trade Completed
         </div>
-        <div style={{ fontSize: 11, color: '#5F5B52', marginTop: 1 }}>
-          Both users confirmed the exchange.
+        <div style={{ fontSize: 11, color: '#5f6b63', marginTop: 3, lineHeight: 1.4 }}>
+          {label ? `Both parties confirmed the exchange on ${label}` : 'Both parties confirmed the exchange.'}
         </div>
-        {label && (
-          <div style={{ fontSize: 10.5, color: '#5F5B52', marginTop: 2 }}>{label}</div>
-        )}
       </div>
-      <div style={{ flex: 1, height: 1, background: '#C9E5D8' }} />
+      <div style={{ flex: 1, height: 1, background: '#d7e8dc' }} />
     </div>
   );
 }
@@ -654,6 +653,10 @@ export default function ChatWindow({
                   </div>
                 )}
                 <div className={`cw-row ${isMine ? 'mine' : 'theirs'}`}>
+                  {!isMine && (
+                    <Avatar name={m.sender_name || otherUserName} imageUrl={otherUserImage} size={30} />
+                  )}
+                  <div className={`cw-message-content ${isMine ? 'mine' : 'theirs'}`}>
                 {!isMine && m.sender_name && (
                   <span className="cw-sender">{m.sender_name}</span>
                 )}
@@ -756,6 +759,7 @@ export default function ChatWindow({
                     )}
                   </div>
                 )}
+                  </div>
               </div>
             </Fragment>
           );
@@ -788,7 +792,7 @@ export default function ChatWindow({
         {chatLocked ? (
           <div className="cw-chat-locked">
             <span className="cw-chat-locked-icon">🔒</span>
-            This conversation is closed. The trade has been completed.
+            Trade complete. This chat is closed to new messages.
           </div>
         ) : (
         <div className="cw-input-row">
