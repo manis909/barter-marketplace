@@ -428,8 +428,6 @@
   color: #0F3D2E;
 }
 
-<<<<<<< HEAD
-=======
 .verified-badge {
   display: inline-flex;
   align-items: center;
@@ -443,7 +441,6 @@
   border-radius: 999px;
 }
 
->>>>>>> bb02118067a83249dd7d5cbebf81b75f07296f98
 .owner-rating-row {
   display: flex;
   align-items: center;
