@@ -21,8 +21,6 @@ const T = {
 const API_URL = 'http://localhost:5000';
 
 const LAYOUT_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
-
 .app-main:has(.skillchatslayout-root) {
   padding: 0 !important;
   width: 100% !important;
@@ -334,7 +332,7 @@ export default function SkillChatsLayout() {
         ) : (
           <>
             <div className="skillchatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/skilter/explore')} style={s.iconBtn} aria-label="Back to Skilter Explore">
+              <button type="button" onClick={() => navigate('/skilter/chat')} style={s.iconBtn} aria-label="Back to Skilter chats">
                 <BackArrow />
               </button>
               <button
@@ -394,6 +392,8 @@ export default function SkillChatsLayout() {
                 otherUserImage={otherUserImage}
                 otherUserId={otherUserIdForReport}
                 skillTitle={selectedBooking.skill_name}
+                skillListingId={selectedBooking.skill_listing_id}
+                onViewSkill={id => navigate(`/skilter/skill/${id}`)}
               />
             </div>
           </>
@@ -422,7 +422,7 @@ const s = {
     maxWidth: 1100, width: '100%', margin: '0 auto',
     border: `1px solid ${T.border}`, borderRadius: T.radiusCard,
     overflow: 'hidden', background: T.surface,
-    fontFamily: 'Manrope, sans-serif', boxSizing: 'border-box',
+    fontFamily: 'var(--font-body)', boxSizing: 'border-box',
   },
   sidebar: {
     width: '28%', minWidth: 260, maxWidth: 320, background: T.surface,
@@ -433,7 +433,7 @@ const s = {
     padding: '16px 14px', borderBottom: `1px solid ${T.border}`,
     display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: T.surface,
   },
-  sidebarTitle: { margin: 0, fontSize: 18, fontWeight: 500, fontFamily: 'Fraunces, serif', color: T.text },
+  sidebarTitle: { margin: 0, fontSize: 18, fontWeight: 500, fontFamily: 'var(--font-heading)', color: T.text },
   sidebarScroll: { flex: 1, overflowY: 'auto', minHeight: 0 },
   sidebarMuted: { padding: 16, color: T.muted, fontSize: 13, margin: 0 },
   emptyList: { padding: '40px 16px', textAlign: 'center' },
@@ -458,7 +458,7 @@ const s = {
   deleteOpt: {
     padding: '10px 14px', border: 'none', background: 'transparent', textAlign: 'left',
     cursor: 'pointer', fontSize: 13, fontWeight: 500, color: T.text,
-    fontFamily: 'Manrope, sans-serif', transition: 'background 0.15s',
+    fontFamily: 'var(--font-body)', transition: 'background 0.15s',
   },
   iconBtn: {
     width: 32, height: 32, minWidth: 32, borderRadius: '50%',
@@ -475,7 +475,7 @@ const s = {
     borderBottom: `1px solid ${T.border}`, background: T.surface, flexShrink: 0,
   },
   desktopHeaderName: {
-    fontWeight: 600, fontSize: 14.5, color: T.text, fontFamily: 'Fraunces, serif',
+    fontWeight: 600, fontSize: 14.5, color: T.text, fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   reportHeaderBtnDesktop: {
@@ -489,7 +489,7 @@ const s = {
     background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
   },
   mobileBackName: {
-    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'Fraunces, serif',
+    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   reportHeaderBtn: {

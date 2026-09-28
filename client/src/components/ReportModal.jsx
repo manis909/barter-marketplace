@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import api from '../services/api';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = api.defaults.baseURL.replace(/\/api\/?$/, '');
 
 export const REPORT_REASONS = [
   'Fraud / Scam',

@@ -26,8 +26,6 @@ const API_URL = 'http://localhost:5000';
 
 /* ─── Injected CSS ───────────────────────────────────────────────────────── */
 const LAYOUT_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
-
 /* Zero out app-main padding so the chat fills the viewport exactly */
 .app-main:has(.chatslayout-root) {
   padding: 0 !important;
@@ -605,7 +603,7 @@ export default function ChatsLayout() {
           <>
             {/* ── Mobile back bar (hidden on desktop via CSS) ── */}
             <div className="chatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/explore')} style={s.iconBtn} aria-label="Back to explore">
+              <button type="button" onClick={() => navigate('/chats')} style={s.iconBtn} aria-label="Back to chats">
                 <BackArrow />
               </button>
               <div
@@ -911,7 +909,7 @@ const s = {
     maxWidth: 1100, width: '100%', margin: '0 auto',
     border: `1px solid ${T.border}`, borderRadius: T.radiusCard,
     overflow: 'hidden', background: T.surface,
-    fontFamily: 'Manrope, sans-serif', boxSizing: 'border-box',
+    fontFamily: 'var(--font-body)', boxSizing: 'border-box',
   },
 
   /* ── sidebar ── */
@@ -924,7 +922,7 @@ const s = {
     padding: '16px 14px', borderBottom: `1px solid ${T.border}`,
     display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: T.surface,
   },
-  sidebarTitle: { margin: 0, fontSize: 18, fontWeight: 500, fontFamily: 'Fraunces, serif', color: T.text },
+  sidebarTitle: { margin: 0, fontSize: 18, fontWeight: 500, fontFamily: 'var(--font-heading)', color: T.text },
   sidebarScroll: { flex: 1, overflowY: 'auto', minHeight: 0 },
   sidebarMuted: { padding: 16, color: T.muted, fontSize: 13, margin: 0 },
   emptyList: { padding: '40px 16px', textAlign: 'center' },
@@ -953,7 +951,7 @@ const s = {
   deleteOpt: {
     padding: '10px 14px', border: 'none', background: 'transparent', textAlign: 'left',
     cursor: 'pointer', fontSize: 13, fontWeight: 500, color: T.text,
-    fontFamily: 'Manrope, sans-serif', transition: 'background 0.15s',
+    fontFamily: 'var(--font-body)', transition: 'background 0.15s',
   },
   iconBtn: {
     width: 32, height: 32, minWidth: 32, borderRadius: '50%',
@@ -980,7 +978,7 @@ const s = {
     borderBottom: `1px solid ${T.border}`, background: T.surface, flexShrink: 0,
   },
   desktopHeaderName: {
-    fontWeight: 600, fontSize: 14.5, color: T.text, fontFamily: 'Fraunces, serif',
+    fontWeight: 600, fontSize: 14.5, color: T.text, fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   desktopHeaderStatus: { fontSize: 11, color: T.accent, marginTop: 1, fontFamily: 'Manrope, sans-serif' },
@@ -997,7 +995,7 @@ const s = {
     background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
   },
   mobileBackName: {
-    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'Fraunces, serif',
+    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   mobileBackStatus: { fontSize: 11, color: T.accent, marginTop: 1, fontFamily: 'Manrope, sans-serif' },

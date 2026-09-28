@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback, Fragment } from 'react';
 import { io } from 'socket.io-client';
 import { fmtTime, fmtDate, formatChatDateHeader, getDateKey } from '../../utils/helpers';
+import api from '../../services/api';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = api.defaults.baseURL.replace(/\/api\/?$/, '');
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
@@ -47,13 +48,11 @@ function Avatar({ name, imageUrl, size = 34 }) {
 
 /* ─── CSS ───────────────────────────────────────────────────────────────── */
 const CHAT_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
-
 /* ── Outer wrapper — fills whatever space ChatsLayout gives it ── */
 .cw-wrap {
   width: 100%; max-width: 100%; box-sizing: border-box;
   display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;
-  font-family: Manrope, sans-serif; overflow: hidden;
+  font-family: var(--font-body); overflow: hidden;
 }
 
 /* ── Desktop header (hidden on mobile; mobile header lives in ChatsLayout) ── */
@@ -65,7 +64,7 @@ const CHAT_CSS = `
 .cw-header-info { flex: 1; min-width: 0; }
 .cw-header-name {
   font-size: 15px; font-weight: 600; color: ${T.text};
-  font-family: Fraunces, serif;
+  font-family: var(--font-heading);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .cw-header-status { font-size: 11px; color: ${T.muted}; margin-top: 1px; }
@@ -86,7 +85,7 @@ const CHAT_CSS = `
   padding: 4px 10px; border-radius: 6px; border: 1px solid ${T.accent};
   background: transparent; color: ${T.accent}; font-size: 11.5px;
   font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  font-family: Manrope, sans-serif; transition: background 0.15s;
+  font-family: var(--font-body); transition: background 0.15s;
 }
 .cw-item-strip-btn:hover { background: rgba(61,110,99,0.08); }
 
@@ -198,7 +197,7 @@ const CHAT_CSS = `
 .cw-actions button {
   font-size: 11px; padding: 3px 8px; border: 1px solid ${T.border};
   background: ${T.surface}; cursor: pointer; color: ${T.muted};
-  border-radius: 6px; transition: border-color 0.12s; font-family: Manrope, sans-serif;
+  border-radius: 6px; transition: border-color 0.12s; font-family: var(--font-body);
 }
 .cw-actions button:hover { border-color: ${T.accent}; color: ${T.accent}; }
 
@@ -212,7 +211,7 @@ const CHAT_CSS = `
 .cw-del-menu button {
   padding: 9px 13px; text-align: left; border: none; background: none;
   cursor: pointer; font-size: 12.5px; color: ${T.text};
-  font-family: Manrope, sans-serif; transition: background 0.12s;
+  font-family: var(--font-body); transition: background 0.12s;
 }
 .cw-del-menu button:hover { background: ${T.bg}; }
 .cw-del-menu button.danger { color: ${T.danger}; }
@@ -282,7 +281,7 @@ const CHAT_CSS = `
   padding: 11px 14px; text-align: left; border: none; background: none;
   cursor: pointer; font-size: 13.5px; color: ${T.text};
   display: flex; align-items: center; gap: 9px;
-  font-family: Manrope, sans-serif; transition: background 0.12s;
+  font-family: var(--font-body); transition: background 0.12s;
 }
 .cw-attach-menu-desktop button:hover { background: ${T.bg}; }
 
@@ -305,7 +304,7 @@ const CHAT_CSS = `
   display: flex; align-items: center; gap: 14px;
   width: 100%; padding: 14px 20px; border: none; background: none;
   cursor: pointer; font-size: 15px; color: ${T.text};
-  font-family: Manrope, sans-serif; text-align: left;
+  font-family: var(--font-body); text-align: left;
   transition: background 0.12s;
 }
 .cw-bottom-sheet button:hover, .cw-bottom-sheet button:active { background: ${T.bg}; }
@@ -315,7 +314,7 @@ const CHAT_CSS = `
 .cw-text-input {
   flex: 1; min-width: 0; padding: 9px 14px;
   border-radius: 22px; border: 1px solid ${T.border};
-  outline: none; font-size: 14px; font-family: Manrope, sans-serif;
+  outline: none; font-size: 14px; font-family: var(--font-body);
   background: ${T.bg}; color: ${T.text}; transition: border-color 0.18s;
   line-height: 1.4;
 }
@@ -343,7 +342,7 @@ const CHAT_CSS = `
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px 16px; flex-shrink: 0;
   background: ${T.bg}; border-top: 1px solid ${T.border};
-  font-size: 13px; color: ${T.muted}; font-family: Manrope, sans-serif;
+  font-size: 13px; color: ${T.muted}; font-family: var(--font-body);
   text-align: center;
 }
 .cw-chat-locked-icon { font-size: 15px; flex-shrink: 0; }
@@ -361,7 +360,7 @@ function TradeCompletedSystemMsg({ completedAt }) {
       <div style={{
         textAlign: 'center', padding: '10px 18px',
         background: '#EEF7F2', border: '1px solid #C9E5D8',
-        borderRadius: '999px', fontFamily: 'Manrope, sans-serif',
+        borderRadius: '999px', fontFamily: 'var(--font-body)',
       }}>
         <div style={{ fontSize: 15 }}>✅</div>
         <div style={{ fontSize: 12.5, fontWeight: 600, color: '#3D6E63', marginTop: 2 }}>
@@ -718,9 +717,7 @@ export default function ChatWindow({
                       <span className="cw-ts">{fmtTime(m.created_at)}</span>
                       {/* ✓ for own messages; turns blue when recipient has read the chat */}
                       {isMine && (
-                        <span className="cw-status" style={{ color: chatIsRead ? '#53bdeb' : 'rgba(255,255,255,0.7)' }}>
-                          ✓✓
-                        </span>
+                        <span className="cw-status" aria-hidden="true" style={{ color: chatIsRead ? '#53bdeb' : 'rgba(255,255,255,0.7)' }} />
                       )}
                     </div>
                   )}

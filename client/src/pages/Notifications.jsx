@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import api from '../services/api';
 import { fmtDateAndTime, normalizeToUTC } from '../utils/helpers';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = api.defaults.baseURL.replace(/\/api\/?$/, '');
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
 const T = {
