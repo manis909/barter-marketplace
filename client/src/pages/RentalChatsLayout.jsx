@@ -359,9 +359,9 @@ export default function RentalChatsLayout() {
             <div className="rentalchatslayout-mobile-back" style={s.mobileBackBar}>
               <button
                 type="button"
-                onClick={() => navigate('/renter')}
+                onClick={() => navigate('/rental/chat')}
                 style={s.iconBtn}
-                aria-label="Back to Rental Explore"
+                aria-label="Back to Rental chats"
               >
                 <BackArrow />
               </button>

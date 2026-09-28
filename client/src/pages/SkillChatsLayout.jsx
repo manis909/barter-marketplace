@@ -332,7 +332,7 @@ export default function SkillChatsLayout() {
         ) : (
           <>
             <div className="skillchatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/skilter/explore')} style={s.iconBtn} aria-label="Back to Skilter Explore">
+              <button type="button" onClick={() => navigate('/skilter/chat')} style={s.iconBtn} aria-label="Back to Skilter chats">
                 <BackArrow />
               </button>
               <button

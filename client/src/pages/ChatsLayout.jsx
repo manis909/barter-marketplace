@@ -603,7 +603,7 @@ export default function ChatsLayout() {
           <>
             {/* ── Mobile back bar (hidden on desktop via CSS) ── */}
             <div className="chatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/explore')} style={s.iconBtn} aria-label="Back to explore">
+              <button type="button" onClick={() => navigate('/chats')} style={s.iconBtn} aria-label="Back to chats">
                 <BackArrow />
               </button>
               <div
