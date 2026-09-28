@@ -6,8 +6,13 @@ import ProfileDrawer from './ProfileDrawer'
 import SkilterDrawer from './SkilterDrawer'
 import RentalDrawer from './RentalDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
+<<<<<<< HEAD
 import UserAvatar from './UserAvatar'
 import { Home, ChevronDown } from 'lucide-react'
+=======
+import MobileBottomNav from './MobileBottomNav'
+import { User, Home, ChevronDown } from 'lucide-react'
+>>>>>>> bb02118067a83249dd7d5cbebf81b75f07296f98
 import { useAuth } from '../features/auth/AuthContext'
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import { SKILTER_CATEGORY_META, normalizeSkilterCategory } from '../data/skilterCategories'
@@ -141,6 +146,16 @@ export default function Navbar() {
   // Show the mobile category row on Barter, Skilter, and Renter explore pages
   const showCategoryRow = isExploreActive || isSkilterActive || isRenterActive
 
+  // Check if current page is any Chat page (Barter, Rental, or Skilter)
+  const isChatPage = useMemo(() => {
+    const p = location.pathname.toLowerCase()
+    return (
+      /^\/chats?(\/|$)/.test(p) ||
+      /^\/(rental|renter|rentals)\/chat(\/|$)/.test(p) ||
+      /^\/(skilter|skills)\/chat(\/|$)/.test(p)
+    )
+  }, [location.pathname])
+
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
   const SKILTER_PREFIXES = ['/skilter', '/skills']
@@ -258,12 +273,15 @@ export default function Navbar() {
 
   const handlePlatformSelect = useCallback(
     (platform) => {
-      const tab = platformTabs.find((item) => item.key === platform)
+      const normalizedKey = platform === 'Rental' ? 'Renter' : platform
+      const tab = platformTabs.find(
+        (item) => item.key === normalizedKey || item.label.toLowerCase() === platform.toLowerCase()
+      )
       if (tab) {
         navigate(tab.path)
       }
     },
-    [navigate, platformTabs]
+    [navigate]
   )
 
   const activeCategoryObj = useMemo(
@@ -274,13 +292,21 @@ export default function Navbar() {
   return (
     <>
       <header
-        className={`navbar-wrapper ${scrolled ? 'is-scrolled' : ''}`}
+        className={`navbar-wrapper platform-${currentPlatform.toLowerCase()} ${scrolled ? 'is-scrolled' : ''}`}
       >
         <div className="navbar-container">
           {/* DESKTOP LAYOUT (768px and above) */}
           <div className="navbar-desktop-row">
-            {/* Desktop Left: Section Tabs */}
+            {/* Desktop Left: TRISTAL Brand & Section Tabs */}
             <div className="navbar-left">
+              <Link
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'}
+                className="desktop-brand-link"
+                aria-label="TRISTAL Home"
+              >
+                <span className="desktop-brand-mark">⇄</span>
+                <span className="desktop-brand-name">TRISTAL</span>
+              </Link>
               <div className="navbar-platform-tabs" aria-label="Platform switcher">
                 {platformTabs.map((tab) => {
                   const isActive = currentPlatform === tab.key
@@ -334,7 +360,7 @@ export default function Navbar() {
                   <motion.div
                     layoutId="navbar-underline"
                     className="active-underline"
-                    style={{ backgroundColor: activeCategoryObj.color }}
+                    style={{ backgroundColor: currentPlatform === 'Barter' ? '#C6E930' : (activeCategoryObj?.color || '#C6E930') }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -454,37 +480,17 @@ export default function Navbar() {
 
           {/* MOBILE LAYOUT (Below 768px) */}
           <div className={`navbar-mobile-wrapper ${scrolled ? 'mobile-scrolled' : ''}`}>
-            {/* ROW 1: Section Tabs | Profile Avatar / Login (Right) */}
+            {/* ROW 1: Brand | Profile Avatar / Login / Home (Right) */}
             <div className="mobile-row-1">
-              <div className="mobile-platform-tabs-wrapper" aria-label="Platform switcher">
-                <div className="mobile-platform-tabs">
-                  {platformTabs.map((tab) => {
-                    const isActive = currentPlatform === tab.key
-
-                    return (
-                      <button
-                        key={tab.key}
-                        type="button"
-                        className={`platform-tab ${isActive ? 'active' : ''}`}
-                        onClick={() => handlePlatformSelect(tab.key)}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        {isActive && (
-                          <motion.span
-                            className="platform-tab-mark"
-                            aria-hidden="true"
-                            whileHover={{ rotate: 180, scale: 1.08 }}
-                            transition={{ duration: 0.4, ease: 'easeInOut' }}
-                          >
-                            ⇄
-                          </motion.span>
-                        )}
-                        <span className="platform-tab-label">{tab.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+              {/* Brand Logo & Title (Replaces old top mode tabs on mobile) */}
+              <Link
+                to={currentPlatform === 'Skilter' ? '/skilter/explore' : currentPlatform === 'Renter' ? '/renter' : '/explore'}
+                className="mobile-brand-link"
+                aria-label="TRISTAL Home"
+              >
+                <span className="mobile-brand-mark">⇄</span>
+                <span className="mobile-brand-name">TRISTAL</span>
+              </Link>
 
               <div className="mobile-actions-right">
                 {/* 1. Home Button */}
@@ -591,6 +597,14 @@ export default function Navbar() {
       )}
       {currentUser && currentPlatform === 'Renter' && (
         <RentalDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
+
+      {/* Floating Bottom Navigation Bar on Mobile (Instagram-style pill) - hidden on all Chat pages */}
+      {!drawerOpen && !isChatPage && (
+        <MobileBottomNav
+          currentPlatform={currentPlatform}
+          onSelectPlatform={handlePlatformSelect}
+        />
       )}
     </>
   )

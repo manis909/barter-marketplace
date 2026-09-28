@@ -18,6 +18,17 @@
   --radius-pill: 999px;
   --font-heading: 'Fraunces', serif;
   --font-body: 'Manrope', sans-serif;
+
+  /* Barter Startup Design System (Professional Palette) */
+  --barter-dark-green: #0F3D2E;
+  --barter-green: #1B4D3E;
+  --barter-light-green: #2F6B52;
+  --barter-accent-lime: #C6E930;
+  --barter-accent-hover: #B3D426;
+  --barter-bg-clean: #F8FAF8;
+  --barter-border: #E2ECE6;
+  --barter-text-dark: #0F3D2E;
+  --barter-text-muted: #567367;
 }
 
 body {
@@ -54,6 +65,20 @@ button {
 .app-shell {
   min-height: 100vh;
   background: var(--bg);
+}
+
+.app-shell:has(.platform-barter) {
+  background: #F8FAF8;
+}
+
+.barter-theme {
+  --theme-primary-dark: #0F3D2E;
+  --theme-primary: #1B4D3E;
+  --theme-primary-light: #2F6B52;
+  --theme-accent-lime: #C6E930;
+  --theme-accent-hover: #B3D426;
+  background: #F8FAF8;
+  color: #1F2E28;
 }
 
 .app-main {
@@ -131,6 +156,6 @@ select:focus {
 @media (max-width: 767px) {
   .app-main {
     width: min(100%, calc(100% - 24px));
-    padding: 4px 0 30px;
+    padding: 4px 0 calc(96px + env(safe-area-inset-bottom, 0px));
   }
 }

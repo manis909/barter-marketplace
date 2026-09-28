@@ -401,7 +401,7 @@ export default function RentalBookingDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F6F5F0] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#F8FAF8] flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <div className="w-9 h-9 border-3 border-[#0F3D2E] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-medium text-stone-500 font-sans">
@@ -414,7 +414,7 @@ export default function RentalBookingDetailPage() {
 
   if (error || !booking) {
     return (
-      <div className="min-h-screen bg-[#F6F5F0] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#F8FAF8] flex items-center justify-center p-6">
         <Card className="max-w-md w-full border-0 bg-white/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 text-center rounded-3xl">
           <Package className="w-12 h-12 text-stone-300 mx-auto mb-4" />
           <h2 style={{ fontFamily: "'Fraunces', serif" }} className="text-2xl font-bold text-[#0F3D2E] mb-2">
@@ -465,7 +465,7 @@ export default function RentalBookingDetailPage() {
   const borrowerLabel = booking.borrower_name || booking.borrower_username || 'Renter'
 
   return (
-    <div className="min-h-screen bg-[#F6F5F0] text-[#10241C] py-8 pb-24 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#F8FAF8] text-[#10241C] py-8 pb-24 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* ── Top Bar ── */}

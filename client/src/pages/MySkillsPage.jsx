@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../features/auth/AuthContext'
-import { uploadImageToSupabase } from '../services/supabase'
+import { uploadImageToSupabase, uploadSkillVideoToSupabase } from '../services/supabase'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
@@ -29,7 +29,7 @@ const SKILL_CATEGORIES = [
   'Music',
   'Dance',
   'Art & Design',
-  'Study Help / Tutoring',
+  'Tutoring',
   'Coding & Tech',
   'Languages',
   'Fitness & Sports',
@@ -50,7 +50,8 @@ const EMPTY_FORM = {
   session_type: 'One-on-One',
   max_participants: '',
   images: [],
-  existingImageUrls: []
+  existingImageUrls: [],
+  demo_video_urls: []
 }
 
 export default function MySkillsPage() {
@@ -59,6 +60,8 @@ export default function MySkillsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [imagePreviews, setImagePreviews] = useState([])
+  const [demoVideoFiles, setDemoVideoFiles] = useState([])
+  const [demoVideoPreviewUrls, setDemoVideoPreviewUrls] = useState([])
   const [skills, setSkills] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -87,7 +90,7 @@ export default function MySkillsPage() {
     api.get('/skill-provider-applications/mine')
       .then((response) => {
         const applications = Array.isArray(response.data?.applications) ? response.data.applications : []
-          setProviderApplication(applications.find((application) => application.status === 'approved') || applications[0] || null)
+        setProviderApplication(applications.find((application) => application.status === 'approved') || applications[0] || null)
       })
       .catch((error) => {
         console.error('Failed to load skill provider application status', error)
@@ -171,6 +174,37 @@ export default function MySkillsPage() {
     event.target.value = ''
   }
 
+  const handleDemoVideoChange = (event) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = ''
+    if (!selectedFile) return
+
+    const isVideo = selectedFile.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(selectedFile.name)
+    if (!isVideo) {
+      setMessage('Please select an MP4, WebM, or MOV video for the Skill Reel.')
+      return
+    }
+
+    demoVideoPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
+    setForm((previous) => ({ ...previous, demo_video_urls: [] }))
+    setDemoVideoFiles([selectedFile])
+    setDemoVideoPreviewUrls([URL.createObjectURL(selectedFile)])
+  }
+
+  const removeDemoVideo = (index, isExisting = false) => {
+    if (isExisting) {
+      setForm((previous) => ({
+        ...previous,
+        demo_video_urls: previous.demo_video_urls.filter((_, itemIndex) => itemIndex !== index)
+      }))
+      return
+    }
+
+    URL.revokeObjectURL(demoVideoPreviewUrls[index])
+    setDemoVideoFiles((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
+    setDemoVideoPreviewUrls((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const removeNewImage = (index) => {
     URL.revokeObjectURL(imagePreviews[index])
     const newImages = form.images.filter((_, i) => i !== index)
@@ -229,8 +263,11 @@ export default function MySkillsPage() {
   }
 
   const resetForm = () => {
+    demoVideoPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
     setForm(EMPTY_FORM)
     setImagePreviews([])
+    setDemoVideoFiles([])
+    setDemoVideoPreviewUrls([])
     setMessage('')
     setIsEditing(false)
     setEditingSkillId(null)
@@ -265,9 +302,14 @@ export default function MySkillsPage() {
       session_type: skill.session_type || 'One-on-One',
       max_participants: skill.max_participants || '',
       images: [],
-      existingImageUrls: Array.isArray(skill.image_urls) ? skill.image_urls : []
+      existingImageUrls: Array.isArray(skill.image_urls) ? skill.image_urls : [],
+      demo_video_urls: Array.isArray(skill.demo_video_urls)
+        ? skill.demo_video_urls
+        : (skill.demo_video_url ? [skill.demo_video_url] : [])
     })
     setImagePreviews([])
+    setDemoVideoFiles([])
+    setDemoVideoPreviewUrls([])
     setMessage('')
     setIsFormOpen(true)
     scrollToForm()
@@ -282,22 +324,37 @@ export default function MySkillsPage() {
   // ── submit (create or update) ──────────────────────────────────
   const handleSubmit = async (event) => {
     event.preventDefault()
+
     setIsSubmitting(true)
     setMessage('')
 
     try {
+      let newDemoVideoUrls = []
+      if (demoVideoFiles.length > 0) {
+        try {
+          newDemoVideoUrls = await Promise.all(
+            demoVideoFiles.map((file) => uploadSkillVideoToSupabase(file))
+          )
+        } catch (uploadError) {
+          console.error('Skill Reel upload failed:', uploadError)
+          setMessage('The Skill Reel could not be uploaded. Your skill was not saved. Please try again.')
+          return
+        }
+      }
+
       // Upload any newly selected images
       const newlyUploadedUrls = form.images.length > 0
         ? await Promise.all(
-            form.images.map(async (file) => {
-              const url = await uploadImageToSupabase(file)
-              console.log('Uploaded:', file.name, url)
-              return url
-            })
-          )
+          form.images.map(async (file) => {
+            const url = await uploadImageToSupabase(file)
+            console.log('Uploaded:', file.name, url)
+            return url
+          })
+        )
         : []
 
       const finalImageUrls = [...form.existingImageUrls, ...newlyUploadedUrls]
+      const demoVideoUrls = [...form.demo_video_urls, ...newDemoVideoUrls]
 
       const payload = {
         skill_name: form.skill_name,
@@ -309,6 +366,7 @@ export default function MySkillsPage() {
         session_type: form.session_type,
         max_participants: form.session_type === 'Group' ? form.max_participants : null,
         image_urls: finalImageUrls,
+        demo_video_urls: demoVideoUrls,
       }
 
       console.log('🔍 FRONTEND DEBUG - Form state:', {
@@ -400,8 +458,8 @@ export default function MySkillsPage() {
   )
   const matchingSuggestions = searchQuery.trim()
     ? suggestionCandidates.filter((c) =>
-        c.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      c.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : []
 
   // ── filtered skills ────────────────────────────────────────────
@@ -502,445 +560,477 @@ export default function MySkillsPage() {
 
   return (
     <>
-    <section className="my-skills-page">
-      {/* ── Premium Hero ─────────────────────────────────────────── */}
-      <div className="ml-hero">
-        <button
-          type="button"
-          className="ml-hero-back"
-          onClick={() => navigate('/skilter')}
-          aria-label="Back to Skilter"
-        >
-          ←
-        </button>
-      </div>
-
-      {/* ── Title Card ────────────────────────────────────────────── */}
-      <div className="ml-title-card">
-        <div className="ml-title-card__inner">
-          <div className="ml-title-card__copy">
-            <div className="hero-badge">
-              <GraduationCap size={16} />
-              <span>MY SKILLS</span>
-            </div>
-            <h1>Manage your skills</h1>
-            <p>Keep your expertise polished, visible, and ready to share.</p>
-          </div>
-          <button type="button" className="primary-button" onClick={handleOpenCreateForm}>
-            <Plus size={18} />
-            <span>Add Skill</span>
+      <section className="my-skills-page">
+        {/* ── Premium Hero ─────────────────────────────────────────── */}
+        <div className="ml-hero">
+          <button
+            type="button"
+            className="ml-hero-back"
+            onClick={() => navigate('/skilter')}
+            aria-label="Back to Skilter"
+          >
+            ←
           </button>
         </div>
-      </div>
 
-      <div className="toolbar">
-        <div className="search-field-container">
-          <label className="search-field">
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Search your skills..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setShowSuggestions(true)
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={handleSearchBlur}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="clear-search-btn"
-                onClick={() => {
-                  setSearchQuery('')
-                  setShowSuggestions(false)
-                }}
-                aria-label="Clear search"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </label>
-          
-          {showSuggestions && matchingSuggestions.length > 0 && (
-            <ul className="suggestions-dropdown">
-              {matchingSuggestions.map((suggestion, idx) => (
-                <li
-                  key={idx}
-                  className="suggestion-item"
-                  onMouseDown={() => handleSelectSuggestion(suggestion)}
-                >
-                  {suggestion}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      <div className="filter-chips">
-          {filterOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`filter-chip ${option === activeFilter ? 'is-active' : ''}`}
-              onClick={() => setActiveFilter(option)}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Create / Edit Form ───────────────────────────────────── */}
-      {isFormOpen && (
-        <form
-          ref={createSkillRef}
-          className={`listing-form ${isFormHighlighting ? 'listing-form--highlight' : ''}`}
-          onSubmit={handleSubmit}
-        >
-          <div className="form-heading">
-            <div>
-              <p className="section-eyebrow">{isEditing ? 'Edit Skill' : 'Create Skill'}</p>
-              <h2>{isEditing ? 'Update your skill details' : 'Share your expertise with the community'}</h2>
-            </div>
-            <p className="form-helper">Keep your skill details clear and compelling so bookings happen faster.</p>
-          </div>
-
-          <div className="form-grid">
-            {/* Image upload */}
-            <div className="form-field form-field--full">
-              <label>Upload Images</label>
-              <div className="upload-area">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  disabled={form.existingImageUrls.length + imagePreviews.length >= MAX_IMAGES}
-                />
-                <div className="upload-content">
-                  <div className="upload-icon">
-                    <Upload size={18} />
-                  </div>
-                  <span>
-                    Drop or browse images
-                    {' '}
-                    <span style={{ color: '#8C887B', fontWeight: 400 }}>
-                      ({form.existingImageUrls.length + imagePreviews.length}/{MAX_IMAGES} added)
-                    </span>
-                  </span>
-                  <small>PNG, JPG, or WebP · max {MAX_IMAGES} images</small>
-                </div>
+        {/* ── Title Card ────────────────────────────────────────────── */}
+        <div className="ml-title-card">
+          <div className="ml-title-card__inner">
+            <div className="ml-title-card__copy">
+              <div className="hero-badge">
+                <GraduationCap size={16} />
+                <span>MY SKILLS</span>
               </div>
-
-              {/* Existing images */}
-              {form.existingImageUrls.length > 0 && (
-                <div className="image-preview-row">
-                  {form.existingImageUrls.map((url, index) => (
-                    <div key={`existing-${index}`} className="image-preview-item">
-                      <img src={url} alt={`existing ${index + 1}`} />
-                      <button
-                        type="button"
-                        className="image-remove-btn"
-                        onClick={() => removeExistingImage(index)}
-                        aria-label="Remove image"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* New image previews */}
-              {imagePreviews.length > 0 && (
-                <div className="image-preview-row">
-                  {imagePreviews.map((src, index) => (
-                    <div key={`new-${index}`} className="image-preview-item">
-                      <img src={src} alt={`new preview ${index + 1}`} />
-                      <button
-                        type="button"
-                        className="image-crop-btn"
-                        onClick={() => handleOpenCrop(index)}
-                        aria-label="Crop image"
-                        title="Crop image"
-                      >
-                        <Crop size={11} />
-                      </button>
-                      <button
-                        type="button"
-                        className="image-remove-btn"
-                        onClick={() => removeNewImage(index)}
-                        aria-label="Remove image"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <h1>Manage your skills</h1>
+              <p>Keep your expertise polished, visible, and ready to share.</p>
             </div>
+            <button type="button" className="primary-button" onClick={handleOpenCreateForm}>
+              <Plus size={18} />
+              <span>Add Skill</span>
+            </button>
+          </div>
+        </div>
 
-            <div className="form-field">
-              <label>Skill Name</label>
+        <div className="toolbar">
+          <div className="search-field-container">
+            <label className="search-field">
+              <Search size={18} />
               <input
                 type="text"
-                name="skill_name"
-                value={form.skill_name}
-                onChange={handleChange}
-                placeholder="Guitar Lessons, Spanish Tutoring, etc."
-                required
+                placeholder="Search your skills..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowSuggestions(true)
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={handleSearchBlur}
               />
-            </div>
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="clear-search-btn"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setShowSuggestions(false)
+                  }}
+                  aria-label="Clear search"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </label>
 
-            <div className="form-field">
-              <label>Category</label>
-              <select
-                name="category"
-                value={form.category}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select Category</option>
-                {SKILL_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+            {showSuggestions && matchingSuggestions.length > 0 && (
+              <ul className="suggestions-dropdown">
+                {matchingSuggestions.map((suggestion, idx) => (
+                  <li
+                    key={idx}
+                    className="suggestion-item"
+                    onMouseDown={() => handleSelectSuggestion(suggestion)}
+                  >
+                    {suggestion}
+                  </li>
                 ))}
-              </select>
+              </ul>
+            )}
+          </div>
+          <div className="filter-chips">
+            {filterOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`filter-chip ${option === activeFilter ? 'is-active' : ''}`}
+                onClick={() => setActiveFilter(option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Create / Edit Form ───────────────────────────────────── */}
+        {isFormOpen && (
+          <form
+            ref={createSkillRef}
+            className={`listing-form ${isFormHighlighting ? 'listing-form--highlight' : ''}`}
+            onSubmit={handleSubmit}
+          >
+            <div className="form-heading">
+              <div>
+                <p className="section-eyebrow">{isEditing ? 'Edit Skill' : 'Create Skill'}</p>
+                <h2>{isEditing ? 'Update your skill details' : 'Share your expertise with the community'}</h2>
+              </div>
+              <p className="form-helper">Keep your skill details clear and compelling so bookings happen faster.</p>
             </div>
 
-            <div className="form-field form-field--full">
-              <label>Description</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                placeholder="Describe what you'll teach or help with..."
-                rows="5"
-                required
-              />
-            </div>
+            <div className="form-grid">
+              {/* Image upload */}
+              <div className="form-field form-field--full">
+                <label>Upload Images</label>
+                <div className="upload-area">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileChange}
+                    disabled={form.existingImageUrls.length + imagePreviews.length >= MAX_IMAGES}
+                  />
+                  <div className="upload-content">
+                    <div className="upload-icon">
+                      <Upload size={18} />
+                    </div>
+                    <span>
+                      Drop or browse images
+                      {' '}
+                      <span style={{ color: '#8C887B', fontWeight: 400 }}>
+                        ({form.existingImageUrls.length + imagePreviews.length}/{MAX_IMAGES} added)
+                      </span>
+                    </span>
+                    <small>PNG, JPG, or WebP · max {MAX_IMAGES} images</small>
+                  </div>
+                </div>
 
-            <div className="form-field">
-              <label>Price Type</label>
-              <select name="price_type" value={form.price_type} onChange={handleChange}>
-                <option value="Free">Free</option>
-                <option value="Paid">Paid</option>
-                <option value="Negotiable">Negotiable</option>
-              </select>
-            </div>
+                {/* Existing images */}
+                {form.existingImageUrls.length > 0 && (
+                  <div className="image-preview-row">
+                    {form.existingImageUrls.map((url, index) => (
+                      <div key={`existing-${index}`} className="image-preview-item">
+                        <img src={url} alt={`existing ${index + 1}`} />
+                        <button
+                          type="button"
+                          className="image-remove-btn"
+                          onClick={() => removeExistingImage(index)}
+                          aria-label="Remove image"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-            {(form.price_type === 'Paid' || form.price_type === 'Negotiable') && (
-              <>
+                {/* New image previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="image-preview-row">
+                    {imagePreviews.map((src, index) => (
+                      <div key={`new-${index}`} className="image-preview-item">
+                        <img src={src} alt={`new preview ${index + 1}`} />
+                        <button
+                          type="button"
+                          className="image-crop-btn"
+                          onClick={() => handleOpenCrop(index)}
+                          aria-label="Crop image"
+                          title="Crop image"
+                        >
+                          <Crop size={11} />
+                        </button>
+                        <button
+                          type="button"
+                          className="image-remove-btn"
+                          onClick={() => removeNewImage(index)}
+                          aria-label="Remove image"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-field form-field--full skill-reel-field">
+                <label htmlFor="skill-demo-video">Skill Reel (Optional)</label>
+                <small>One short MP4, WebM, or MOV video. Selecting a new video replaces the current reel.</small>
+                <input
+                  id="skill-demo-video"
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                  onChange={handleDemoVideoChange}
+                />
+                {demoVideoFiles[0] && (
+                  <p className="skill-reel-filename">{demoVideoFiles[0].name}</p>
+                )}
+                <div className="skill-reel-preview-list">
+                  {form.demo_video_urls.map((url, index) => (
+                    <div className="skill-reel-preview" key={url}>
+                      <video src={url} controls preload="metadata" />
+                      <button type="button" onClick={() => removeDemoVideo(index, true)} aria-label="Remove existing Skill Reel">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  {demoVideoPreviewUrls.map((url, index) => (
+                    <div className="skill-reel-preview" key={url}>
+                      <video src={url} controls preload="metadata" />
+                      <button type="button" onClick={() => removeDemoVideo(index)} aria-label="Remove selected Skill Reel">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Skill Name</label>
+                <input
+                  type="text"
+                  name="skill_name"
+                  value={form.skill_name}
+                  onChange={handleChange}
+                  placeholder="Guitar Lessons, Spanish Tutoring, etc."
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Category</label>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {SKILL_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field form-field--full">
+                <label>Description</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  placeholder="Describe what you'll teach or help with..."
+                  rows="5"
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Price Type</label>
+                <select name="price_type" value={form.price_type} onChange={handleChange}>
+                  <option value="Free">Free</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Negotiable">Negotiable</option>
+                </select>
+              </div>
+
+              {(form.price_type === 'Paid' || form.price_type === 'Negotiable') && (
+                <>
+                  <div className="form-field">
+                    <label>Price (₹)</label>
+                    <input
+                      type="number"
+                      name="price"
+                      value={form.price}
+                      onChange={handleChange}
+                      placeholder="Enter price in ₹"
+                      required={form.price_type === 'Paid' || form.price_type === 'Negotiable'}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Price Unit</label>
+                    <select name="price_unit" value={form.price_unit} onChange={handleChange}>
+                      {PRICE_UNITS.map((unit) => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div className="form-field">
+                <label>Session Type</label>
+                <select name="session_type" value={form.session_type} onChange={handleChange}>
+                  {SESSION_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              {form.session_type === 'Group' && (
                 <div className="form-field">
-                  <label>Price (₹)</label>
+                  <label>Maximum Participants</label>
                   <input
                     type="number"
-                    name="price"
-                    value={form.price}
+                    name="max_participants"
+                    value={form.max_participants}
                     onChange={handleChange}
-                    placeholder="Enter price in ₹"
-                    required={form.price_type === 'Paid' || form.price_type === 'Negotiable'}
+                    placeholder="Enter max participants"
+                    required={form.session_type === 'Group'}
                   />
                 </div>
-
-                <div className="form-field">
-                  <label>Price Unit</label>
-                  <select name="price_unit" value={form.price_unit} onChange={handleChange}>
-                    {PRICE_UNITS.map((unit) => (
-                      <option key={unit} value={unit}>{unit}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div className="form-field">
-              <label>Session Type</label>
-              <select name="session_type" value={form.session_type} onChange={handleChange}>
-                {SESSION_TYPES.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
+              )}
             </div>
 
-            {form.session_type === 'Group' && (
-              <div className="form-field">
-                <label>Maximum Participants</label>
-                <input
-                  type="number"
-                  name="max_participants"
-                  value={form.max_participants}
-                  onChange={handleChange}
-                  placeholder="Enter max participants"
-                  required={form.session_type === 'Group'}
-                />
-              </div>
-            )}
-          </div>
+            {message && <p className={`form-message ${message.includes('successfully') ? 'form-message--success' : 'form-message--error'}`}>{message}</p>}
 
-          {message && <p className={`form-message ${message.includes('successfully') ? 'form-message--success' : 'form-message--error'}`}>{message}</p>}
-
-          <div className="form-footer">
-            {isEditing && (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
+            <div className="form-footer">
+              {isEditing && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+              )}
+              <button type="submit" className="primary-button" disabled={isSubmitting}>
+                <Upload size={18} />
+                <span>
+                  {isSubmitting
+                    ? (isEditing ? 'Saving Changes...' : 'Creating Skill...')
+                    : (isEditing ? 'Save Changes' : 'Submit Skill')}
+                </span>
               </button>
-            )}
-            <button type="submit" className="primary-button" disabled={isSubmitting}>
-              <Upload size={18} />
-              <span>
-                {isSubmitting
-                  ? (isEditing ? 'Saving Changes...' : 'Creating Skill...')
-                  : (isEditing ? 'Save Changes' : 'Submit Skill')}
-              </span>
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* ── Skills Grid ──────────────────────────────────────────── */}
-      {filteredSkills.length === 0 ? (
-        skills.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state__icon">
-              <GraduationCap size={34} />
             </div>
-            <h3>No Skills Yet</h3>
-            <p>Start your Skilter journey by adding your first skill.</p>
-            <p>Your skills will appear here once added.</p>
-          </div>
+          </form>
+        )}
+
+        {/* ── Skills Grid ──────────────────────────────────────────── */}
+        {filteredSkills.length === 0 ? (
+          skills.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state__icon">
+                <GraduationCap size={34} />
+              </div>
+              <h3>No Skills Yet</h3>
+              <p>Start your Skilter journey by adding your first skill.</p>
+              <p>Your skills will appear here once added.</p>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state__icon">
+                <Search size={34} />
+              </div>
+              <h3>No matching skills found.</h3>
+              <p>Try another name or category.</p>
+            </div>
+          )
         ) : (
-          <div className="empty-state">
-            <div className="empty-state__icon">
-              <Search size={34} />
-            </div>
-            <h3>No matching skills found.</h3>
-            <p>Try another name or category.</p>
-          </div>
-        )
-      ) : (
-        <div className="listings-grid">
-          {filteredSkills.map((skill) => (
-            <article key={skill.id} className="listing-card">
-              <div className="listing-card__media">
-                <div
-                  className="listing-card__media-backdrop"
-                  style={{
-                    backgroundImage: `url(${Array.isArray(skill.image_urls) && skill.image_urls.length > 0 ? skill.image_urls[0] : '/placeholder.png'})`
-                  }}
-                />
-                <img
-                  src={
-                    Array.isArray(skill.image_urls) && skill.image_urls.length > 0
-                      ? skill.image_urls[0]
-                      : '/placeholder.png'
-                  }
-                  alt={skill.skill_name}
-                />
-              </div>
-              <div className="listing-card__content">
-                <div className="listing-card__top">
-                  <div className="listing-card__badges">
-                    <span className="badge badge--category">{skill.category}</span>
-                    <span className="badge badge--condition">{skill.session_type}</span>
-                  </div>
+          <div className="listings-grid">
+            {filteredSkills.map((skill) => (
+              <article key={skill.id} className="listing-card">
+                <div className="listing-card__media">
                   <div
-                    className="listing-card__status"
+                    className="listing-card__media-backdrop"
                     style={{
-                      textTransform: 'capitalize',
-                      background: skill.status === 'active' ? '#E8F5EE' : '#FFF6E2',
-                      color: skill.status === 'active' ? '#2F6B57' : '#A56A00',
-                      padding: '2px 10px',
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 600,
+                      backgroundImage: `url(${Array.isArray(skill.image_urls) && skill.image_urls.length > 0 ? skill.image_urls[0] : '/placeholder.png'})`
                     }}
-                  >
-                    {skill.status || 'active'}
-                  </div>
+                  />
+                  <img
+                    src={
+                      Array.isArray(skill.image_urls) && skill.image_urls.length > 0
+                        ? skill.image_urls[0]
+                        : '/placeholder.png'
+                    }
+                    alt={skill.skill_name}
+                  />
                 </div>
-                <h3>{skill.skill_name}</h3>
-                <p>{skill.description}</p>
-                <div className="listing-card__divider" />
-                <div className="listing-card__footer">
-                  <div className="listing-card__meta">
-                    {(skill.price_type === 'coins' || skill.price_type === 'negotiable') && skill.price && (
-                      <span className="meta-pill">
-                        ₹{Number(skill.price).toLocaleString('en-IN')} / {skill.price_unit}
-                      </span>
-                    )}
-                    {skill.price_type === 'free' && (
-                      <span className="meta-pill">Free</span>
-                    )}
-                    {skill.session_type === 'Group' && skill.max_participants && (
-                      <span className="meta-pill">Max {skill.max_participants} participants</span>
-                    )}
-                    <span className="meta-pill">
-                      Listed {skill.created_at ? fmtDate(skill.created_at) : ''}
-                    </span>
-                  </div>
-                  <div className="listing-card__actions">
-                    <button
-                      type="button"
-                      className="action-btn"
-                      onClick={() => handleEdit(skill)}
+                <div className="listing-card__content">
+                  <div className="listing-card__top">
+                    <div className="listing-card__badges">
+                      <span className="badge badge--category">{skill.category}</span>
+                      <span className="badge badge--condition">{skill.session_type}</span>
+                    </div>
+                    <div
+                      className="listing-card__status"
+                      style={{
+                        textTransform: 'capitalize',
+                        background: skill.status === 'active' ? '#E8F5EE' : '#FFF6E2',
+                        color: skill.status === 'active' ? '#2F6B57' : '#A56A00',
+                        padding: '2px 10px',
+                        borderRadius: 12,
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     >
-                      <Pencil size={14} />
-                      <span>Edit</span>
-                    </button>
-                    <button type="button" className="action-btn action-btn--danger" onClick={() => handleDelete(skill)}>
-                      <Trash2 size={14} />
-                      <span>Delete</span>
-                    </button>
+                      {skill.status || 'active'}
+                    </div>
+                  </div>
+                  <h3>{skill.skill_name}</h3>
+                  <p>{skill.description}</p>
+                  <div className="listing-card__divider" />
+                  <div className="listing-card__footer">
+                    <div className="listing-card__meta">
+                      {(skill.price_type === 'coins' || skill.price_type === 'negotiable') && skill.price && (
+                        <span className="meta-pill">
+                          ₹{Number(skill.price).toLocaleString('en-IN')} / {skill.price_unit}
+                        </span>
+                      )}
+                      {skill.price_type === 'free' && (
+                        <span className="meta-pill">Free</span>
+                      )}
+                      {skill.session_type === 'Group' && skill.max_participants && (
+                        <span className="meta-pill">Max {skill.max_participants} participants</span>
+                      )}
+                      <span className="meta-pill">
+                        Listed {skill.created_at ? fmtDate(skill.created_at) : ''}
+                      </span>
+                    </div>
+                    <div className="listing-card__actions">
+                      <button
+                        type="button"
+                        className="action-btn"
+                        onClick={() => handleEdit(skill)}
+                      >
+                        <Pencil size={14} />
+                        <span>Edit</span>
+                      </button>
+                      <button type="button" className="action-btn action-btn--danger" onClick={() => handleDelete(skill)}>
+                        <Trash2 size={14} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Delete confirmation modal ────────────────────────────── */}
+      {confirmItem && (
+        <DeleteConfirmModal
+          itemTitle={confirmItem.skill_name}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setConfirmItem(null)}
+        />
       )}
-    </section>
 
-    {/* ── Delete confirmation modal ────────────────────────────── */}
-    {confirmItem && (
-      <DeleteConfirmModal
-        itemTitle={confirmItem.skill_name}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setConfirmItem(null)}
-      />
-    )}
+      {/* ── Crop modal ───────────────────────────────────────────── */}
+      {cropModalOpen && cropImageSrc && (
+        <ImageCropModal
+          imageSrc={cropImageSrc}
+          onCrop={handleCropApply}
+          onCancel={handleCropCancel}
+        />
+      )}
 
-    {/* ── Crop modal ───────────────────────────────────────────── */}
-    {cropModalOpen && cropImageSrc && (
-      <ImageCropModal
-        imageSrc={cropImageSrc}
-        onCrop={handleCropApply}
-        onCancel={handleCropCancel}
-      />
-    )}
+      {/* ── Undo toast ───────────────────────────────────────────── */}
+      {pendingDelete && (
+        <UndoToast
+          message="Skill deleted"
+          onUndo={handleUndo}
+          onExpire={handleDeleteExpire}
+        />
+      )}
 
-    {/* ── Undo toast ───────────────────────────────────────────── */}
-    {pendingDelete && (
-      <UndoToast
-        message="Skill deleted"
-        onUndo={handleUndo}
-        onExpire={handleDeleteExpire}
-      />
-    )}
-
-    {/* ── Verification required modal ─────────────────────────── */}
-    {showVerificationModal && (
-      <VerificationRequiredModal
-        status={verificationStatus}
-        rejectionReason={rejectionReason}
-        onClose={() => setShowVerificationModal(false)}
-      />
-    )}
+      {/* ── Verification required modal ─────────────────────────── */}
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          status={verificationStatus}
+          rejectionReason={rejectionReason}
+          onClose={() => setShowVerificationModal(false)}
+        />
+      )}
     </>
   )
 }

@@ -11,7 +11,7 @@
   align-items: center;
   background: #FFFFFF;
   border: 1px solid #D0ECE9;
-  border-radius: 14px;
+  border-radius: 12px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
 }
@@ -23,7 +23,7 @@
 
 .search-bar__input-row input {
   flex: 1;
-  padding: 13px 8px 13px 16px;
+  padding: 8px 8px 8px 14px;
   border: none;
   outline: none;
   background: transparent;
@@ -263,4 +263,64 @@
   font-size: 0.76rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+/* ============================================================
+   PLATFORM BARTER - SEARCH DROPDOWN THEME
+   ============================================================ */
+.platform-barter .search-dropdown {
+  background: #FFFFFF;
+  border: 1px solid #E2ECE6;
+  box-shadow: 0 16px 40px rgba(15, 61, 46, 0.16);
+}
+
+.platform-barter .search-dropdown__row {
+  border-bottom: 1px solid #F1F6F3;
+}
+
+.platform-barter .search-dropdown__row:hover,
+.platform-barter .search-dropdown__row.is-active {
+  background: #F1F6F3;
+}
+
+.platform-barter .search-dropdown__thumb {
+  background: #F4F8F5;
+  border-color: #E2ECE6;
+}
+
+.platform-barter .search-dropdown__title {
+  color: #0F3D2E;
+  font-weight: 700;
+}
+
+.platform-barter .search-dropdown__category {
+  color: #1B4D3E;
+}
+
+.platform-barter .search-highlight {
+  color: #0F3D2E;
+  background: rgba(198, 233, 48, 0.45);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.platform-barter .search-dropdown__see-all {
+  background: #F8FAF8;
+  border-top: 1px solid #E2ECE6;
+  color: #0F3D2E;
+}
+
+.platform-barter .search-dropdown__see-all:hover,
+.platform-barter .search-dropdown__see-all.is-active {
+  background: #F1F6F3;
+}
+
+.platform-barter .search-dropdown__see-all strong {
+  color: #0F3D2E;
+}
+
+.platform-barter .search-dropdown__see-all-count {
+  background: #C6E930;
+  color: #0F3D2E;
+  font-weight: 800;
 }

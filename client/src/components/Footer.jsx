@@ -83,7 +83,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="site-footer">
+    <footer className={`site-footer ${isSkilterSection ? 'footer-skilter' : 'footer-barter'}`}>
       <div className="footer-mobile-header">
         <Link to={explorePath} className="footer-brand">
           <div className="footer-mark">⇄</div>

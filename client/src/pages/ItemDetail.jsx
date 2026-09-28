@@ -349,7 +349,7 @@ export default function ItemDetailPage() {
   const rentalTotal = Math.round((rentalFee + rentalDeposit) * 100) / 100
 
   return (
-    <div className="item-detail-page">
+    <div className="item-detail-page barter-theme">
       {/* Top Navigation & Breadcrumb */}
       <div className="detail-top-nav">
         <Link to="/explore" className="detail-back-btn" aria-label="Back to Explore">
@@ -430,7 +430,7 @@ export default function ItemDetailPage() {
 
         {/* Right Column: Copy & Interactive Cards */}
         <div className="detail-copy">
-          {/* Header Title Card */}
+          {/* 1. Product Name & Category Header */}
           <div className="detail-header-card">
             <div className="detail-tags-row">
               <span className="category-pill-tag">
@@ -446,27 +446,7 @@ export default function ItemDetailPage() {
             <h1 className="detail-title">{normalizedItem.title}</h1>
           </div>
 
-          {/* Description Card */}
-          <div className="detail-section-card description-card">
-            <h3 className="section-card-title">About this Item</h3>
-            <p className="detail-description">{normalizedItem.description}</p>
-          </div>
-
-          {/* Trade Preference Card */}
-          <div className="detail-section-card preference-card">
-            <div className="preference-header">
-              <ArrowLeftRight size={18} className="pref-icon" />
-              <h3 className="section-card-title">Owner's Trade Preference</h3>
-            </div>
-            <div className="preference-box">
-              <span className="pref-label">Desired Item in Return:</span>
-              <p className="pref-value">
-                {normalizedItem.desiredItem ? `"${normalizedItem.desiredItem}"` : 'Open to any suitable barter offer'}
-              </p>
-            </div>
-          </div>
-
-          {/* Owner Info Card */}
+          {/* 2. Owner / Seller Information */}
           <div
             className="detail-owner-card clickable-owner-card"
             onClick={() => {
@@ -480,6 +460,7 @@ export default function ItemDetailPage() {
               <User size={22} />
             </div>
             <div className="owner-details">
+              <span className="owner-role-label">Item Owner</span>
               <div className="owner-name-row">
                 <span className="owner-title-name">{normalizedItem.ownerName}</span>
                 {normalizedItem.ownerIsVerified && (
@@ -490,7 +471,7 @@ export default function ItemDetailPage() {
                 <Star size={14} className="star-icon" fill="#F59E0B" color="#F59E0B" />
                 <span className="rating-score">{Number(normalizedItem.ownerRating).toFixed(1)} Rating</span>
                 <span className="dot-sep">•</span>
-                <span className="trust-text">View Profile & Ratings</span>
+                <span className="trust-text">View Profile & Reviews</span>
               </div>
             </div>
             <div className="owner-arrow-indicator">
@@ -498,9 +479,77 @@ export default function ItemDetailPage() {
             </div>
           </div>
 
-          {/* Key Specs Card Grid */}
+          {/* 3. Action Card: Propose Trade Button */}
+          <div className="detail-action-card">
+            {!isOwner && normalizedItem.status === 'available' ? (
+              <>
+                <button
+                  type="button"
+                  className="detail-primary-offer-btn"
+                  onClick={openTradeModal}
+                >
+                  <ShoppingBag size={20} />
+                  <span>Propose Trade</span>
+                </button>
+                {rental && rental.status === 'available' && (
+                  <button
+                    type="button"
+                    className="detail-rental-offer-btn"
+                    onClick={openRentalModal}
+                  >
+                    <KeyRound size={18} />
+                    <span>Request to Rent — ₹{Number(rental.rate_amount)}/{rental.rate_type === 'hourly' ? 'hr' : 'day'}</span>
+                  </button>
+                )}
+              </>
+            ) : isOwner ? (
+              <>
+                <div className="owner-listing-banner">
+                  <CheckCircle2 size={18} />
+                  <span>This is your listing. You can manage or edit it in My Listings.</span>
+                </div>
+                {rental && (
+                  <div className="owner-rental-banner">
+                    <KeyRound size={16} />
+                    <span>Listed for rent at ₹{Number(rental.rate_amount)}/{rental.rate_type === 'hourly' ? 'hr' : 'day'} · status: {rental.status}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="unavailable-listing-banner">
+                <span>This item has been successfully traded and is no longer available.</span>
+              </div>
+            )}
+
+            <div className="guarantee-footer">
+              <ShieldCheck size={16} />
+              <span>Protected by Barter Safe Swap Guarantee</span>
+            </div>
+          </div>
+
+          {/* 4. Trade Details */}
+          <div className="detail-section-card preference-card">
+            <div className="preference-header">
+              <ArrowLeftRight size={18} className="pref-icon" />
+              <h3 className="section-card-title">Trade Details</h3>
+            </div>
+            <div className="preference-box">
+              <span className="pref-label">Desired Item in Exchange:</span>
+              <p className="pref-value">
+                {normalizedItem.desiredItem ? `"${normalizedItem.desiredItem}"` : 'Open to any suitable barter offer'}
+              </p>
+            </div>
+          </div>
+
+          {/* 5. About the Product */}
+          <div className="detail-section-card description-card">
+            <h3 className="section-card-title">About this Item</h3>
+            <p className="detail-description">{normalizedItem.description}</p>
+          </div>
+
+          {/* 6. Remaining Item Details & Specs */}
           <div className="detail-section-card specs-card">
-            <h3 className="section-card-title">Listing Details</h3>
+            <h3 className="section-card-title">Item Details & Specifications</h3>
             <div className="specs-grid">
               <div className="spec-item">
                 <span className="spec-label"><Tag size={13} /> Category</span>
@@ -520,59 +569,6 @@ export default function ItemDetailPage() {
                   {normalizedItem.estimated_value ? `$${normalizedItem.estimated_value}` : 'Open Barter'}
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* Action Card */}
-          <div className="detail-action-card">
-            {!isOwner && normalizedItem.status === 'available' ? (
-              <>
-                <button
-                  type="button"
-                  className="detail-primary-offer-btn"
-                  onClick={openTradeModal}
-                >
-                  <ShoppingBag size={20} />
-                  <span>Propose Trade Offer</span>
-                </button>
-                {rental && rental.status === 'available' && (
-                  <button
-                    type="button"
-                    className="detail-primary-offer-btn"
-                    style={{ marginTop: 10, background: '#0F766E' }}
-                    onClick={openRentalModal}
-                  >
-                    <KeyRound size={20} />
-                    <span>Request to Rent — ₹{Number(rental.rate_amount)}/{rental.rate_type === 'hourly' ? 'hr' : 'day'}</span>
-                  </button>
-                )}
-              </>
-            ) : isOwner ? (
-              <>
-                <div className="owner-listing-banner">
-                  <CheckCircle2 size={18} />
-                  <span>This is your listing. You can manage or edit it in My Listings.</span>
-                </div>
-                {rental && (
-                  <div style={{
-                    marginTop: 10, background: '#F0FDFA', border: '1px solid #99F6E4',
-                    borderRadius: 10, padding: '12px 14px', fontSize: 13.5, color: '#134E4A',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                  }}>
-                    <KeyRound size={16} />
-                    <span>Listed for rent at ₹{Number(rental.rate_amount)}/{rental.rate_type === 'hourly' ? 'hr' : 'day'} · status: {rental.status}</span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="unavailable-listing-banner">
-                <span>This item has been successfully traded and is no longer available.</span>
-              </div>
-            )}
-
-            <div className="guarantee-footer">
-              <ShieldCheck size={16} />
-              <span>Protected by Barter Safe Swap Guarantee</span>
             </div>
           </div>
         </div>

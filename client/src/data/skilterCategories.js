@@ -54,14 +54,14 @@ export const SKILTER_CATEGORY_META = [
   },
   {
     id: 'study-help',
-    name: 'Study Help / Tutoring',
+    name: 'Tutoring',
     icon: BookOpen,
     color: '#0891B2',
     lightBg: 'rgba(8, 145, 178, 0.10)',
   },
   {
     id: 'coding-tech',
-    name: 'Coding & Tech',
+    name: 'Coding',
     icon: Code2,
     color: '#16A34A',
     lightBg: 'rgba(22, 163, 74, 0.10)',
@@ -82,7 +82,7 @@ export const SKILTER_CATEGORY_META = [
   },
   {
     id: 'photography-video',
-    name: 'Photography & Videography',
+    name: 'Photography',
     icon: Camera,
     color: '#475569',
     lightBg: 'rgba(71, 85, 105, 0.10)',

@@ -1,8 +1,9 @@
 .skills-profile-page {
   max-width: 560px;
-  margin: 0;
-  padding: 20px 20px 40px;
+  margin: 0 auto;
+  padding: 20px 20px 48px;
   position: relative;
+  color: #0F3D2E;
 }
 
 .skills-profile-header {
@@ -27,18 +28,22 @@
 
 .skills-profile-header-info .profile-joined {
   margin: 0 0 8px;
+  color: #567367;
 }
 
 .skills-teach-grid {
   width: 100%;
   margin-top: 20px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #E2ECE6;
   padding-top: 16px;
 }
 
 .skills-teach-grid h3 {
   font-size: 15px;
   margin-bottom: 12px;
+  color: #0F3D2E;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
 }
 
 .skills-teach-grid-inner {
@@ -49,11 +54,19 @@
 
 .skills-teach-card {
   display: block;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid #E2ECE6;
+  border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(15, 61, 46, 0.04);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.skills-teach-card:hover {
+  transform: translateY(-2px);
+  border-color: #2F6B52;
 }
 
 .skills-teach-card-image {
@@ -61,6 +74,7 @@
   aspect-ratio: 1;
   object-fit: cover;
   display: block;
+  background: #F4F8F5;
 }
 
 .skills-teach-card-body {
@@ -75,7 +89,7 @@
 }
 
 .verification-rejected-note {
-  color: #9b2c2c;
+  color: #DC2626;
   font-size: 12px;
   margin: 4px 0 6px;
 }

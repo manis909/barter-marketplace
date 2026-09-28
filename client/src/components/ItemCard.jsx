@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { User, ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
+import { User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from './WishlistButton'
@@ -228,8 +228,7 @@ export default function ItemCard({ item }) {
                 onClick={handleOfferTradeClick}
                 aria-label={`Propose trade for ${item.title}`}
               >
-                <ArrowLeftRight size={13} className="btn-action-icon" />
-                <span>Trade</span>
+                Trade
               </button>
             ) : isOwner ? (
               <span className="card-status-badge owner-badge">Mine</span>

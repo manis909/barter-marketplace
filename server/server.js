@@ -1,3 +1,5 @@
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -32,10 +34,10 @@ const rentalBookingsRoutes = require("./routes/rentalBookings");
 const rentalWishlistRoutes = require("./routes/rentalWishlist");
 const rentalChatRoutes = require("./routes/rentalChat");
 const rateLimit = require("express-rate-limit");
-const authLimiter = rateLimit({ 
-  windowMs: 15 * 60 * 1000, 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 30,
-  message: { error: 'Too many login attempts. Please try again later.' } 
+  message: { error: 'Too many login attempts. Please try again later.' }
 });
 
 const app = express();

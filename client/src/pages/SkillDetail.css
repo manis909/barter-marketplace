@@ -1,41 +1,69 @@
-/* SkillDetail.css - Adapted from the Barter/Rental detail styling */
+/* ================================================================
+   SkillDetail.css - TRISTAL Lime + Dark Green Theme
+   Matching Barter ItemDetail & RentalDetail design system.
+   ================================================================ */
 
 .skill-detail-page {
   display: grid;
-  gap: 28px;
-  padding: 8px 0 32px;
+  gap: 24px;
+  padding: 12px 0 48px;
+  background: #F8FAF8;
+  color: #0F3D2E;
+  min-height: 100vh;
 }
 
 .skill-detail-page .detail-loading {
   padding: 60px 0;
   text-align: center;
-  color: #5F5B52;
-  font-size: 1rem;
+  color: #0F3D2E;
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .skill-detail-page .detail-back {
-  color: #3D6E63;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2ECE6;
+  color: #0F3D2E;
+  font-size: 0.88rem;
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 61, 46, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.skill-detail-page .detail-back:hover {
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(15, 61, 46, 0.15);
 }
 
 .skill-detail-page .detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
-  gap: 22px;
+  gap: 24px;
   align-items: start;
   width: min(1040px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 18px;
-  border: 1px solid #e7e4dc;
+  padding: 20px;
+  border: 1px solid #E2ECE6;
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 10px 24px rgba(18, 40, 32, 0.06);
+  background: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(15, 61, 46, 0.05);
 }
 
 .skill-detail-page .detail-gallery {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .skill-detail-page .detail-image-shell {
@@ -45,9 +73,9 @@
   aspect-ratio: 1 / 1;
   min-height: 340px;
   overflow: hidden;
-  border-radius: 16px;
-  background: #f5f5f0;
-  border: 1px solid #e6ebe7;
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1px solid #E2ECE6;
 }
 
 .skill-detail-page .detail-main-image {
@@ -57,32 +85,37 @@
   height: 100%;
   object-fit: contain;
   object-position: center;
-  background: #f5f5f0;
+  background: transparent;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .skill-detail-page .detail-nav-button {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(18, 29, 27, 0.74);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(24, 24, 24, 0.12);
+  width: 36px;
+  height: 36px;
+  border: 1px solid #E2ECE6;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0F3D2E;
+  box-shadow: 0 2px 8px rgba(15, 61, 46, 0.12);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 1.05rem;
   font-weight: 700;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform 0.18s ease, background 0.18s ease;
+  z-index: 2;
 }
 
 .skill-detail-page .detail-nav-button:hover {
-  transform: translateY(-50%) scale(1.04);
-  background: rgba(18, 29, 27, 0.82);
+  transform: translateY(-50%) scale(1.06);
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
 }
 
 .skill-detail-page .detail-nav-button-left {
@@ -102,31 +135,33 @@
 .skill-detail-page .thumb-button {
   width: 64px;
   height: 64px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  padding: 0;
-  background: #f4f1eb;
+  border: 2px solid #E2ECE6;
+  border-radius: 12px;
+  padding: 3px;
+  background: #FFFFFF;
   cursor: pointer;
   overflow: hidden;
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .skill-detail-page .thumb-button:hover {
-  transform: scale(1.03);
+  border-color: #2F6B52;
+  transform: translateY(-1px);
 }
 
 .skill-detail-page .thumb-button.active {
-  border-color: #1f7d68;
-  box-shadow: 0 0 0 3px rgba(31, 125, 104, 0.12);
+  border-color: #0F3D2E;
+  box-shadow: 0 0 0 2px #C6E930;
 }
 
 .skill-detail-page .thumb-button img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
+/* ── Copy Column ─────────────────────────────────────────────────── */
 .skill-detail-page .detail-copy {
   display: grid;
   gap: 16px;
@@ -137,14 +172,14 @@
 .skill-detail-page .detail-teacher-card,
 .skill-detail-page .detail-specs-card,
 .skill-detail-page .detail-actions-card {
-  border: 1px solid #e8e4db;
+  border: 1px solid #E2ECE6;
   border-radius: 18px;
-  background: #fffdfb;
-  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.03);
+  background: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(15, 61, 46, 0.03);
 }
 
 .skill-detail-page .detail-header-card {
-  padding: 16px 16px 14px;
+  padding: 16px 18px;
 }
 
 .skill-detail-page .detail-badges-row {
@@ -158,20 +193,22 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
 .skill-detail-page .detail-chip-category {
-  background: #eaf5f2;
-  color: #225e4c;
+  background: #F1F6F3;
+  color: #0F3D2E;
+  border: 1px solid #E2ECE6;
 }
 
 .skill-detail-page .detail-chip-session {
-  background: #f0f8f8;
-  color: #145b4a;
+  background: #0F3D2E;
+  color: #C6E930;
+  border: 1px solid rgba(198, 233, 48, 0.3);
 }
 
 .skill-detail-page .detail-title-row {
@@ -183,19 +220,20 @@
 
 .skill-detail-page .detail-copy h1 {
   margin: 0;
+  color: #0F3D2E;
   font-family: 'Fraunces', serif;
-  font-size: clamp(2rem, 3vw, 2.8rem);
-  line-height: 1.08;
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  line-height: 1.15;
 }
 
 .skill-detail-page .detail-mine-badge {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 999px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px dashed #d1d5db;
+  background: #F1F6F3;
+  color: #567367;
+  border: 1px dashed #2F6B52;
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -203,38 +241,42 @@
 .skill-detail-page .detail-description-card,
 .skill-detail-page .detail-specs-card,
 .skill-detail-page .detail-actions-card {
-  padding: 16px 16px 14px;
+  padding: 16px 18px;
 }
 
 .skill-detail-page .detail-description-card h3,
 .skill-detail-page .detail-specs-card h3 {
   margin: 0 0 12px;
-  color: #21353a;
-  font-size: 1.02rem;
+  color: #0F3D2E;
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .skill-detail-page .detail-description {
   margin: 0;
-  color: #53615d;
-  line-height: 1.7;
+  color: #3B574C;
+  line-height: 1.65;
+  font-size: 0.95rem;
 }
 
 .skill-detail-page .detail-teacher-card {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 14px;
+  padding: 14px 18px;
 }
 
 .skill-detail-page .detail-teacher-avatar {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e8f8f3 0%, #d6efe9 100%);
-  color: #1d5d50;
+  background: #0F3D2E;
+  color: #C6E930;
+  box-shadow: 0 3px 10px rgba(15, 61, 46, 0.2);
 }
 
 .skill-detail-page .detail-teacher-meta {
@@ -250,45 +292,61 @@
 
 .skill-detail-page .detail-teacher-row a,
 .skill-detail-page .detail-teacher-link {
-  color: #203d36;
+  color: #0F3D2E;
   font-weight: 800;
   text-decoration: none;
+  font-size: 1rem;
 }
 
-.skill-detail-page .detail-teacher-rating {
-  margin-top: 4px;
-  color: #5b6c68;
-  font-size: 0.78rem;
+.skill-detail-page .detail-teacher-link:hover {
+  color: #1B4D3E;
+  text-decoration: underline;
+}
+
+<<<<<<< HEAD
+=======
+.skill-detail-page .detail-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(198, 233, 48, 0.3);
+  border: 1px solid rgba(143, 163, 34, 0.35);
+  color: #0F3D2E;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
-.skill-detail-page .detail-teacher-link {
-  color: #0f766e;
-  font-size: 0.82rem;
+>>>>>>> bb02118067a83249dd7d5cbebf81b75f07296f98
+.skill-detail-page .detail-teacher-rating {
+  margin-top: 4px;
+  color: #567367;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 .skill-detail-page .detail-specs-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .skill-detail-page .detail-spec-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid #e5efeb;
-  border-radius: 14px;
-  background: #f7faf8;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid #E2ECE6;
+  border-radius: 12px;
+  background: #F8FAF8;
 }
 
 .skill-detail-page .detail-spec-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #5f7d79;
+  color: #567367;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -296,8 +354,8 @@
 }
 
 .skill-detail-page .detail-spec-value {
-  color: #0f1f1d;
-  font-size: 0.96rem;
+  color: #0F3D2E;
+  font-size: 0.95rem;
   font-weight: 800;
   text-transform: capitalize;
 }
@@ -306,34 +364,52 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 16px 18px;
 }
 
+/* Primary CTA Book Session button in TRISTAL Lime */
 .skill-detail-page .detail-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 15px 18px;
-  border: 0;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #0f766e 0%, #0d5d57 100%);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 800;
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+  padding: 15px;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #C6E930 !important;
+  color: #0F3D2E !important;
+  font-size: 1.02rem;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 16px rgba(198, 233, 48, 0.45), 0 2px 4px rgba(15, 61, 46, 0.08) !important;
   cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease !important;
+}
+
+.skill-detail-page .detail-action:hover {
+  background: #B3D426 !important;
+  color: #0F3D2E !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(179, 212, 38, 0.55) !important;
+}
+
+.skill-detail-page .detail-action:active {
+  transform: scale(0.98);
 }
 
 .skill-detail-page .detail-owner-note {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f0fdf8;
-  border: 1px solid #bbf7d0;
-  color: #0f766e;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #F1F6F3;
+  border: 1px solid #2F6B52;
+  color: #0F3D2E;
   font-weight: 700;
+  text-align: center;
 }
 
 .skill-detail-page .detail-booking-error {
   margin: 0;
-  color: #dc2626;
+  color: #DC2626;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -343,11 +419,12 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  color: #5f7d79;
-  font-size: 0.76rem;
-  font-weight: 700;
+  color: #567367;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
+/* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 980px) {
   .skill-detail-page .detail-grid {
     grid-template-columns: 1fr;

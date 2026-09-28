@@ -34,21 +34,21 @@ const LAYOUT_CSS = `
 .rentalchatslayout-sidebar-scroll::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
 
 .rentalchatslayout-row {
-  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
-  cursor: pointer; border-bottom: 1px solid ${T.border};
-  transition: background 0.15s, transform 0.15s, border-color 0.15s;
-  background: transparent; border-left: 3px solid transparent; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; margin: 6px 8px; padding: 12px;
+  cursor: pointer; border: 1px solid #e5e7eb;
+  border-radius: 14px; transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  background: #ffffff; box-shadow: 0 1px 2px rgba(15, 61, 46, 0.04); box-sizing: border-box;
 }
-.rentalchatslayout-row:hover { background: ${T.bg}; border-left-color: ${T.accent}; transform: translateY(-1px); }
-.rentalchatslayout-row.active { background: #EBF2F0; border-left-color: ${T.accent}; }
+.rentalchatslayout-row:hover { background: rgba(249, 250, 251, 0.8); }
+.rentalchatslayout-row.active { background: #f0fdf4; border-color: #bbf7d0; box-shadow: 0 1px 3px rgba(15, 61, 46, 0.08); }
 .rentalchatslayout-del-opt:hover { background: ${T.bg}; }
 
 @media (max-width: 767px) {
   .rentalchatslayout-root {
     border-radius: 0 !important; border: none !important;
-    height: calc(100vh - 80px) !important;
-    height: calc(100dvh - 80px) !important;
-    height: calc(var(--vv-height, 100dvh) - 80px) !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: var(--vv-height, 100dvh) !important;
     max-width: 100% !important; width: 100% !important;
     margin: 0 !important; overflow: hidden !important;
     overscroll-behavior: contain !important;
@@ -101,17 +101,17 @@ const LAYOUT_CSS = `
 
 function initialOf(n) { return (n || '?').trim().charAt(0).toUpperCase(); }
 
-function Avatar({ name, imageUrl, size = 38 }) {
+function Avatar({ name, imageUrl, size = 38, fallbackBackground = T.accent, fallbackWeight = 700, roundedSquare = false }) {
   const [err, setErr] = useState(false);
   useEffect(() => { setErr(false); }, [imageUrl]);
   const src = imageUrl && !err
     ? (imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`) : null;
   return (
     <span style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex',
+      width: size, height: size, borderRadius: roundedSquare ? 14 : '50%', flexShrink: 0, display: 'flex',
       alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      background: src ? 'transparent' : T.accent, color: '#fff',
-      fontWeight: 700, fontSize: size * 0.39, border: `1px solid ${T.border}`,
+      background: src ? 'transparent' : fallbackBackground, color: '#fff',
+      fontWeight: fallbackWeight, fontSize: size * 0.39, border: `1px solid ${T.border}`,
     }}>
       {src
         ? <img src={src} alt={name} onError={() => setErr(true)}
@@ -227,6 +227,9 @@ export default function RentalChatsLayout() {
         ? (selectedBooking.owner_name || selectedBooking.owner_username)
         : (selectedBooking.borrower_name || selectedBooking.borrower_username))
     : '';
+  const otherUserUsername = selectedBooking
+    ? (isBorrower ? selectedBooking.owner_username : selectedBooking.borrower_username)
+    : '';
   const otherUserImage = selectedBooking
     ? (isBorrower
         ? selectedBooking.owner_profile_image
@@ -293,6 +296,7 @@ export default function RentalChatsLayout() {
                   ? booking.owner_profile_image
                   : booking.borrower_profile_image;
                 const isActive = String(booking.id) === String(bookingId);
+                const isComplete = booking.status === 'completed';
                 const menuOpen = deleteMenuFor === booking.id;
                 return (
                   <li key={booking.id} style={{ position: 'relative' }}>
@@ -303,10 +307,11 @@ export default function RentalChatsLayout() {
                       tabIndex={0}
                       onKeyDown={e => e.key === 'Enter' && handleSelectChat(booking.id)}
                     >
-                      <Avatar name={name} imageUrl={imgField} size={38} />
+                      <Avatar name={name} imageUrl={imgField} size={56} fallbackBackground="#1b4d3e" fallbackWeight={600} roundedSquare />
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={s.rowName}>{name || 'Unknown user'}</span>
                         <span style={s.rowSub}>{booking.item_name}</span>
+                        {isComplete && <span style={s.rowCompletedBadge}>✓ Completed</span>}
                       </span>
                       <button
                         type="button"
@@ -360,7 +365,7 @@ export default function RentalChatsLayout() {
               <button
                 type="button"
                 onClick={() => navigate('/rental/chat')}
-                style={s.iconBtn}
+                style={{ ...s.iconBtn, background: 'transparent', borderColor: 'rgba(255,255,255,0.55)', color: '#ffffff' }}
                 aria-label="Back to Rental chats"
               >
                 <BackArrow />
@@ -377,7 +382,7 @@ export default function RentalChatsLayout() {
                 </div>
               </button>
               {bookingId && reportedBookings.has(String(bookingId)) ? (
-                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.8, cursor: 'default', color: '#c6e930' }} title="Reported">
                   ✓
                 </span>
               ) : (
@@ -401,6 +406,9 @@ export default function RentalChatsLayout() {
                 otherUserId={otherUserId}
                 rentalTitle={selectedBooking.item_name}
                 rentalListingId={selectedBooking.rental_listing_id}
+                rentalImageUrl={selectedBooking.item_image_urls?.[0] || null}
+                bookingStatus={selectedBooking.status}
+                otherUserUsername={otherUserUsername}
               />
             </div>
           </>
@@ -445,12 +453,17 @@ const s = {
   sidebarMuted: { padding: 16, color: T.muted, fontSize: 13, margin: 0 },
   emptyList: { padding: '40px 16px', textAlign: 'center' },
   rowName: {
-    display: 'block', fontWeight: 600, fontSize: 13.5, color: T.text,
+    display: 'block', fontWeight: 700, fontSize: 14, color: '#111827',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   rowSub: {
-    display: 'block', fontSize: 11.5, color: T.muted, overflow: 'hidden',
+    display: 'block', fontSize: 12, color: T.muted, overflow: 'hidden',
     textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
+  },
+  rowCompletedBadge: {
+    display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4,
+    padding: '3px 8px', borderRadius: 999, background: '#dcfce7',
+    color: '#166534', fontSize: 11, fontWeight: 600, lineHeight: 1.2,
   },
   trashBtn: {
     border: 'none', background: 'transparent', color: T.muted, cursor: 'pointer',
@@ -479,14 +492,14 @@ const s = {
   },
   mobileBackBar: {
     display: 'none', alignItems: 'center', gap: 10, padding: '8px 12px',
-    background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
+    background: '#0f3d2e', borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
   },
   mobileBackName: {
-    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'Fraunces, serif',
+    fontWeight: 600, fontSize: 15, color: '#ffffff', fontFamily: 'Fraunces, serif',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   reportHeaderBtn: {
-    border: '1px solid #d1d5db', background: '#ffffff', color: '#1f2937',
+    border: '1px solid rgba(255,255,255,0.55)', background: 'transparent', color: '#ffffff',
     borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700,
     padding: '6px 10px', lineHeight: 1, flexShrink: 0,
   },

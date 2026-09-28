@@ -24,7 +24,9 @@ export default function CategoryFilter({
       <h2>{heading}</h2>
       <div className="category-grid">
         {categories.map((category) => {
-          const isActive = category.name === activeCategory
+          const isActive =
+            category.name === activeCategory ||
+            (category.name === 'All' && (!activeCategory || activeCategory === 'All'))
           const Icon = category.icon
           return (
             <button
@@ -32,14 +34,9 @@ export default function CategoryFilter({
               type="button"
               className={isActive ? 'category-pill active' : 'category-pill'}
               onClick={() => onSelect(category.name)}
-              style={isActive ? {
-                '--pill-active-color': category.color,
-              } : {}}
             >
               <span
                 className="category-icon"
-                style={{ background: isActive ? category.lightBg : undefined,
-                         color:      isActive ? category.color   : undefined }}
                 aria-hidden="true"
               >
                 <Icon size={18} />

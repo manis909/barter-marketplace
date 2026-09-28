@@ -1,12 +1,14 @@
 /* ================================================================
-   Skilter.css
-   Mirrors the Barter Explore.css layout so both pages feel
-   visually consistent. Breakpoints match App.css / Explore.css.
+   Skilter.css - TRISTAL Lime + Dark Green Theme
+   Mirrors the Barter & Rental layout for a unified TRISTAL aesthetic.
    ================================================================ */
 
 .skilter-page {
   display: grid;
   gap: 20px;
+  background: #F8FAF8;
+  color: #0F3D2E;
+  min-height: 100vh;
 }
 
 /* Desktop centering — matches Explore's 1024px+ rule */
@@ -29,22 +31,23 @@
 
 .skilter-section-label {
   margin: 0 0 6px;
-  color: #5F5B52;
+  color: #567367;
   text-transform: uppercase;
   letter-spacing: 0.15em;
   font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .skilter-summary h2 {
   margin: 0;
   font-family: 'Fraunces', serif;
   font-size: 1.7rem;
-  color: #0F172A;
+  color: #0F3D2E;
 }
 
 .skilter-filter-hint {
   margin: 0;
-  color: #5F5B52;
+  color: #567367;
   font-size: 0.95rem;
   white-space: nowrap;
 }
@@ -64,7 +67,7 @@
 
 .skilter-reels__header h2 {
   margin: 0;
-  color: #0F172A;
+  color: #0F3D2E;
   font-family: 'Fraunces', serif;
   font-size: clamp(1.35rem, 2vw, 1.75rem);
 }
@@ -92,12 +95,13 @@
   flex: 0 0 210px;
   width: 210px;
   min-width: 0;
-  border: 1px solid rgba(203, 213, 225, 0.9);
+  border: 1px solid #E2ECE6;
   border-radius: 18px;
-  background: #0F172A;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  background: #0F3D2E;
+  box-shadow: 0 8px 24px rgba(15, 61, 46, 0.12);
   cursor: pointer;
   outline: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .skilter-reel-item > .skilter-reel-wishlist.glass-wishlist-btn {
@@ -115,7 +119,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #0F172A;
+  background: #0F3D2E;
 }
 
 .skilter-reel-card__overlay {
@@ -126,7 +130,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 44px 14px 14px;
-  background: linear-gradient(transparent, rgba(15, 23, 42, 0.9));
+  background: linear-gradient(transparent, rgba(15, 61, 46, 0.92));
   color: #FFFFFF;
   pointer-events: none;
 }
@@ -141,20 +145,22 @@
 
 .skilter-reel-card__overlay h3 {
   font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .skilter-reel-card__overlay p {
   margin-top: 3px;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 0.78rem;
 }
 
 .skilter-reel-card:focus-visible {
-  box-shadow: 0 0 0 3px #2F6B57, 0 12px 28px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 0 0 3px #C6E930, 0 12px 28px rgba(15, 61, 46, 0.2);
 }
 
 .skilter-reel-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 61, 46, 0.18);
 }
 
 .skilter-reel-viewer {
@@ -165,7 +171,8 @@
   place-items: center;
   padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
     max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-  background: rgba(4, 8, 9, 0.96);
+  background: rgba(15, 61, 46, 0.95);
+  backdrop-filter: blur(12px);
 }
 
 .skilter-reel-viewer__dialog {
@@ -173,9 +180,10 @@
   width: min(92vw, 500px, 50vh);
   aspect-ratio: 9 / 16;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 18px;
   background: #000000;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(198, 233, 48, 0.25);
 }
 
 .skilter-reel-viewer__dialog > video {
@@ -190,7 +198,7 @@
   position: absolute;
   inset: auto 0 0;
   padding: 72px 20px 20px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+  background: linear-gradient(transparent, rgba(15, 61, 46, 0.92));
   color: #FFFFFF;
   pointer-events: none;
 }
@@ -205,11 +213,12 @@
 
 .skilter-reel-viewer__caption h2 {
   font-size: 1.1rem;
+  font-family: 'Fraunces', serif;
 }
 
 .skilter-reel-viewer__caption p {
   margin-top: 4px;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 0.88rem;
 }
 
@@ -222,9 +231,17 @@
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.58);
+  background: rgba(15, 61, 46, 0.75);
   color: #FFFFFF;
   cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.skilter-reel-viewer__close:hover,
+.skilter-reel-viewer__navigation button:hover {
+  background: #C6E930;
+  color: #0F3D2E;
+  border-color: #C6E930;
 }
 
 .skilter-reel-viewer__close {
@@ -277,10 +294,11 @@
   gap: 14px;
   min-height: 320px;
   border-radius: 20px;
-  border: 1px dashed #CBD5E1;
-  background: #F8FAFC;
+  border: 1px dashed #2F6B52;
+  background: #FFFFFF;
   text-align: center;
   padding: 40px 24px;
+  box-shadow: 0 2px 10px rgba(15, 61, 46, 0.03);
 }
 
 .skilter-coming-soon__icon {
@@ -292,13 +310,13 @@
   margin: 0;
   font-family: 'Fraunces', serif;
   font-size: 1.35rem;
-  color: #0F172A;
+  color: #0F3D2E;
 }
 
 .skilter-coming-soon p {
   margin: 0;
   max-width: 440px;
-  color: #64748B;
+  color: #567367;
   line-height: 1.65;
 }
 

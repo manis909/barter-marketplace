@@ -6,59 +6,83 @@
   margin: 0 0 14px;
   font-family: 'Fraunces', serif;
   font-size: 1.25rem;
-  color: #005C66;
+  font-weight: 800;
+  color: #0F3D2E;
 }
 
 .category-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .category-pill {
-  border: 1px solid #D0ECE9;
+  border: 1px solid #E2ECE6;
   background: #FFFFFF;
-  color: #005C66;
-  border-radius: 14px;
-  padding: 6px 12px;
+  color: #243830;
+  border-radius: 999px;
+  padding: 6px 14px;
   text-align: left;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.82rem;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 61, 46, 0.04);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
 .category-pill:hover {
   transform: translateY(-1px);
-  border-color: #008C99;
-  background: #F0FAF9;
+  border-color: #2F6B52;
+  background: #F1F6F3;
+  color: #0F3D2E;
+  box-shadow: 0 3px 8px rgba(15, 61, 46, 0.08);
 }
 
 .category-pill.active {
-  border-color: var(--pill-active-color, #007885);
-  background: #E6F7F6;
-  color: #005C66;
+  border-color: #C6E930;
+  background: #C6E930;
+  color: #0F3D2E !important;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgba(198, 233, 48, 0.35);
+}
+
+.category-pill.active:hover {
+  background: #B3D426;
+  border-color: #B3D426;
+  color: #0F3D2E !important;
+  box-shadow: 0 4px 14px rgba(179, 212, 38, 0.45);
+}
+
+.category-pill.active span {
+  color: #0F3D2E !important;
 }
 
 .category-icon {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 8px;
-  background: #E6F7F6;
-  color: #008C99;
+  border-radius: 50%;
+  background: #F1F6F3;
+  color: #1B4D3E;
+  transition: all 0.18s ease;
+}
+
+.category-pill.active .category-icon {
+  background: #0F3D2E !important;
+  color: #C6E930 !important;
 }
 
 .category-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 @media (max-width: 767px) {

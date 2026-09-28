@@ -28,9 +28,9 @@
 .smart-section__title {
   margin: 0;
   font-family: 'Fraunces', serif;
-  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
-  font-weight: 700;
-  color: #005C66;
+  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+  font-weight: 800;
+  color: #0F3D2E;
   line-height: 1.2;
   display: inline-flex;
   align-items: center;
@@ -38,32 +38,32 @@
 }
 
 .smart-section__title-icon {
-  color: #007885;
+  color: #1B4D3E;
   flex-shrink: 0;
 }
 
 .smart-section__subtitle {
   margin: 0;
-  font-size: 0.83rem;
-  color: #3D7880;
+  font-size: 0.84rem;
+  color: #567367;
   line-height: 1.4;
 }
 
 .smart-section__see-all {
   flex-shrink: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #007885;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1B4D3E;
   text-decoration: none;
   white-space: nowrap;
   padding: 4px 0;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
 }
 
 .smart-section__see-all:hover {
-  color: #005C66;
-  border-bottom-color: #007885;
+  color: #0F3D2E;
+  border-bottom-color: #C6E930;
 }
 
 /* ── Scroll track / Grid container ─────────────────────────────── */
@@ -148,9 +148,9 @@
 .skeleton-btn {
   background: linear-gradient(
     90deg,
-    #F0EDEA 25%,
-    #E8E4E0 50%,
-    #F0EDEA 75%
+    #F1F6F3 25%,
+    #E5EFE9 50%,
+    #F1F6F3 75%
   );
   background-size: 600px 100%;
   animation: ss-shimmer 1.4s ease-in-out infinite;

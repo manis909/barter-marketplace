@@ -4,18 +4,18 @@
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #E2ECE6;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 3px rgba(15, 61, 46, 0.04), 0 1px 2px rgba(15, 61, 46, 0.02);
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
   box-sizing: border-box;
   width: 100%;
 }
 
 .compact-item-card:hover {
-  border-color: #CBD5E1;
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+  border-color: #2F6B52;
+  box-shadow: 0 10px 24px -4px rgba(15, 61, 46, 0.12);
 }
 
 /* Image Container (75-80% Height Proportion, Uniform Pastel Background) */
@@ -23,9 +23,9 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background-color: #EAF4EE;
+  background: linear-gradient(180deg, #F4F8F5 0%, #EAF2ED 100%);
   overflow: hidden;
-  border-bottom: 1px solid #D8EBDD;
+  border-bottom: 1px solid #E2ECE6;
 }
 
 .card-image {
@@ -54,20 +54,21 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #0F172A;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #E2ECE6;
+  color: #0F3D2E;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  transition: background-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 2px 6px rgba(15, 61, 46, 0.12);
+  transition: background-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease, color 0.15s ease;
   opacity: 0.85;
 }
 
 .image-nav-btn:hover {
-  background: #FFFFFF;
+  background: #0F3D2E;
+  color: #C6E930;
   opacity: 1;
   transform: translateY(-50%) scale(1.08);
 }
@@ -91,7 +92,7 @@
   gap: 4px;
   padding: 3px 6px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(15, 61, 46, 0.4);
   backdrop-filter: blur(4px);
 }
 
@@ -105,9 +106,9 @@
 }
 
 .image-dot.active {
-  width: 12px;
+  width: 14px;
   border-radius: 4px;
-  background: #FFFFFF;
+  background: #C6E930;
 }
 
 /* Wishlist Heart Icon with Padding Inset */
@@ -119,9 +120,10 @@
   height: 32px !important;
   padding: 0 !important;
   margin: 0 !important;
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(4px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  background: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #8FA322 !important;
   border-radius: 50% !important;
   display: flex !important;
   align-items: center !important;
@@ -165,9 +167,17 @@
 }
 
 @keyframes heartPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.25);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Content Body & High Density Hierarchy */
@@ -183,10 +193,10 @@
 .card-title {
   margin: 0;
   font-family: 'Fraunces', serif;
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.2;
-  color: #0F172A;
+  color: #0F3D2E;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -198,7 +208,7 @@
   align-items: center;
   gap: 4px;
   font-size: 0.78rem;
-  color: #64748B;
+  color: #567367;
   margin-bottom: 2px;
 }
 
@@ -209,22 +219,23 @@
 }
 
 .meta-icon {
-  color: #005C66;
+  color: #2F6B52;
 }
 
 .owner-link {
-  color: #005C66;
+  color: #1B4D3E;
   font-weight: 600;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 110px;
+  transition: color 0.15s ease;
 }
 
 .owner-link:hover {
   text-decoration: underline;
-  color: #0F172A;
+  color: #0F3D2E;
 }
 
 /* Varied Action Buttons (Solid Turquoise Pill vs. Outlined Rectangle) */
@@ -236,70 +247,75 @@
   padding-top: 2px;
 }
 
-/* Primary Action: Solid Turquoise High-Contrast Pill Button */
+/* Primary Action: TRISTAL Lime Button with Dark Green Text */
 .btn-trade-primary,
 .btn-compact-primary {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   height: 36px;
   min-height: 36px;
-  padding: 0 12px;
+  padding: 0 14px;
   border-radius: 999px;
-  background: #005C66;
-  color: #FFFFFF !important;
+  background: #C6E930;
+  color: #0F3D2E !important;
   border: none;
   font-size: 0.84rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 92, 102, 0.2);
-  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 3px 12px rgba(198, 233, 48, 0.42), 0 1px 3px rgba(15, 61, 46, 0.08);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .btn-trade-primary:hover,
 .btn-compact-primary:hover {
-  background: #007885;
-  color: #FFFFFF !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 92, 102, 0.25);
+  background: #B3D426;
+  color: #0F3D2E !important;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 5px 16px rgba(179, 212, 38, 0.52), 0 2px 6px rgba(15, 61, 46, 0.12);
 }
 
 .btn-trade-primary:active,
 .btn-compact-primary:active {
-  transform: translateY(0);
+  background: #A6C71D;
+  transform: scale(0.97);
+  box-shadow: 0 2px 6px rgba(179, 212, 38, 0.35);
 }
 
 .btn-action-icon {
-  flex-shrink: 0;
-  display: inline-block;
+  display: none;
 }
 
-/* Secondary Action: Plain Outlined Button */
+/* Secondary Action: White and simple with subtle neutral/dark outline */
 .btn-details-secondary,
 .btn-compact-secondary {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   height: 36px;
   min-height: 36px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: #FFFFFF;
-  color: #3F3F46 !important;
-  border: 1px solid #E4E4E7;
+  color: #374151 !important;
+  /* Subtle neutral/dark text */
+  border: 1.5px solid #D1D5DB;
+  /* Subtle neutral outline */
   font-size: 0.84rem;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -309,9 +325,10 @@
 
 .btn-details-secondary:hover,
 .btn-compact-secondary:hover {
-  background: #F4F4F5;
-  color: #18181B !important;
-  border-color: #D4D4D8;
+  background: #F9FAFB;
+  color: #111827 !important;
+  border-color: #9CA3AF;
+  transform: translateY(-1px);
 }
 
 .card-status-badge {
@@ -321,15 +338,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .owner-badge {
-  background: #F1F5F9;
-  color: #64748B;
-  border: 1px dashed #CBD5E1;
+  background: #F1F6F3;
+  color: #1B4D3E;
+  border: 1.5px dashed #2F6B52;
 }
 
 .unavailable-badge {
@@ -345,8 +362,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 61, 46, 0.72);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -356,23 +373,25 @@
 
 .trade-modal-container {
   background: #FFFFFF;
-  border-radius: 18px;
+  border-radius: 20px;
+  border: 1px solid #E2ECE6;
   padding: 24px;
   max-width: 440px;
   width: 100%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 24px 60px rgba(15, 61, 46, 0.25);
 }
 
 .modal-title {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
+  font-family: 'Fraunces', serif;
   font-weight: 800;
   margin: 0 0 6px;
-  color: #1C1917;
+  color: #0F3D2E;
 }
 
 .modal-subtitle {
   font-size: 0.88rem;
-  color: #57534E;
+  color: #567367;
   margin: 0 0 16px;
 }
 
@@ -400,7 +419,7 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #1C1917;
+  color: #0F3D2E;
   margin-bottom: 5px;
 }
 
@@ -408,19 +427,22 @@
 .modal-textarea {
   width: 100%;
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #E4E2D9;
+  border-radius: 12px;
+  border: 1px solid #D1E2DB;
   font-size: 0.88rem;
   margin-bottom: 14px;
-  background: #F9F8F6;
+  background: #F8FAF8;
+  color: #0F3D2E;
   font-family: inherit;
   box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .modal-select:focus,
 .modal-textarea:focus {
   outline: none;
-  border-color: #3D6E63;
+  border-color: #2F6B52;
+  box-shadow: 0 0 0 3px rgba(47, 107, 82, 0.15);
 }
 
 .modal-textarea {
@@ -434,24 +456,38 @@
 }
 
 .btn-modal-cancel {
-  background: #F6F5F0;
-  border: 1px solid #E4E2D9;
-  color: #24231F;
+  background: #F1F6F3;
+  border: 1px solid #E2ECE6;
+  color: #1B4D3E;
   padding: 9px 16px;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-modal-cancel:hover {
+  background: #E5EFE9;
 }
 
 .btn-modal-submit {
-  background: #3D6E63;
+  background: #C6E930;
   border: none;
-  color: #FFFFFF;
-  padding: 9px 18px;
+  color: #0F3D2E !important;
+  padding: 10px 20px;
   border-radius: 10px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   text-decoration: none;
+  box-shadow: 0 2px 8px rgba(198, 233, 48, 0.32);
+  transition: all 0.18s ease;
+}
+
+.btn-modal-submit:hover {
+  background: #B3D426;
+  color: #0F3D2E !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(198, 233, 48, 0.45);
 }
 
 /* ============================================================
@@ -491,15 +527,23 @@
   }
 
   .btn-trade-primary,
+  .btn-compact-primary {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.82rem;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
   .btn-details-secondary,
   .btn-compact,
-  .btn-compact-primary,
   .btn-compact-secondary {
     height: 34px;
     min-height: 34px;
-    padding: 0 6px;
-    font-size: 0.8rem;
-    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+    border-radius: 999px;
     font-weight: 600;
   }
 

@@ -67,22 +67,36 @@ const SKC_CSS = `
 .skc-header-status { font-size: 11px; color: ${T.accent}; margin-top: 1px; }
 @media (max-width: 767px) { .skc-header { display: none !important; } }
 
-/* Skill context strip */
-.skc-item-strip {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px; background: ${T.bg};
-  border-bottom: 1px solid ${T.border}; flex-shrink: 0;
-  font-size: 12.5px; color: ${T.muted};
+/* Skill booking summary card */
+.skc-summary-card {
+  display: flex; align-items: center; gap: 12px;
+  margin: 10px 12px 0; padding: 12px;
+  background: #f1f5f9; border: 1px solid #d6e7dc;
+  border-radius: 16px; flex-shrink: 0; box-sizing: border-box;
 }
-.skc-item-strip-title {
-  flex: 1; min-width: 0; font-weight: 500; color: ${T.text};
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.skc-summary-thumb {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; min-width: 56px; overflow: hidden;
+  border-radius: 12px; background: #e6eee9; color: #2f6b52; font-size: 22px;
+}
+.skc-summary-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.skc-summary-content { flex: 1; min-width: 0; }
+.skc-summary-heading { margin: 0 0 3px; color: #0f3d2e; font-size: 13px; font-weight: 700; line-height: 1.3; }
+.skc-summary-title { overflow: hidden; color: ${T.text}; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.skc-summary-footer { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+.skc-summary-status {
+  display: inline-flex; align-items: center; padding: 4px 8px;
+  border: 1px solid #cfe2d5; border-radius: 999px; background: #fff;
+  color: #245b3f; font-size: 11px; font-weight: 600; line-height: 1.2;
 }
 .skc-item-strip-btn {
-  padding: 4px 10px; border-radius: 6px; border: 1px solid ${T.accent};
-  background: transparent; color: ${T.accent}; font-size: 11.5px;
+  padding: 5px 10px; border-radius: 999px; border: 1px solid #b8d5c2;
+  background: #ffffff; color: #0f3d2e; font-size: 11.5px;
   font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
   font-family: var(--font-body);
+}
+@media (max-width: 480px) {
+  .skc-summary-card { gap: 10px; margin: 8px 8px 0; padding: 10px; }
 }
 
 /* Outer border */
@@ -117,7 +131,9 @@ const SKC_CSS = `
 /* Message row */
 .skc-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
 .skc-row.mine   { align-self: flex-end;  align-items: flex-end;  }
-.skc-row.theirs { align-self: flex-start; align-items: flex-start; }
+.skc-row.theirs { align-self: flex-start; align-items: flex-end; flex-direction: row; gap: 8px; }
+.skc-message-content { display: flex; flex: 1; flex-direction: column; align-items: flex-start; min-width: 0; }
+.skc-row.mine .skc-message-content { display: contents; }
 @media (max-width: 767px) { .skc-row { max-width: 75%; } }
 
 .skc-sender { font-size: 11px; font-weight: 500; color: ${T.muted}; margin-bottom: 2px; margin-left: 4px; }
@@ -312,6 +328,9 @@ export default function SkillBookingChatWindow({
   otherUserId,       // for presence checks
   skillTitle,
   skillListingId,
+  skillImageUrl,
+  bookingStatus,
+  otherUserUsername,
   onViewSkill,
 }) {
   const [messages,       setMessages]       = useState([]);
@@ -542,16 +561,25 @@ export default function SkillBookingChatWindow({
     <div className="skc-wrap">
       <style>{SKC_CSS}</style>
 
-      {/* Skill context strip */}
+      {/* Skill booking summary */}
       {skillTitle && (
-        <div className="skc-item-strip">
-          <span>🎓</span>
-          <span className="skc-item-strip-title">{skillTitle}</span>
+        <div className="skc-summary-card">
+          <div className="skc-summary-thumb" aria-hidden="true">
+            🎓
+            {skillImageUrl && <img src={skillImageUrl} alt="" onError={e => { e.currentTarget.style.display = 'none'; }} />}
+          </div>
+          <div className="skc-summary-content">
+            <div className="skc-summary-heading">Booking with {otherUserUsername || otherUserName || 'your participant'}</div>
+            <div className="skc-summary-title">{skillTitle}</div>
+            <div className="skc-summary-footer">
+              {bookingStatus === 'completed' && <span className="skc-summary-status">✓ Booking Completed</span>}
           {skillListingId && onViewSkill && (
             <button className="skc-item-strip-btn" onClick={() => onViewSkill(skillListingId)}>
               View Skill
             </button>
           )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -584,6 +612,10 @@ export default function SkillBookingChatWindow({
                 )}
 
                 <div className={`skc-row ${isMine ? 'mine' : 'theirs'}`}>
+                  {!isMine && (
+                    <Avatar name={m.sender_name || otherUserName} imageUrl={otherUserImage} size={30} />
+                  )}
+                  <div className={`skc-message-content ${isMine ? 'mine' : 'theirs'}`}>
                   {!isMine && m.sender_name && <span className="skc-sender">{m.sender_name}</span>}
 
                   <div
@@ -693,6 +725,7 @@ export default function SkillBookingChatWindow({
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               </Fragment>
             );

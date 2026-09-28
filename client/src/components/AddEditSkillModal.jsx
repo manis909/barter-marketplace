@@ -9,7 +9,7 @@ const SKILL_CATEGORIES = [
   'Music',
   'Dance',
   'Art & Design',
-  'Study Help / Tutoring',
+  'Tutoring',
   'Coding & Tech',
   'Languages',
   'Fitness & Sports',
@@ -254,11 +254,11 @@ export default function AddEditSkillModal({ isOpen, onClose, onSuccess, editSkil
       const uploadedImageUrls =
         form.images.length > 0
           ? await Promise.all(
-              form.images.map(async (file) => {
-                const url = await uploadImageToSupabase(file, 'skill-images')
-                return url
-              })
-            )
+            form.images.map(async (file) => {
+              const url = await uploadImageToSupabase(file, 'skill-images')
+              return url
+            })
+          )
           : []
 
       // Combine existing and new image URLs

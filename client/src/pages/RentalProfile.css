@@ -1,7 +1,8 @@
 .rental-profile-page {
   max-width: 600px;
-  margin: 0;
-  padding: 20px 20px 40px;
+  margin: 0 auto;
+  padding: 20px 20px 48px;
+  color: #0F3D2E;
 }
 .rental-profile-header {
   display: flex;
@@ -16,17 +17,20 @@
   margin: 6px 0;
 }
 .rental-verified-text {
-  color: #059669;
-  font-weight: 600;
+  color: #0F3D2E;
+  font-weight: 700;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .rental-unverified-text {
-  color: #dc2626;
+  color: #DC2626;
   font-weight: 600;
   font-size: 13px;
 }
 .rental-unverified-text a {
-  color: #2f6f5e;
+  color: #1B4D3E;
   text-decoration: underline;
   margin-left: 4px;
 }
@@ -35,12 +39,15 @@
 }
 .rental-listings-grid {
   margin-top: 20px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #E2ECE6;
   padding-top: 16px;
 }
 .rental-listings-grid h3 {
   font-size: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  color: #0F3D2E;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
 }
 .rental-listings-grid-inner {
   display: grid;
@@ -48,39 +55,48 @@
   gap: 12px;
 }
 .rental-listing-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid #E2ECE6;
+  border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(15, 61, 46, 0.04);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.rental-listing-card:hover {
+  transform: translateY(-2px);
+  border-color: #2F6B52;
 }
 .rental-listing-card-image {
   width: 100%;
   aspect-ratio: 4/3;
   object-fit: cover;
+  background: #F4F8F5;
 }
 .rental-listing-card-body {
-  padding: 8px 10px;
+  padding: 10px;
 }
 .rental-listing-title {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 13px;
+  color: #0F3D2E;
 }
 .rental-listing-rate {
   display: block;
-  font-size: 12px;
-  color: #2f6f5e;
-  font-weight: 600;
+  font-size: 12.5px;
+  color: #0F3D2E;
+  font-weight: 800;
   margin-top: 2px;
 }
 .rental-listing-category {
   font-size: 11px;
-  color: #9ca3af;
+  color: #567367;
   margin: 4px 0 0;
 }
 .rental-empty-note {
-  color: #9ca3af;
+  color: #567367;
   font-size: 13px;
   margin-top: 20px;
 }
@@ -99,52 +115,55 @@
 }
 
 .profile-stat-number {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
-  color: #1f2937;
+  color: #0F3D2E;
 }
 
 .profile-stat-label {
   font-size: 14px;
-  color: #6b7280;
+  color: #567367;
 }
 
 .profile-no-rating {
-  color: #4f5fc9;
+  color: #567367;
 }
 
-/* ---------- Shared with Profile.css: fullname/college/bio/copy-link/back-btn ---------- */
+/* ---------- Shared with Profile.css ---------- */
 .profile-fullname {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 15px;
   margin: 2px 0;
+  color: #0F3D2E;
 }
 
 .profile-college {
-  color: #6b7280;
+  color: #567367;
   font-size: 13px;
   margin: 2px 0;
 }
 
 .profile-bio {
-  color: #374151;
+  color: #3B574C;
   font-size: 14px;
   margin: 2px 0 16px;
+  line-height: 1.5;
 }
 
 .profile-copy-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: 1px solid #2f6f5e;
-  color: #2f6f5e;
+  background: #FFFFFF;
+  border: 1.5px solid #E2ECE6;
+  color: #0F3D2E;
   padding: 8px 18px;
-  border-radius: 20px;
-  font-weight: 600;
+  border-radius: 999px;
+  font-weight: 700;
   font-size: 13px;
   cursor: pointer;
   margin: 4px 0 8px;
+  transition: all 0.2s ease;
 }
 
 .profile-copy-link svg {
@@ -153,30 +172,33 @@
 }
 
 .profile-copy-link:hover {
-  background: #2f6f5e;
-  color: white;
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
 }
 
 .profile-joined {
-  color: #9ca3af;
+  color: #567367;
   font-size: 12px;
   margin: 0 0 8px;
 }
 
 .edit-profile-btn {
-  border: 1px solid #2f6f5e;
-  background: none;
-  color: #2f6f5e;
+  border: 1.5px solid #E2ECE6;
+  background: #FFFFFF;
+  color: #0F3D2E;
   padding: 6px 20px;
-  border-radius: 20px;
-  font-weight: 600;
+  border-radius: 999px;
+  font-weight: 700;
   font-size: 13px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .edit-profile-btn:hover {
-  background: #2f6f5e;
-  color: white;
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
 }
 
 .profile-back-btn {
@@ -185,19 +207,20 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: #f0fbe9;
-  border: 1px solid #d5f0c4;
+  background: #FFFFFF;
+  border: 1.5px solid #E2ECE6;
   border-radius: 50%;
-  color: #6cc247;
+  color: #0F3D2E;
   cursor: pointer;
   padding: 0;
   margin-bottom: 20px;
-  transition: background 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .profile-back-btn:hover {
-  background: #e2f5d4;
-  color: #5aab38;
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
 }
 
 .profile-back-btn svg {
@@ -210,7 +233,7 @@
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #E2ECE6;
   flex-shrink: 0;
 }
 
@@ -218,21 +241,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e5e7eb;
-  color: #9ca3af;
+  background: #F1F6F3;
+  color: #567367;
 }
 
 .profile-username {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 18px;
   margin: 0;
+  color: #0F3D2E;
 }
 
 .verification-rejected-note {
-  color: #9b2c2c;
+  color: #DC2626;
   font-size: 12px;
   margin: 4px 0 6px;
 }
