@@ -102,7 +102,7 @@ export default function Footer() {
         </Link>
 
         <div className="footer-socials footer-socials-inline">
-          <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.instagram.com/curu.in" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
             <FaInstagram size={15} />
           </a>
           <a href="#" aria-label="X" target="_blank" rel="noopener noreferrer">
@@ -190,7 +190,7 @@ export default function Footer() {
       <div className="footer-bottom">
         <p>© 2026 {isSkilterSection ? 'Skilter' : isRentalSection ? 'Rental' : 'Barter'}. All Rights Reserved.</p>
         <div className="footer-socials footer-socials-bottom">
-          <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.instagram.com/curu.in" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
             <FaInstagram size={15} />
           </a>
           <a href="#" aria-label="X" target="_blank" rel="noopener noreferrer">
