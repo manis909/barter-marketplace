@@ -230,6 +230,8 @@ export default function SkillChatsLayout() {
   const isRequesterView = selectedBooking?.requester_id === userId;
   const otherUserName = selectedBooking
     ? (isRequesterView ? selectedBooking.teacher_name : selectedBooking.requester_name) : '';
+  const otherUserUsername = selectedBooking
+    ? (isRequesterView ? selectedBooking.teacher_username : selectedBooking.requester_username) : '';
   const otherUserImage = selectedBooking
     ? (isRequesterView ? selectedBooking.teacher_profile_image : selectedBooking.requester_profile_image) : null;
   const otherUserIdForReport = selectedBooking
@@ -332,7 +334,7 @@ export default function SkillChatsLayout() {
         ) : (
           <>
             <div className="skillchatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/skilter/chat')} style={s.iconBtn} aria-label="Back to Skilter chats">
+              <button type="button" onClick={() => navigate('/skilter/chat')} style={{ ...s.iconBtn, background: 'transparent', borderColor: 'rgba(255,255,255,0.55)', color: '#ffffff' }} aria-label="Back to Skilter chats">
                 <BackArrow />
               </button>
               <button
@@ -347,7 +349,7 @@ export default function SkillChatsLayout() {
                 </div>
               </button>
               {bookingId && reportedBookings.has(String(bookingId)) ? (
-                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.8, cursor: 'default', color: '#c6e930' }} title="Reported">
                   ✓
                 </span>
               ) : (
@@ -372,7 +374,7 @@ export default function SkillChatsLayout() {
                 </div>
               </button>
               {bookingId && reportedBookings.has(String(bookingId)) ? (
-                <span style={{ ...s.reportHeaderBtnDesktop, opacity: 0.7, cursor: 'default', color: '#15803d' }}>
+                <span style={{ ...s.reportHeaderBtnDesktop, opacity: 0.8, cursor: 'default', color: '#c6e930' }}>
                   ✓ Reported
                 </span>
               ) : (
@@ -393,6 +395,9 @@ export default function SkillChatsLayout() {
                 otherUserId={otherUserIdForReport}
                 skillTitle={selectedBooking.skill_name}
                 skillListingId={selectedBooking.skill_listing_id}
+                skillImageUrl={selectedBooking.skill_image_urls?.[0] || null}
+                bookingStatus={selectedBooking.status}
+                otherUserUsername={otherUserUsername}
                 onViewSkill={id => navigate(`/skilter/skill/${id}`)}
               />
             </div>
@@ -472,29 +477,29 @@ const s = {
   },
   desktopHeader: {
     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-    borderBottom: `1px solid ${T.border}`, background: T.surface, flexShrink: 0,
+    borderBottom: `1px solid ${T.border}`, background: '#0f3d2e', flexShrink: 0,
   },
   desktopHeaderName: {
-    fontWeight: 600, fontSize: 14.5, color: T.text, fontFamily: 'var(--font-heading)',
+    fontWeight: 600, fontSize: 14.5, color: '#ffffff', fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   reportHeaderBtnDesktop: {
     padding: '5px 12px', borderRadius: T.radiusCtrl,
-    border: `1px solid ${T.border}`, background: 'transparent',
-    color: T.muted, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.55)', background: 'transparent',
+    color: '#ffffff', fontSize: 12, fontWeight: 500, cursor: 'pointer',
     fontFamily: 'Manrope, sans-serif', flexShrink: 0,
   },
   mobileBackBar: {
     display: 'none', alignItems: 'center', gap: 10, padding: '8px 12px',
-    background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
+    background: '#0f3d2e', borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
   },
   mobileBackName: {
-    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'var(--font-heading)',
+    fontWeight: 600, fontSize: 15, color: '#ffffff', fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   reportHeaderBtn: {
-    width: 32, height: 32, borderRadius: '50%', border: `1px solid ${T.border}`,
-    background: 'transparent', color: T.muted, cursor: 'pointer',
+    width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.55)',
+    background: 'transparent', color: '#ffffff', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
   },
   /* Clickable avatar+name wrapper in both desktop and mobile headers */
