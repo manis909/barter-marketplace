@@ -6,7 +6,7 @@
 
 .skilter-page {
   display: grid;
-  gap: 32px;
+  gap: 20px;
 }
 
 /* Desktop centering — matches Explore's 1024px+ rule */
@@ -49,6 +49,203 @@
   white-space: nowrap;
 }
 
+/* ── Skill Reels ────────────────────────────────────────────────── */
+.skilter-reels {
+  display: grid;
+  gap: 18px;
+}
+
+.skilter-reels__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.skilter-reels__header h2 {
+  margin: 0;
+  color: #0F172A;
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+}
+
+.skilter-reels__row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: thin;
+}
+
+.skilter-reel-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.skilter-reel-card {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 9 / 16;
+  flex: 0 0 210px;
+  width: 210px;
+  min-width: 0;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 18px;
+  background: #0F172A;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  outline: none;
+}
+
+.skilter-reel-item > .skilter-reel-wishlist.glass-wishlist-btn {
+  position: relative;
+  top: auto;
+  right: auto;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  margin-top: 8px;
+}
+
+.skilter-reel-card video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #0F172A;
+}
+
+.skilter-reel-card__overlay {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 44px 14px 14px;
+  background: linear-gradient(transparent, rgba(15, 23, 42, 0.9));
+  color: #FFFFFF;
+  pointer-events: none;
+}
+
+.skilter-reel-card__overlay h3,
+.skilter-reel-card__overlay p {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skilter-reel-card__overlay h3 {
+  font-size: 0.95rem;
+}
+
+.skilter-reel-card__overlay p {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+}
+
+.skilter-reel-card:focus-visible {
+  box-shadow: 0 0 0 3px #2F6B57, 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.skilter-reel-card:hover {
+  transform: translateY(-2px);
+}
+
+.skilter-reel-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: rgba(4, 8, 9, 0.96);
+}
+
+.skilter-reel-viewer__dialog {
+  position: relative;
+  width: min(92vw, 500px, 50vh);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #000000;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.skilter-reel-viewer__dialog > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000000;
+}
+
+.skilter-reel-viewer__caption {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 72px 20px 20px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+  color: #FFFFFF;
+  pointer-events: none;
+}
+
+.skilter-reel-viewer__caption h2,
+.skilter-reel-viewer__caption p {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skilter-reel-viewer__caption h2 {
+  font-size: 1.1rem;
+}
+
+.skilter-reel-viewer__caption p {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+}
+
+.skilter-reel-viewer__close,
+.skilter-reel-viewer__navigation button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.58);
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+.skilter-reel-viewer__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.skilter-reel-viewer__navigation {
+  position: absolute;
+  inset: 50% 10px auto;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.skilter-reel-viewer__navigation button {
+  pointer-events: auto;
+}
+
 @media (max-width: 760px) {
   .skilter-summary {
     flex-direction: column;
@@ -57,6 +254,17 @@
 
   .skilter-filter-hint {
     white-space: normal;
+  }
+
+  .skilter-reels__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .skilter-reel-card {
+    flex-basis: max(168px, 42vw);
+    width: max(168px, 42vw);
   }
 }
 

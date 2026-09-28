@@ -284,14 +284,15 @@ export default function ItemDetailPage() {
     setSubmittingRental(true)
     setRentalError('')
     try {
-      const startDateTime = new Date(`${startDate}T00:00:00`)
-      const endDateTime = new Date(startDateTime)
-      endDateTime.setDate(endDateTime.getDate() + daysRequested)
+      const startIso = `${startDate}T00:00:00.000Z`
+      const startDateObj = new Date(startIso)
+      const endDateObj = new Date(startDateObj.getTime() + daysRequested * 86400000)
+      const endIso = endDateObj.toISOString()
 
       await createRentalBooking({
         rental_listing_id: rental.id,
-        start_datetime: startDateTime.toISOString(),
-        end_datetime: endDateTime.toISOString(),
+        start_datetime: startIso,
+        end_datetime: endIso,
         meeting_location: meetingLocation.trim()
       })
       setIsRentalModalOpen(false)

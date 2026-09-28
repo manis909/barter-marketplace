@@ -102,6 +102,14 @@ function normalizeAvailability(value) {
   return normalizedValues.length > 0 ? normalizedValues.join(', ') : null;
 }
 
+function normalizeDemoVideoUrls(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(url => typeof url === 'string')
+    .map(url => url.trim())
+    .filter(Boolean);
+}
+
 // ── POST /api/skills ──────────────────────────────────────────────
 // Create a new skill listing
 router.post('/', requireAuth, requireVerified, async (req, res) => {
@@ -122,7 +130,8 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
       teaching_mode,
       teaching_language,
       availability,
-      max_participants
+      max_participants,
+      demo_video_urls
     } = req.body;
 
     console.log('🔍 BACKEND DEBUG - Destructured values:', {
@@ -159,6 +168,11 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
     const normalizedTeachingLanguage = normalizeTeachingLanguage(teaching_language);
     const normalizedAvailability = normalizeAvailability(availability);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
+    const normalizedDemoVideoUrls = normalizeDemoVideoUrls(demo_video_urls);
+
+    if (normalizedDemoVideoUrls.length > 3) {
+      return res.status(400).json({ error: 'A skill can have up to 3 demo videos' });
+    }
 
     if (normalizedPriceType === 'coins') {
       if (!price || isNaN(price) || Number(price) <= 0) {
@@ -215,9 +229,10 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         availability,
         max_participants,
         image_urls,
+        demo_video_urls,
         status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
         req.userId,
@@ -235,6 +250,7 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         normalizedAvailability,
         finalMaxParticipants,
         normalizedImageUrls,
+        normalizedDemoVideoUrls,
         'active' // default status - matches DB constraint (active, paused)
       ]
     );
@@ -285,6 +301,7 @@ router.get('/', async (req, res) => {
         s.description,
         s.category,
         s.image_urls,
+        s.demo_video_urls,
         s.price_type,
         s.price,
         s.price_unit,
@@ -411,7 +428,8 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
       teaching_mode,
       teaching_language,
       availability,
-      max_participants
+      max_participants,
+      demo_video_urls
     } = req.body;
 
     // Validation
@@ -442,6 +460,13 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
     const normalizedTeachingLanguage = normalizeTeachingLanguage(teaching_language);
     const normalizedAvailability = normalizeAvailability(availability);
     const normalizedImageUrls = Array.isArray(image_urls) ? image_urls.filter(Boolean) : [];
+    const normalizedDemoVideoUrls = demo_video_urls === undefined
+      ? null
+      : normalizeDemoVideoUrls(demo_video_urls);
+
+    if (normalizedDemoVideoUrls?.length > 3) {
+      return res.status(400).json({ error: 'A skill can have up to 3 demo videos' });
+    }
 
     if (normalizedPriceType === 'coins') {
       if (!price || isNaN(price) || Number(price) <= 0) {
@@ -482,8 +507,9 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
            teaching_language = $11,
            availability = $12,
            max_participants = $13,
-           image_urls = $14
-       WHERE id = $15
+           image_urls = $14,
+           demo_video_urls = COALESCE($15::text[], demo_video_urls)
+       WHERE id = $16
        RETURNING *`,
       [
         skill_name.trim(),
@@ -500,6 +526,7 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
         normalizedAvailability,
         normalizedSessionType === 'group' ? Number(max_participants) : 1,
         normalizedImageUrls,
+        normalizedDemoVideoUrls,
         id
       ]
     );

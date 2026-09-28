@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Layers, X } from 'lucide-react'
+import { Layers, Flame, Sparkles, Heart, Target, Eye, Clock, X } from 'lucide-react'
 import CategoryFilter from '../components/CategoryFilter'
 import CategorySection from '../components/CategorySection'
 import SmartSection from '../components/SmartSection'
@@ -44,31 +44,49 @@ async function safeFetch(urlOrPromise) {
   }
 }
 
+// ── Client-side cache to avoid 1-2s loading delays on return navigation ────
+let exploreCache = {
+  items: null,
+  queryKey: null,
+  smartData: null,
+  smartUserId: undefined,
+}
+
 export default function ExplorePage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { currentUser } = useAuth()
 
-  // ── Existing state (UNCHANGED) ───────────────────────────────────────────
-  const [activeCategory, setActiveCategory] = useState(() => normalizeCategory(new URLSearchParams(location.search).get('category')) || '')
-  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '')
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const initialCat = normalizeCategory(new URLSearchParams(location.search).get('category')) || ''
+  const initialSearch = (new URLSearchParams(location.search).get('search') || '').trim()
+  const initialParams = new URLSearchParams()
+  if (initialCat && initialCat !== 'All') initialParams.set('category', initialCat)
+  if (initialSearch) initialParams.set('search', initialSearch)
+  const initialQueryKey = initialParams.toString()
+
+  const hasItemCache = exploreCache.items !== null && exploreCache.queryKey === initialQueryKey
+  const hasSmartCache = exploreCache.smartData !== null && exploreCache.smartUserId === (currentUser?.id || null)
+
+  // ── Existing state ───────────────────────────────────────────────────────
+  const [activeCategory, setActiveCategory] = useState(initialCat)
+  const [search, setSearch] = useState(initialSearch)
+  const [items, setItems] = useState(() => (hasItemCache ? exploreCache.items : []))
+  const [loading, setLoading] = useState(() => !hasItemCache)
   const [error, setError] = useState('')
   const [isSwipeModeOpen, setIsSwipeModeOpen] = useState(false)
 
   // ── Smart-section state ──────────────────────────────────────────────────
-  const [trendingItems,   setTrendingItems]   = useState([])
-  const [recommendedItems, setRecommendedItems] = useState([])
-  const [matchesItems,    setMatchesItems]    = useState([])
-  const [recentlyViewed,  setRecentlyViewed]  = useState([])
-  const [similarItems,    setSimilarItems]    = useState([])
-  const [latestItems,     setLatestItems]     = useState([])
+  const [trendingItems,    setTrendingItems]    = useState(() => (hasSmartCache ? exploreCache.smartData.trending : []))
+  const [recommendedItems, setRecommendedItems] = useState(() => (hasSmartCache ? exploreCache.smartData.recommended : []))
+  const [matchesItems,     setMatchesItems]     = useState(() => (hasSmartCache ? exploreCache.smartData.matches : []))
+  const [recentlyViewed,   setRecentlyViewed]   = useState(() => (hasSmartCache ? exploreCache.smartData.viewed : []))
+  const [similarItems,     setSimilarItems]     = useState(() => (hasSmartCache ? exploreCache.smartData.similar : []))
+  const [latestItems,      setLatestItems]      = useState(() => (hasSmartCache ? exploreCache.smartData.latest : []))
 
-  const [smartLoading, setSmartLoading] = useState(true)
+  const [smartLoading, setSmartLoading] = useState(() => !hasSmartCache)
 
   // IDs already shown in any smart section — used to filter the main grid
-  const [shownSmartIds, setShownSmartIds] = useState(new Set())
+  const [shownSmartIds, setShownSmartIds] = useState(() => (hasSmartCache ? exploreCache.smartData.shownSmartIds : new Set()))
 
   // Track which fetch cycle the smart data belongs to so stale results from
   // a previous login state are never applied after the user logs out or in.
@@ -89,7 +107,7 @@ export default function ExplorePage() {
     document.body.scrollTop = 0
   }, [location.pathname, location.search])
 
-  // ── Existing main-items fetch (UNCHANGED) ────────────────────────────────
+  // ── Existing main-items fetch (With cache revalidation) ─────────────────
   useEffect(() => {
     const controller = new AbortController()
     const params = new URLSearchParams()
@@ -105,18 +123,23 @@ export default function ExplorePage() {
     const query = params.toString()
     const url = `${apiBaseUrl}/items${query ? `?${query}` : ''}`
 
-    setLoading(true)
+    if (!exploreCache.items || exploreCache.queryKey !== query) {
+      setLoading(true)
+    }
     setError('')
 
     fetch(url, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('Unable to load items')
         const data = await response.json()
-        setItems(Array.isArray(data.items) ? data.items : [])
+        const fetchedItems = Array.isArray(data.items) ? data.items : []
+        setItems(fetchedItems)
+        exploreCache.items = fetchedItems
+        exploreCache.queryKey = query
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
-        setItems([])
+        if (!exploreCache.items) setItems([])
         setError('Unable to load items right now.')
       })
       .finally(() => setLoading(false))
@@ -124,12 +147,12 @@ export default function ExplorePage() {
     return () => controller.abort()
   }, [activeCategory, search])
 
-  // ── Smart sections fetch ─────────────────────────────────────────────────
-  // Runs once on mount and whenever the logged-in user changes.
-  // All requests are parallel; each section fails independently.
+  // ── Smart sections fetch (With cache revalidation) ──────────────────────
   useEffect(() => {
     const fetchId = ++smartFetchId.current
-    setSmartLoading(true)
+    if (!exploreCache.smartData || exploreCache.smartUserId !== (currentUser?.id || null)) {
+      setSmartLoading(true)
+    }
 
     async function fetchSmartSections() {
       try {
@@ -185,9 +208,7 @@ export default function ExplorePage() {
         const matches     = dedup(rawMatches)
         const viewed      = dedup(rawViewed)
         const similar     = dedup(rawSimilar)
-        // Latest: take up to 8 from the already-fetched main items list
-        // (sorted newest-first), excluding anything already shown above
-        const latest      = dedup(rawLatest.slice(0, 20))  // slice gives enough candidates
+        const latest      = dedup(rawLatest.slice(0, 20))
 
         setTrendingItems(trending)
         setRecommendedItems(recommended)
@@ -195,8 +216,19 @@ export default function ExplorePage() {
         setRecentlyViewed(viewed)
         setSimilarItems(similar)
         setLatestItems(latest.slice(0, 8))
-        // Snapshot the full set of displayed IDs so the main grid can exclude them
-        setShownSmartIds(new Set(displayedIds))
+        const idsSet = new Set(displayedIds)
+        setShownSmartIds(idsSet)
+
+        exploreCache.smartData = {
+          trending,
+          recommended,
+          matches,
+          viewed,
+          similar,
+          latest: latest.slice(0, 8),
+          shownSmartIds: idsSet,
+        }
+        exploreCache.smartUserId = currentUser?.id || null
       } catch (err) {
         console.error('Error fetching smart sections:', err)
       } finally {
@@ -207,8 +239,6 @@ export default function ExplorePage() {
     }
 
     fetchSmartSections()
-  // Re-run only when the logged-in user actually changes (login/logout)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id])
 
   // ── normalizedItems ──────────────────────────────────────────────────────
@@ -265,27 +295,21 @@ export default function ExplorePage() {
       {/* ── Existing: category filter bar (UNCHANGED) ─────────────────── */}
       <CategoryFilter activeCategory={activeCategory} onSelect={handleCategorySelect} />
 
-      {/* ── Marketplace Hero Advertisement Banner ─────────────────────── */}
-      <div className="market-promo-banner">
-        <div className="market-promo-content">
-          <span className="market-promo-badge">✨ BARTER MARKETPLACE</span>
-          <h2 className="market-promo-heading">Trade items with trusted local members</h2>
-          <p className="market-promo-subtext">
-            Give items a second life • {loading ? 'Loading items...' : `${allExploreItems.length} items available in ${activeCategory || 'All categories'}`}
-          </p>
-        </div>
-        <div className="market-promo-action">
-          <button
-            type="button"
-            className="swipe-mode-trigger-btn"
-            onClick={() => setIsSwipeModeOpen(true)}
-            aria-label="Open Swipe Discovery Mode"
-            title="Swipe Mode"
-          >
-            <Layers size={18} />
-            <span>Swipe Mode</span>
-          </button>
-        </div>
+      {/* ── Subheader row with item count & subtle inline Swipe Mode button ── */}
+      <div className="explore-subhead-row">
+        <span className="explore-count-text">
+          {loading ? 'Loading items...' : `${allExploreItems.length} items available ${activeCategory && activeCategory !== 'All' ? `in ${activeCategory}` : ''}`}
+        </span>
+        <button
+          type="button"
+          className="swipe-mode-trigger-btn"
+          onClick={() => setIsSwipeModeOpen(true)}
+          aria-label="Open Swipe Discovery Mode"
+          title="Swipe Mode"
+        >
+          <Layers size={14} />
+          <span>Swipe Mode</span>
+        </button>
       </div>
 
       {error ? <p className="section-label">{error}</p> : null}
@@ -295,7 +319,8 @@ export default function ExplorePage() {
         {!isFiltered && (
           <div className="smart-sections-block">
             <SmartSection
-              title="🔥 Trending Now"
+              icon={Flame}
+              title="Trending Now"
               subtitle="Items people are viewing and saving right now"
               items={trendingItems}
               loading={smartLoading}
@@ -303,7 +328,8 @@ export default function ExplorePage() {
 
             {currentUser && (
               <SmartSection
-                title="💜 Recommended for You"
+                icon={Heart}
+                title="Recommended for You"
                 subtitle="Based on your wishlist activity"
                 items={recommendedItems}
                 loading={smartLoading}
@@ -312,7 +338,8 @@ export default function ExplorePage() {
 
             {currentUser && (
               <SmartSection
-                title="🎯 Matches Your Desired Items"
+                icon={Target}
+                title="Matches Your Desired Items"
                 subtitle="Listings that are looking for something you might have"
                 items={matchesItems}
                 loading={smartLoading}
@@ -321,7 +348,8 @@ export default function ExplorePage() {
 
             {currentUser && recentlyViewed.length > 0 && (
               <SmartSection
-                title="👀 Recently Viewed"
+                icon={Eye}
+                title="Recently Viewed"
                 subtitle="Pick up where you left off"
                 items={recentlyViewed}
                 loading={false}
@@ -330,7 +358,8 @@ export default function ExplorePage() {
 
             {currentUser && (
               <SmartSection
-                title="✨ You May Also Like"
+                icon={Sparkles}
+                title="You May Also Like"
                 subtitle="Similar to items you've shown interest in"
                 items={similarItems}
                 loading={smartLoading}
@@ -338,7 +367,8 @@ export default function ExplorePage() {
             )}
 
             <SmartSection
-              title="🆕 Latest Listings"
+              icon={Clock}
+              title="Latest Listings"
               subtitle="Fresh items just added to the marketplace"
               items={latestItems}
               loading={smartLoading}

@@ -2,11 +2,7 @@
   "name": "barter-marketplace",
   "private": true,
   "scripts": {
-    "build": "npm run build --prefix client",
-    "start": "npm run start --prefix client"
-  },
-  "dependencies": {
-    "express-rate-limit": "^8.6.1",
-    "multer": "^2.2.0"
+    "postinstall": "npm install --prefix client && npm install --prefix server && npm run build --prefix client",
+    "start": "npm run start --prefix server"
   }
 }

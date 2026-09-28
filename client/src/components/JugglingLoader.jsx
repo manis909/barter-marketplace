@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingBag, BookOpen, Package, Wine } from 'lucide-react'
+import bagLoader from '../assets/bag-loader.png'
+import booksLoader from '../assets/books-loader.png'
 import './JugglingLoader.css'
 
-const ITEMS = [
-  { icon: Wine, gradient: 'linear-gradient(135deg, #FF8E53 0%, #FF6B4A 100%)' },
-  { icon: BookOpen, gradient: 'linear-gradient(135deg, #00A8B5 0%, #005C66 100%)' },
-  { icon: Package, gradient: 'linear-gradient(135deg, #34D399 0%, #059669 100%)' },
-  { icon: ShoppingBag, gradient: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)' },
+const LOADER_ITEMS = [
+  { src: bagLoader, alt: 'Handbag Item' },
+  { src: booksLoader, alt: 'Books Item' },
 ]
 
 export default function JugglingLoader({ message = "Getting your barter items ready..." }) {
@@ -15,13 +14,12 @@ export default function JugglingLoader({ message = "Getting your barter items re
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % ITEMS.length)
-    }, 1300)
+      setIndex((prev) => (prev + 1) % LOADER_ITEMS.length)
+    }, 1400)
     return () => clearInterval(timer)
   }, [])
 
-  const CurrentItem = ITEMS[index]
-  const IconComponent = CurrentItem.icon
+  const currentItem = LOADER_ITEMS[index]
 
   return (
     <div className="clean-juggling-screen">
@@ -29,40 +27,39 @@ export default function JugglingLoader({ message = "Getting your barter items re
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.7 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, scale: 0.6, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.6, y: -12 }}
+            transition={{ duration: 0.25 }}
             className="clean-item-shell"
           >
             <motion.div
               animate={{
-                y: [0, -36, 0],
-                rotate: [-12, 12, -12],
+                y: [0, -30, 0],
+                rotate: [-8, 8, -8],
               }}
               transition={{
-                duration: 0.7,
+                duration: 0.75,
                 repeat: Infinity,
-                ease: [0.4, 0, 0.6, 1],
+                ease: [0.45, 0, 0.55, 1],
               }}
-              className="clean-3d-capsule"
-              style={{ background: CurrentItem.gradient }}
+              className="user-svg-loader-box"
             >
-              <IconComponent size={34} color="#FFFFFF" strokeWidth={2.2} />
+              <img src={currentItem.src} alt={currentItem.alt} className="user-svg-loader-img" />
             </motion.div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Soft shadow underneath matching reference image */}
+        {/* Dynamic shadow underneath */}
         <motion.div
           animate={{
-            scaleX: [1, 0.35, 1],
-            opacity: [0.25, 0.05, 0.25],
+            scaleX: [1, 0.4, 1],
+            opacity: [0.25, 0.08, 0.25],
           }}
           transition={{
-            duration: 0.7,
+            duration: 0.75,
             repeat: Infinity,
-            ease: [0.4, 0, 0.6, 1],
+            ease: [0.45, 0, 0.55, 1],
           }}
           className="clean-shadow-oval"
         />

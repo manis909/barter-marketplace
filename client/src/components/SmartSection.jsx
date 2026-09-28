@@ -23,6 +23,7 @@ const SKELETON_COUNT = 5
 export default function SmartSection({
   title,
   subtitle,
+  icon: Icon,
   items = [],
   loading = false,
   seeAllHref,
@@ -35,7 +36,10 @@ export default function SmartSection({
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="smart-section__header">
         <div className="smart-section__titles">
-          <h2 className="smart-section__title">{title}</h2>
+          <h2 className="smart-section__title">
+            {Icon && <Icon className="smart-section__title-icon" size={20} />}
+            <span>{title}</span>
+          </h2>
           {subtitle && (
             <p className="smart-section__subtitle">{subtitle}</p>
           )}

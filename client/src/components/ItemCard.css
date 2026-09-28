@@ -1,41 +1,31 @@
-/* ItemCard.css - Compact, Clean & High-Density Card Design */
+/* ItemCard.css - E-Commerce Flipkart/Amazon Style Card Design */
 
 .compact-item-card {
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
-  border: 1px solid #E4E2D9;
+  border: 1px solid #E2E8F0;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
   box-sizing: border-box;
   width: 100%;
 }
 
 .compact-item-card:hover {
-  border-color: #C9DBD2;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-color: #CBD5E1;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
 }
 
-/* Image Container (~65-70% of Card Height, Aspect 4:3) */
+/* Image Container (75-80% Height Proportion, Uniform Pastel Background) */
 .card-media-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  background-color: #F5F4F0;
+  aspect-ratio: 1 / 1;
+  background-color: #EAF4EE;
   overflow: hidden;
-}
-
-.card-media-backdrop {
-  position: absolute;
-  inset: -12px;
-  background-size: cover;
-  background-position: center;
-  filter: blur(18px) saturate(1.12);
-  transform: scale(1.08);
-  opacity: 0.48;
-  z-index: 0;
+  border-bottom: 1px solid #D8EBDD;
 }
 
 .card-image {
@@ -44,30 +34,101 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: transform 0.3s ease;
+  object-position: center;
+  padding: 8px;
+  box-sizing: border-box;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  mix-blend-mode: multiply;
 }
 
 .compact-item-card:hover .card-image {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
-/* Standalone Floating Wishlist Heart Icon (No Square Box) */
+/* Multi-Image Controls & Dot Indicators */
+.image-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: background-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+  opacity: 0.85;
+}
+
+.image-nav-btn:hover {
+  background: #FFFFFF;
+  opacity: 1;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.image-nav-btn.prev-btn {
+  left: 6px;
+}
+
+.image-nav-btn.next-btn {
+  right: 6px;
+}
+
+.card-image-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(4px);
+}
+
+.image-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.image-dot.active {
+  width: 12px;
+  border-radius: 4px;
+  background: #FFFFFF;
+}
+
+/* Wishlist Heart Icon with Padding Inset */
 .glass-wishlist-btn {
   position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
+  top: 10px !important;
+  right: 10px !important;
   width: 32px !important;
   height: 32px !important;
   padding: 0 !important;
   margin: 0 !important;
-  background: transparent !important;
-  border: none !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 50% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  box-shadow: none !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease !important;
   z-index: 10 !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -77,19 +138,17 @@
 }
 
 .glass-wishlist-btn:hover {
-  background: transparent !important;
-  border-color: transparent !important;
-  transform: scale(1.18) !important;
+  background: #FFFFFF !important;
+  transform: scale(1.1) !important;
 }
 
 .heart-icon {
-  width: 20px !important;
-  height: 20px !important;
-  color: #1F2937 !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #475569 !important;
   fill: none !important;
-  stroke: #1F2937 !important;
+  stroke: #475569 !important;
   stroke-width: 2.2px !important;
-  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)) !important;
   transition: color 0.2s ease, fill 0.2s ease, transform 0.2s ease !important;
   display: block !important;
   opacity: 1 !important;
@@ -101,26 +160,14 @@
   color: #EF4444 !important;
   fill: #EF4444 !important;
   stroke: #EF4444 !important;
-  filter: drop-shadow(0 2px 6px rgba(239, 68, 68, 0.45)) !important;
+  filter: drop-shadow(0 2px 5px rgba(239, 68, 68, 0.4)) !important;
   animation: heartPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes heartPop {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.25);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.glass-wishlist-btn.wishlisted {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
 }
 
 /* Content Body & High Density Hierarchy */
@@ -128,102 +175,59 @@
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 
-/* Row 1: Category & Condition Pill Badges (Single Compact Row) */
-.card-badges-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  overflow: hidden;
-}
-
-.pill-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 100px;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  text-transform: capitalize;
-}
-
-.category-pill {
-  background: #E4F0ED;
-  color: #2F5B4D;
-  border: 1px solid rgba(47, 91, 77, 0.15);
-}
-
-.condition-pill {
-  background: #F3F4F6;
-  color: #4B5563;
-  border: 1px solid rgba(75, 85, 99, 0.15);
-}
-
-/* Row 2: 2-Line Truncated Title */
+/* Item Title (Single Bold Line Truncated) */
 .card-title {
   margin: 0;
   font-family: 'Fraunces', serif;
   font-size: 0.92rem;
   font-weight: 700;
-  line-height: 1.25;
-  color: #1C1917;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.2;
+  color: #0F172A;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Row 3: Owner & Rating (Single Compact Row) */
+/* Owner Meta Line */
 .card-owner-rating-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  font-size: 0.8rem;
-  color: #57534E;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #64748B;
+  margin-bottom: 2px;
 }
 
-.owner-box,
-.rating-box {
+.owner-box {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .meta-icon {
-  color: #3D6E63;
+  color: #005C66;
 }
 
 .owner-link {
-  color: #2F5B4D;
+  color: #005C66;
   font-weight: 600;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 90px;
+  max-width: 110px;
 }
 
 .owner-link:hover {
   text-decoration: underline;
-  color: #1C1917;
+  color: #0F172A;
 }
 
-.rating-box {
-  font-weight: 700;
-  color: #24231F;
-}
-
-.rating-box .star-icon.filled {
-  color: #EAB308;
-  fill: #EAB308;
-}
-
-/* Row 4: Compact Equal-Width Icon-Free Buttons (Height 36px, Font 13-14px) */
+/* Varied Action Buttons (Solid Turquoise Pill vs. Outlined Rectangle) */
 .card-actions-row {
   display: flex;
   align-items: center;
@@ -232,67 +236,88 @@
   padding-top: 2px;
 }
 
-.btn-compact {
+/* Primary Action: Solid Turquoise High-Contrast Pill Button */
+.btn-trade-primary {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 36px;
   min-height: 36px;
-  padding: 0 6px;
-  border-radius: 9px;
-  font-size: 0.84rem; /* ~13.5px */
-  font-weight: 600;
-  text-decoration: none;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #005C66;
+  color: #FFFFFF;
+  border: none;
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 92, 102, 0.2);
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.btn-compact-primary {
-  background: #3D6E63;
-  color: #FFFFFF;
-  border: none;
-  box-shadow: 0 2px 6px rgba(61, 110, 99, 0.18);
+.btn-trade-primary:hover {
+  background: #007885;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 92, 102, 0.25);
 }
 
-.btn-compact-primary:hover {
-  background: #2F5B4D;
+.btn-trade-primary:active {
+  transform: translateY(0);
 }
 
-.btn-compact-secondary {
-  background: #F6F5F0;
-  color: #2F5B4D;
-  border: 1px solid #C9DBD2;
+/* Secondary Action: Plain Outlined Button */
+.btn-details-secondary {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: #3F3F46;
+  border: 1px solid #E4E4E7;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
-.btn-compact-secondary:hover {
-  background: #EAF2EE;
-  border-color: #3D6E63;
+.btn-details-secondary:hover {
+  background: #F4F4F5;
+  color: #18181B;
+  border-color: #D4D4D8;
 }
 
-.card-status-pill {
+.card-status-badge {
   flex: 1;
   height: 36px;
   min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
 }
 
-.owner-pill {
-  background: #F3F4F6;
-  color: #6B7280;
-  border: 1px dashed #D1D5DB;
+.owner-badge {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px dashed #CBD5E1;
 }
 
-.unavailable-pill {
+.unavailable-badge {
   background: #FEF2F2;
   color: #DC2626;
   border: 1px solid #FCA5A5;

@@ -32,6 +32,14 @@
   font-weight: 700;
   color: #005C66;
   line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smart-section__title-icon {
+  color: #007885;
+  flex-shrink: 0;
 }
 
 .smart-section__subtitle {
