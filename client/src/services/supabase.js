@@ -54,3 +54,36 @@ export async function uploadImageToSupabase(file) {
 
   return publicData.publicUrl
 }
+
+export async function uploadSkillVideoToSupabase(file) {
+  if (!file || !supabaseUrl || !supabaseAnonKey || !supabase) {
+    throw new Error('Supabase storage is not configured')
+  }
+
+  const fileName = `skill-reels/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name ?? 'demo-video.mp4'}`
+  const { data, error } = await supabase.storage
+    .from('item-images')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || 'video/mp4'
+    })
+
+  if (error) {
+    throw error
+  }
+
+  const { data: publicData, error: publicUrlError } = supabase.storage
+    .from('item-images')
+    .getPublicUrl(data.path)
+
+  if (publicUrlError) {
+    throw publicUrlError
+  }
+
+  if (!publicData?.publicUrl) {
+    throw new Error('Supabase did not return a public URL for the skill video')
+  }
+
+  return publicData.publicUrl
+}
