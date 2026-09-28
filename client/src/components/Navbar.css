@@ -9,7 +9,7 @@
   width: 100%;
   background: #FFFFFF;
   border-bottom: 1px solid #D0ECE9;
-  padding: 10px 0;
+  padding: 6px 0;
   box-shadow: 0 1px 4px rgba(0, 92, 102, 0.05);
 }
 
@@ -25,10 +25,10 @@
    ============================================================ */
 .navbar-desktop-row {
   display: grid;
-  grid-template-columns: minmax(170px, 220px) 1fr minmax(200px, 280px);
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 20px;
-  min-height: 52px;
+  min-height: 44px;
 }
 
 .navbar-left {
@@ -36,6 +36,57 @@
   align-items: center;
   position: relative;
   min-width: 0;
+}
+
+.desktop-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  margin-right: 20px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.desktop-brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #C6E930;
+  color: #0F3D2E;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(198, 233, 48, 0.35);
+  transition: transform 0.25s ease;
+}
+
+.desktop-brand-link:hover .desktop-brand-mark {
+  transform: rotate(180deg) scale(1.08);
+}
+
+.desktop-brand-name {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0F3D2E;
+  line-height: 1;
+}
+
+.navbar-wrapper.platform-barter .desktop-brand-name,
+.navbar-wrapper.platform-renter .desktop-brand-name,
+.navbar-wrapper.platform-skilter .desktop-brand-name {
+  color: #FFFFFF;
+}
+
+.navbar-wrapper.platform-barter .desktop-brand-mark,
+.navbar-wrapper.platform-renter .desktop-brand-mark,
+.navbar-wrapper.platform-skilter .desktop-brand-mark {
+  background: #C6E930;
+  color: #0F3D2E;
 }
 
 .navbar-platform-tabs {
@@ -140,14 +191,14 @@
 
 .navbar-link {
   position: relative;
-  padding: 8px 14px;
-  border-radius: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
   text-decoration: none;
   color: #005C66;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 600;
   transition: background-color 0.15s ease, color 0.15s ease;
-  min-height: 40px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
 }
@@ -160,7 +211,7 @@
 .navbar-login-btn {
   background: #005C66;
   color: #FFFFFF !important;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 600;
   box-shadow: 0 2px 6px rgba(0, 92, 102, 0.2);
   transition: background-color 0.15s ease, transform 0.15s ease;
@@ -174,18 +225,18 @@
 .active-underline {
   position: absolute;
   bottom: 2px;
-  left: 12px;
-  right: 12px;
+  left: 10px;
+  right: 10px;
   height: 2.5px;
   border-radius: 2px;
   background-color: #005C66;
 }
 
 .profile-button {
-  min-width: 40px;
-  min-height: 40px;
-  width: 40px;
-  height: 40px;
+  min-width: 36px;
+  min-height: 36px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   box-sizing: border-box;
   border-radius: 50%;
@@ -226,13 +277,13 @@
 .navbar-mobile-wrapper {
   display: none;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   position: relative;
   transition: gap 200ms ease;
 }
 
 .navbar-wrapper.is-scrolled .navbar-mobile-wrapper {
-  gap: 4px;
+  gap: 3px;
 }
 
 .mobile-row-1 {
@@ -268,9 +319,9 @@
   padding-top: 0px;
   padding-bottom: 2px;
   margin-top: -2px;
-  margin-bottom: -10px; /* Aligns category tiles directly against the navbar bottom border */
+  margin-bottom: -6px; /* Aligns category tiles directly against the navbar bottom border */
   background: #FFFFFF;
-  max-height: 84px;
+  max-height: 80px;
   opacity: 1;
   overflow: hidden;
   transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
@@ -290,28 +341,67 @@
 }
 
 /* Compact Brand Badge & Logo for Mobile */
-.mobile-mark {
-  width: 34px;
-  height: 34px;
-  font-size: 0.95rem;
+.mobile-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  user-select: none;
+  padding: 2px 0;
 }
 
-.navbar-wrapper.is-scrolled .mobile-mark {
-  width: 32px;
-  height: 32px;
+.mobile-brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #005C66;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 92, 102, 0.2);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.mobile-brand-link:hover .mobile-brand-mark,
+.mobile-brand-link:active .mobile-brand-mark {
+  transform: rotate(180deg) scale(1.08);
+}
+
+.mobile-brand-name {
+  font-family: var(--font-heading);
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #005C66;
+  line-height: 1;
+}
+
+.mobile-mark {
+  width: 30px;
+  height: 30px;
   font-size: 0.85rem;
 }
 
+.navbar-wrapper.is-scrolled .mobile-mark {
+  width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
+}
+
 .mobile-logo {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 /* Mobile Top Right Actions (Home, Notification Bell, Profile Avatar on ONE line) */
 .mobile-home-btn {
-  min-width: 36px;
-  min-height: 36px;
-  width: 36px;
-  height: 36px;
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1px solid #D0ECE9;
   background: #FFFFFF;
@@ -336,17 +426,18 @@
 }
 
 .mobile-profile-btn {
-  min-width: 36px;
-  min-height: 36px;
-  width: 36px;
-  height: 36px;
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   box-sizing: border-box;
 }
 
 .mobile-login-btn {
-  min-height: 38px;
-  padding: 6px 14px;
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
 }
 
 /* Horizontally Scrollable Category Chips Container */
@@ -386,9 +477,9 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 4px 8px;
-  min-width: 52px;
-  border-radius: 10px;
+  padding: 3px 6px;
+  min-width: 48px;
+  border-radius: 9px;
   border: 1px solid #D0ECE9;
   background: #E6F7F6;
   color: #005C66;
@@ -419,9 +510,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
   background: transparent;
   color: currentColor;
 }
@@ -462,6 +553,10 @@
    RESPONSIVE BREAKPOINTS & SUPPRESSION RULES
    ============================================================ */
 @media (max-width: 767px) {
+  .navbar-wrapper {
+    padding: 5px 0;
+  }
+
   .navbar-desktop-row {
     display: none;
   }
@@ -537,3 +632,250 @@
   position: static;
   margin-left: 8px;
 }
+
+/* ============================================================
+   PLATFORM BARTER, RENTER & SKILTER - TRISTAL THEME (#0F3D2E, #1B4D3E, #2F6B52, #C6E930)
+   ============================================================ */
+.navbar-wrapper.platform-barter,
+.navbar-wrapper.platform-renter,
+.navbar-wrapper.platform-skilter {
+  background: #0F3D2E;
+  border-bottom: 1px solid #1B4D3E;
+  box-shadow: 0 4px 20px rgba(15, 61, 46, 0.25);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.navbar-wrapper.platform-barter.is-scrolled,
+.navbar-wrapper.platform-renter.is-scrolled,
+.navbar-wrapper.platform-skilter.is-scrolled {
+  background: rgba(15, 61, 46, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom-color: #2F6B52;
+}
+
+/* Platform Switcher Tabs */
+.navbar-wrapper.platform-barter .platform-tab,
+.navbar-wrapper.platform-renter .platform-tab,
+.navbar-wrapper.platform-skilter .platform-tab {
+  color: #A3C9B8;
+}
+
+.navbar-wrapper.platform-barter .platform-tab:hover,
+.navbar-wrapper.platform-renter .platform-tab:hover,
+.navbar-wrapper.platform-skilter .platform-tab:hover {
+  color: #FFFFFF;
+}
+
+.navbar-wrapper.platform-barter .platform-tab.active,
+.navbar-wrapper.platform-renter .platform-tab.active,
+.navbar-wrapper.platform-skilter .platform-tab.active {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.navbar-wrapper.platform-barter .platform-tab.active::after,
+.navbar-wrapper.platform-renter .platform-tab.active::after,
+.navbar-wrapper.platform-skilter .platform-tab.active::after {
+  background: #C6E930;
+  height: 3px;
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(198, 233, 48, 0.6);
+}
+
+.navbar-wrapper.platform-barter .platform-tab-mark,
+.navbar-wrapper.platform-renter .platform-tab-mark,
+.navbar-wrapper.platform-skilter .platform-tab-mark {
+  background: #C6E930;
+  color: #0F3D2E;
+  font-weight: 800;
+  border-radius: 6px;
+}
+
+/* Search Bar on Barter, Rental & Skilter */
+.navbar-wrapper.platform-barter .search-bar__input-row,
+.navbar-wrapper.platform-renter .search-bar__input-row,
+.navbar-wrapper.platform-skilter .search-bar__input-row {
+  background: rgba(27, 77, 62, 0.65);
+  border: 1px solid #2F6B52;
+  backdrop-filter: blur(8px);
+}
+
+.navbar-wrapper.platform-barter .search-bar__input-row:focus-within,
+.navbar-wrapper.platform-renter .search-bar__input-row:focus-within,
+.navbar-wrapper.platform-skilter .search-bar__input-row:focus-within {
+  background: rgba(27, 77, 62, 0.9);
+  border-color: #C6E930;
+  box-shadow: 0 0 0 3px rgba(198, 233, 48, 0.25);
+}
+
+.navbar-wrapper.platform-barter .search-bar__input-row input,
+.navbar-wrapper.platform-renter .search-bar__input-row input,
+.navbar-wrapper.platform-skilter .search-bar__input-row input {
+  color: #FFFFFF;
+}
+
+.navbar-wrapper.platform-barter .search-bar__input-row input::placeholder,
+.navbar-wrapper.platform-renter .search-bar__input-row input::placeholder,
+.navbar-wrapper.platform-skilter .search-bar__input-row input::placeholder {
+  color: #8EBAA7;
+}
+
+.navbar-wrapper.platform-barter .search-bar__icon-btn,
+.navbar-wrapper.platform-renter .search-bar__icon-btn,
+.navbar-wrapper.platform-skilter .search-bar__icon-btn {
+  color: #C6E930;
+}
+
+.navbar-wrapper.platform-barter .search-bar__icon-btn:hover,
+.navbar-wrapper.platform-renter .search-bar__icon-btn:hover,
+.navbar-wrapper.platform-skilter .search-bar__icon-btn:hover {
+  color: #B3D426;
+}
+
+/* Actions Right */
+.navbar-wrapper.platform-barter .navbar-link,
+.navbar-wrapper.platform-renter .navbar-link,
+.navbar-wrapper.platform-skilter .navbar-link {
+  color: #FFFFFF;
+}
+
+.navbar-wrapper.platform-barter .navbar-link:hover,
+.navbar-wrapper.platform-renter .navbar-link:hover,
+.navbar-wrapper.platform-skilter .navbar-link:hover {
+  background: rgba(47, 107, 82, 0.35);
+  color: #C6E930;
+}
+
+.navbar-wrapper.platform-barter .active-underline,
+.navbar-wrapper.platform-renter .active-underline,
+.navbar-wrapper.platform-skilter .active-underline {
+  background-color: #C6E930 !important;
+  box-shadow: 0 0 8px rgba(198, 233, 48, 0.5);
+}
+
+.navbar-wrapper.platform-barter .navbar-brand-dropdown-trigger,
+.navbar-wrapper.platform-renter .navbar-brand-dropdown-trigger,
+.navbar-wrapper.platform-skilter .navbar-brand-dropdown-trigger {
+  color: #FFFFFF !important;
+}
+
+.navbar-wrapper.platform-barter .navbar-login-btn,
+.navbar-wrapper.platform-renter .navbar-login-btn,
+.navbar-wrapper.platform-skilter .navbar-login-btn {
+  background: #C6E930 !important;
+  color: #0F3D2E !important;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 2px 8px rgba(198, 233, 48, 0.3);
+}
+
+.navbar-wrapper.platform-barter .navbar-login-btn:hover,
+.navbar-wrapper.platform-renter .navbar-login-btn:hover,
+.navbar-wrapper.platform-skilter .navbar-login-btn:hover {
+  background: #B3D426 !important;
+  color: #0F3D2E !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(198, 233, 48, 0.45);
+}
+
+.navbar-wrapper.platform-barter .profile-button,
+.navbar-wrapper.platform-renter .profile-button,
+.navbar-wrapper.platform-skilter .profile-button {
+  background: #1B4D3E;
+  border: 1.5px solid #2F6B52;
+  color: #C6E930;
+}
+
+.navbar-wrapper.platform-barter .profile-button:hover,
+.navbar-wrapper.platform-renter .profile-button:hover,
+.navbar-wrapper.platform-skilter .profile-button:hover {
+  border-color: #C6E930;
+  background: #2F6B52;
+  box-shadow: 0 0 10px rgba(198, 233, 48, 0.3);
+}
+
+.navbar-wrapper.platform-barter .profile-icon,
+.navbar-wrapper.platform-renter .profile-icon,
+.navbar-wrapper.platform-skilter .profile-icon {
+  color: #C6E930;
+}
+
+/* Mobile Navbar on Barter, Rental & Skilter */
+.navbar-wrapper.platform-barter .mobile-home-btn,
+.navbar-wrapper.platform-renter .mobile-home-btn,
+.navbar-wrapper.platform-skilter .mobile-home-btn {
+  background: rgba(27, 77, 62, 0.65);
+  border-color: #2F6B52;
+  color: #C6E930;
+}
+
+.navbar-wrapper.platform-barter .mobile-home-btn:hover,
+.navbar-wrapper.platform-barter .mobile-home-btn:active,
+.navbar-wrapper.platform-renter .mobile-home-btn:hover,
+.navbar-wrapper.platform-renter .mobile-home-btn:active,
+.navbar-wrapper.platform-skilter .mobile-home-btn:hover,
+.navbar-wrapper.platform-skilter .mobile-home-btn:active {
+  background: #C6E930;
+  color: #0F3D2E;
+  border-color: #C6E930;
+}
+
+.navbar-wrapper.platform-barter .mobile-home-icon,
+.navbar-wrapper.platform-renter .mobile-home-icon,
+.navbar-wrapper.platform-skilter .mobile-home-icon {
+  color: inherit;
+}
+
+.navbar-wrapper.platform-barter .mobile-row-3-categories-wrapper,
+.navbar-wrapper.platform-renter .mobile-row-3-categories-wrapper,
+.navbar-wrapper.platform-skilter .mobile-row-3-categories-wrapper {
+  border-top: 1px solid rgba(47, 107, 82, 0.35);
+  background: rgba(15, 61, 46, 0.6);
+}
+
+.navbar-wrapper.platform-barter .category-tile,
+.navbar-wrapper.platform-renter .category-tile,
+.navbar-wrapper.platform-skilter .category-tile {
+  background: rgba(27, 77, 62, 0.6);
+  border: 1px solid #2F6B52;
+  color: #D1E7DC;
+}
+
+.navbar-wrapper.platform-barter .category-tile:hover,
+.navbar-wrapper.platform-renter .category-tile:hover,
+.navbar-wrapper.platform-skilter .category-tile:hover {
+  background: #2F6B52;
+  border-color: #C6E930;
+  color: #FFFFFF;
+}
+
+.navbar-wrapper.platform-barter .category-tile.active,
+.navbar-wrapper.platform-renter .category-tile.active,
+.navbar-wrapper.platform-skilter .category-tile.active {
+  background: #C6E930;
+  color: #0F3D2E;
+  border-color: #C6E930;
+  box-shadow: 0 3px 12px rgba(198, 233, 48, 0.35);
+}
+
+.navbar-wrapper.platform-barter .category-tile.active .category-tile-icon-box,
+.navbar-wrapper.platform-renter .category-tile.active .category-tile-icon-box,
+.navbar-wrapper.platform-skilter .category-tile.active .category-tile-icon-box {
+  background: #0F3D2E;
+  color: #C6E930;
+}
+
+.navbar-wrapper.platform-barter .mobile-brand-name,
+.navbar-wrapper.platform-renter .mobile-brand-name,
+.navbar-wrapper.platform-skilter .mobile-brand-name {
+  color: #FFFFFF;
+}
+
+.navbar-wrapper.platform-barter .mobile-brand-mark,
+.navbar-wrapper.platform-renter .mobile-brand-mark,
+.navbar-wrapper.platform-skilter .mobile-brand-mark {
+  background: #C6E930;
+  color: #0F3D2E;
+  box-shadow: 0 2px 8px rgba(198, 233, 48, 0.45);
+}

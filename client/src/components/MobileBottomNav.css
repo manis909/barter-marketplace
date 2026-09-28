@@ -1,0 +1,120 @@
+/* ============================================================
+   MobileBottomNav.css - iPhone-Style Translucent Glass Navigation
+   ============================================================ */
+
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: max(18px, env(safe-area-inset-bottom, 18px));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 950;
+  pointer-events: none; /* Touches outside the pill pass through to content */
+}
+
+.mobile-bottom-nav-inner {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  /* Completely translucent glass appearance with subtle white tint */
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  box-shadow: 
+    0 12px 36px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  user-select: none;
+  max-width: calc(100vw - 32px);
+}
+
+.bottom-nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #4B5563; /* Inactive: clean neutral */
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.bottom-nav-item:hover {
+  color: #111827;
+}
+
+/* Active mode: subtle lime-green */
+.bottom-nav-item.active {
+  color: #283C05 !important;
+  font-weight: 700;
+}
+
+.bottom-nav-icon {
+  flex-shrink: 0;
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+  stroke-width: 2.3px;
+}
+
+.bottom-nav-label {
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Subtle lime-green active background pill */
+.bottom-nav-active-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(198, 233, 48, 0.38); /* Subtle lime-green only on active item */
+  border: 1px solid rgba(143, 163, 34, 0.4);
+  box-shadow: 0 2px 10px rgba(198, 233, 48, 0.28);
+  z-index: 1;
+}
+
+.bottom-nav-item .bottom-nav-icon,
+.bottom-nav-item .bottom-nav-label {
+  position: relative;
+  z-index: 2;
+}
+
+/* Hide completely on desktop screens (768px and above) */
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+/* Extra small mobile adjustments */
+@media (max-width: 360px) {
+  .bottom-nav-item {
+    padding: 6px 12px;
+    gap: 4px;
+    font-size: 0.78rem;
+  }
+
+  .mobile-bottom-nav-inner {
+    gap: 3px;
+    padding: 4px 5px;
+  }
+}

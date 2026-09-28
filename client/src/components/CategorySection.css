@@ -14,30 +14,36 @@
   margin: 0;
   font-family: 'Fraunces', serif;
   font-size: 1.45rem;
+  font-weight: 800;
+  color: #0F3D2E;
 }
 
 .item-section p {
   margin: 8px 0 0;
-  color: #5F5B52;
+  color: #567367;
   font-size: 0.95rem;
   max-width: 520px;
 }
 
 .view-all-button {
-  padding: 10px 16px;
-  border-radius: 14px;
+  padding: 8px 18px;
+  border-radius: 999px;
   background: #FFFFFF;
-  border: 1px solid #E4E2D9;
-  color: #24231F;
-  font-size: 0.95rem;
+  border: 1.5px solid #2F6B52;
+  color: #0F3D2E;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 61, 46, 0.05);
+  transition: all 0.2s ease;
 }
 
 .view-all-button:hover {
-  background: #F7F4EB;
-  border-color: #C9DBD2;
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 61, 46, 0.18);
 }
 
 .item-grid {

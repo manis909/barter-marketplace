@@ -1,13 +1,16 @@
-/* SkillCard.css - Adapted from ItemCard.css for Skilter Skills */
+/* ================================================================
+   SkillCard.css - TRISTAL Lime + Dark Green Theme
+   Matching ItemCard.css for a unified marketplace experience.
+   ================================================================ */
 
 .compact-skill-card {
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
-  border: 1px solid #E4E2D9;
-  border-radius: 14px;
+  border: 1px solid #E2ECE6;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 8px rgba(15, 61, 46, 0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   box-sizing: border-box;
   width: 100%;
@@ -16,13 +19,14 @@
 }
 
 .compact-skill-card:hover {
-  border-color: #C9DBD2;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-3px);
+  border-color: #2F6B52;
+  box-shadow: 0 8px 24px rgba(15, 61, 46, 0.1);
 }
 
 .compact-skill-card:focus-visible {
-  border-color: #3D6E63;
-  box-shadow: 0 0 0 3px rgba(61, 110, 99, 0.22), 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-color: #0F3D2E;
+  box-shadow: 0 0 0 3px rgba(198, 233, 48, 0.35), 0 8px 20px rgba(15, 61, 46, 0.08);
 }
 
 /* Image Container */
@@ -30,7 +34,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background-color: #EAF4EE;
+  background-color: #F4F8F5;
   overflow: hidden;
 }
 
@@ -61,10 +65,10 @@
 
 /* Content Body */
 .compact-skill-card .card-body {
-  padding: 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   flex: 1;
 }
 
@@ -80,39 +84,39 @@
 .compact-skill-card .pill-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 100px;
+  padding: 3px 8px;
+  border-radius: 999px;
   letter-spacing: 0.01em;
   white-space: nowrap;
   text-transform: capitalize;
 }
 
 .compact-skill-card .category-pill {
-  background: #E4F0ED;
-  color: #2F5B4D;
-  border: 1px solid rgba(47, 91, 77, 0.15);
+  background: #F1F6F3;
+  color: #0F3D2E;
+  border: 1px solid #E2ECE6;
 }
 
 .compact-skill-card .session-pill {
-  background: #DBEAFE;
-  color: #1E40AF;
-  border: 1px solid rgba(30, 64, 175, 0.15);
+  background: #0F3D2E;
+  color: #C6E930;
+  border: 1px solid rgba(198, 233, 48, 0.3);
 }
 
 .compact-skill-card .verified-pill {
-  background: #EEF9F3;
-  color: #196D3C;
-  border: 1px solid rgba(25, 109, 60, 0.15);
+  background: rgba(198, 233, 48, 0.25);
+  color: #0F3D2E;
+  border: 1px solid rgba(143, 163, 34, 0.35);
 }
 
 /* Row 2: Title */
 .compact-skill-card .card-title {
   margin: 0;
   font-family: 'Fraunces', serif;
-  font-size: 0.92rem;
+  font-size: 0.96rem;
   font-weight: 700;
   line-height: 1.25;
-  color: #1C1917;
+  color: #0F3D2E;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -126,7 +130,7 @@
   justify-content: space-between;
   gap: 6px;
   font-size: 0.8rem;
-  color: #57534E;
+  color: #567367;
 }
 
 .compact-skill-card .owner-box {
@@ -136,39 +140,41 @@
 }
 
 .compact-skill-card .meta-icon {
-  color: #3D6E63;
+  color: #1B4D3E;
 }
 
 .compact-skill-card .owner-link {
-  color: #2F5B4D;
-  font-weight: 600;
+  color: #1B4D3E;
+  font-weight: 700;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 90px;
+  transition: color 0.15s ease;
 }
 
 .compact-skill-card .owner-link:hover {
   text-decoration: underline;
-  color: #1C1917;
+  color: #0F3D2E;
 }
 
 .compact-skill-card .price-box {
-  font-weight: 700;
-  color: #1E40AF;
+  font-weight: 800;
+  color: #0F3D2E;
+  font-size: 0.92rem;
 }
 
 .compact-skill-card .price-box.free {
-  color: #065F46;
+  color: #1B4D3E;
 }
 
 /* Row 4: Description Preview */
 .compact-skill-card .card-description {
   margin: 0;
   font-size: 0.82rem;
-  color: #64748B;
-  line-height: 1.4;
+  color: #567367;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -181,7 +187,7 @@
   align-items: center;
   gap: 6px;
   margin-top: auto;
-  padding-top: 2px;
+  padding-top: 4px;
 }
 
 .compact-skill-card .btn-compact {
@@ -189,42 +195,52 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
-  min-height: 36px;
-  padding: 0 6px;
-  border-radius: 9px;
-  font-size: 0.84rem;
-  font-weight: 600;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.15s ease;
   box-sizing: border-box;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Primary CTA Book Session button in TRISTAL Lime */
 .compact-skill-card .btn-compact-primary {
-  background: #3D6E63;
-  color: #FFFFFF;
-  border: none;
-  box-shadow: 0 2px 6px rgba(61, 110, 99, 0.18);
+  background: #C6E930 !important;
+  color: #0F3D2E !important;
+  border: none !important;
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 10px rgba(198, 233, 48, 0.4) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease !important;
 }
 
 .compact-skill-card .btn-compact-primary:hover {
-  background: #2F5B4D;
+  background: #B3D426 !important;
+  color: #0F3D2E !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 14px rgba(179, 212, 38, 0.5) !important;
+}
+
+.compact-skill-card .btn-compact-primary:active {
+  transform: scale(0.97);
 }
 
 .compact-skill-card .card-status-pill {
   flex: 1;
-  height: 36px;
-  min-height: 36px;
+  height: 38px;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .compact-skill-card .card-status-pill.full-width {
@@ -232,9 +248,9 @@
 }
 
 .compact-skill-card .owner-pill {
-  background: #F3F4F6;
-  color: #6B7280;
-  border: 1px dashed #D1D5DB;
+  background: #F1F6F3;
+  color: #567367;
+  border: 1px dashed #2F6B52;
 }
 
 /* Responsive */
@@ -245,7 +261,7 @@
   }
 
   .compact-skill-card .card-title {
-    font-size: 0.85rem;
+    font-size: 0.86rem;
   }
 
   .compact-skill-card .card-owner-rating-row {
@@ -264,15 +280,15 @@
   .compact-skill-card .btn-compact {
     height: 34px;
     min-height: 34px;
-    padding: 0 4px;
+    padding: 0 6px;
     font-size: 0.8rem;
-    border-radius: 8px;
+    border-radius: 999px;
   }
 
   .compact-skill-card .card-status-pill {
     height: 34px;
     min-height: 34px;
-    border-radius: 8px;
+    border-radius: 999px;
     font-size: 0.76rem;
   }
 

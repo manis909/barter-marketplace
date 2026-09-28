@@ -315,7 +315,7 @@ button.footer-link-item {
     align-items: center;
     justify-content: space-between;
     margin: 0 -16px;
-    padding: 12px 16px;
+    padding: 12px 16px calc(80px + env(safe-area-inset-bottom, 0px));
     gap: 10px;
     font-size: 0.83rem;
   }
@@ -336,4 +336,64 @@ button.footer-link-item {
   .footer-socials-bottom {
     display: none;
   }
+}
+
+/* ============================================================
+   BARTER FOOTER - PROFESSIONAL PALETTE (#0F3D2E, #1B4D3E, #C6E930)
+   ============================================================ */
+.site-footer.footer-barter {
+  background: #0F3D2E;
+  border-top: 1px solid #1B4D3E;
+  color: #FFFFFF;
+}
+
+.site-footer.footer-barter .footer-mark {
+  background: #C6E930;
+  color: #0F3D2E;
+  font-weight: 800;
+}
+
+.site-footer.footer-barter .footer-logo {
+  color: #FFFFFF;
+  font-family: var(--font-heading);
+}
+
+.site-footer.footer-barter .footer-copy {
+  color: #A3C9B8;
+}
+
+.site-footer.footer-barter .footer-heading {
+  color: #C6E930;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.site-footer.footer-barter .footer-nav a,
+.site-footer.footer-barter .footer-link-item {
+  color: #D1E7DC;
+}
+
+.site-footer.footer-barter .footer-nav a:hover,
+.site-footer.footer-barter .footer-link-item:hover {
+  color: #C6E930;
+  transform: translateX(3px);
+}
+
+.site-footer.footer-barter .footer-bottom {
+  background: #0A2D22;
+  border-top: 1px solid rgba(47, 107, 82, 0.4);
+  color: #7AA894;
+}
+
+.site-footer.footer-barter .footer-socials a {
+  background: #1B4D3E;
+  color: #C6E930;
+  border: 1px solid #2F6B52;
+}
+
+.site-footer.footer-barter .footer-socials a:hover {
+  background: #C6E930;
+  color: #0F3D2E;
+  border-color: #C6E930;
+  transform: translateY(-2px);
 }

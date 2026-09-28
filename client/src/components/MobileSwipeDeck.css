@@ -27,21 +27,22 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #005C66;
-  font-weight: 700;
-  font-size: 1rem;
+  color: #0F3D2E;
+  font-weight: 800;
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
 }
 
 .deck-title-icon {
-  color: #007885;
+  color: #1B4D3E;
 }
 
 .deck-counter-pill {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #005C66;
-  background: #E6F7F6;
-  border: 1px solid #D0ECE9;
+  color: #0F3D2E;
+  background: #F1F6F3;
+  border: 1px solid #D1E2DB;
   padding: 3px 10px;
   border-radius: 999px;
   letter-spacing: 0.02em;
@@ -49,28 +50,29 @@
 
 .deck-sub-hint {
   font-size: 0.76rem;
-  color: #5F7D80;
+  color: #567367;
   font-weight: 600;
   text-align: center;
   margin-bottom: 14px;
 }
 
 .deck-header-close-btn {
-  background: #E6F7F6;
-  border: 1px solid #D0ECE9;
+  background: #F1F6F3;
+  border: 1px solid #D1E2DB;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #005C66;
+  color: #0F3D2E;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .deck-header-close-btn:hover {
-  background: #005C66;
-  color: #FFFFFF;
+  background: #0F3D2E;
+  color: #C6E930;
+  border-color: #0F3D2E;
 }
 
 /* Card Stack */
@@ -192,7 +194,7 @@
   font-family: 'Fraunces', serif;
   font-size: 1.18rem;
   font-weight: 700;
-  color: #1F2937;
+  color: #0F3D2E;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -202,7 +204,7 @@
 .swipe-card-val {
   font-size: 1rem;
   font-weight: 800;
-  color: #3D6E63;
+  color: #0F3D2E;
   flex-shrink: 0;
 }
 
@@ -219,7 +221,7 @@
   gap: 4px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #6B7280;
+  color: #567367;
   text-transform: capitalize;
 }
 
@@ -229,7 +231,7 @@
   gap: 4px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #4B5563;
+  color: #1B4D3E;
 }
 
 /* Action Control Buttons (Pass / Trade Interest) */
@@ -251,7 +253,7 @@
   border-radius: 999px;
   border: none;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
@@ -274,13 +276,14 @@
 }
 
 .btn-trade {
-  background: #3D6E63;
-  color: #FFFFFF;
-  box-shadow: 0 6px 18px rgba(61, 110, 99, 0.25);
+  background: #C6E930;
+  color: #0F3D2E !important;
+  box-shadow: 0 6px 18px rgba(198, 233, 48, 0.35);
 }
 
 .btn-trade:hover {
-  background: #2D544C;
+  background: #B3D426;
+  color: #0F3D2E !important;
 }
 
 /* Empty & Completed States */
@@ -293,19 +296,19 @@
   padding: 40px 20px;
   text-align: center;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px solid #E2ECE6;
   border-radius: 24px;
   max-width: 440px;
   margin: 16px auto;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(15, 61, 46, 0.04);
 }
 
 .completed-badge {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(61, 110, 99, 0.1);
-  color: #3D6E63;
+  background: rgba(198, 233, 48, 0.25);
+  color: #0F3D2E;
   display: grid;
   place-items: center;
   margin-bottom: 12px;
@@ -315,13 +318,13 @@
   margin: 0 0 6px;
   font-family: 'Fraunces', serif;
   font-size: 1.2rem;
-  color: #1F2937;
+  color: #0F3D2E;
 }
 
 .swipe-deck-completed p {
   margin: 0 0 20px;
   font-size: 0.88rem;
-  color: #6B7280;
+  color: #567367;
 }
 
 .deck-reset-btn {
@@ -330,16 +333,16 @@
   gap: 8px;
   padding: 10px 22px;
   border-radius: 999px;
-  border: 1px solid #3D6E63;
+  border: 1.5px solid #0F3D2E;
   background: #FFFFFF;
-  color: #3D6E63;
+  color: #0F3D2E;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .deck-reset-btn:hover {
-  background: #3D6E63;
-  color: #FFFFFF;
+  background: #0F3D2E;
+  color: #C6E930;
 }
