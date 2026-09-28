@@ -227,6 +227,9 @@ export default function RentalChatsLayout() {
         ? (selectedBooking.owner_name || selectedBooking.owner_username)
         : (selectedBooking.borrower_name || selectedBooking.borrower_username))
     : '';
+  const otherUserUsername = selectedBooking
+    ? (isBorrower ? selectedBooking.owner_username : selectedBooking.borrower_username)
+    : '';
   const otherUserImage = selectedBooking
     ? (isBorrower
         ? selectedBooking.owner_profile_image
@@ -359,9 +362,9 @@ export default function RentalChatsLayout() {
             <div className="rentalchatslayout-mobile-back" style={s.mobileBackBar}>
               <button
                 type="button"
-                onClick={() => navigate('/renter')}
-                style={s.iconBtn}
-                aria-label="Back to Rental Explore"
+                onClick={() => navigate('/rental/chat')}
+                style={{ ...s.iconBtn, background: 'transparent', borderColor: 'rgba(255,255,255,0.55)', color: '#ffffff' }}
+                aria-label="Back to Rental chats"
               >
                 <BackArrow />
               </button>
@@ -377,7 +380,7 @@ export default function RentalChatsLayout() {
                 </div>
               </button>
               {bookingId && reportedBookings.has(String(bookingId)) ? (
-                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.8, cursor: 'default', color: '#c6e930' }} title="Reported">
                   ✓
                 </span>
               ) : (
@@ -401,6 +404,9 @@ export default function RentalChatsLayout() {
                 otherUserId={otherUserId}
                 rentalTitle={selectedBooking.item_name}
                 rentalListingId={selectedBooking.rental_listing_id}
+                rentalImageUrl={selectedBooking.item_image_urls?.[0] || null}
+                bookingStatus={selectedBooking.status}
+                otherUserUsername={otherUserUsername}
               />
             </div>
           </>
@@ -479,14 +485,14 @@ const s = {
   },
   mobileBackBar: {
     display: 'none', alignItems: 'center', gap: 10, padding: '8px 12px',
-    background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
+    background: '#0f3d2e', borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
   },
   mobileBackName: {
-    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'Fraunces, serif',
+    fontWeight: 600, fontSize: 15, color: '#ffffff', fontFamily: 'Fraunces, serif',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   reportHeaderBtn: {
-    border: '1px solid #d1d5db', background: '#ffffff', color: '#1f2937',
+    border: '1px solid rgba(255,255,255,0.55)', background: 'transparent', color: '#ffffff',
     borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700,
     padding: '6px 10px', lineHeight: 1, flexShrink: 0,
   },

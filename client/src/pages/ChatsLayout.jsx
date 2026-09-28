@@ -136,22 +136,51 @@ const LAYOUT_CSS = `
   box-shadow: 0 8px 32px rgba(0,0,0,0.14);
 }
 
-/* ── Responsive action bar ── */
+/* ── Trade summary card ── */
+.cl-trade-summary {
+  display: flex; flex-direction: column; gap: 10px;
+  margin: 10px 12px 0; padding: 12px;
+  background: #f1f5f9; border: 1px solid #d6e7dc;
+  border-radius: 16px; flex-shrink: 0; box-sizing: border-box;
+}
+.cl-trade-summary-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cl-trade-thumbnail {
+  width: 56px; height: 56px; min-width: 56px; border-radius: 12px;
+  object-fit: cover; background: #e6eee9;
+}
+.cl-trade-thumbnail-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: #2f6b52; font-size: 22px;
+}
+.cl-trade-summary-content { flex: 1; min-width: 0; }
+.cl-trade-summary-title {
+  margin: 0 0 7px; color: #0f3d2e; font-size: 14px;
+  font-weight: 700; line-height: 1.3;
+}
 .cl-action-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-bottom: 1px solid ${T.border};
-  background: ${T.surface};
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  box-sizing: border-box;
-  width: 100%;
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap; box-sizing: border-box; width: 100%;
+}
+.cl-summary-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 9px; border: 1px solid #cfe2d5; border-radius: 999px;
+  background: #ffffff; color: #245b3f; font-size: 11.5px;
+  font-weight: 600; line-height: 1.2; font-family: Manrope, sans-serif;
+}
+.cl-summary-action {
+  padding: 5px 10px; border: 1px solid #b8d5c2; border-radius: 999px;
+  background: #ffffff; color: #0f3d2e; font-size: 11.5px;
+  font-weight: 600; line-height: 1.2; font-family: Manrope, sans-serif;
+}
+.cl-summary-caption {
+  border-top: 1px solid #dce9e0; padding-top: 8px;
+  color: #64746b; font-size: 10.5px; line-height: 1.4;
+  font-family: Manrope, sans-serif;
 }
 @media (max-width: 480px) {
-  .cl-action-bar { gap: 6px; padding: 7px 10px; }
   .cl-action-bar button, .cl-action-bar span { font-size: 11.5px !important; }
+  .cl-trade-summary { margin: 8px 8px 0; padding: 10px; gap: 8px; }
+  .cl-trade-summary-main { gap: 10px; }
 }
 `;
 
@@ -603,7 +632,7 @@ export default function ChatsLayout() {
           <>
             {/* ── Mobile back bar (hidden on desktop via CSS) ── */}
             <div className="chatslayout-mobile-back" style={s.mobileBackBar}>
-              <button type="button" onClick={() => navigate('/explore')} style={s.iconBtn} aria-label="Back to explore">
+              <button type="button" onClick={() => navigate('/chats')} style={{ ...s.iconBtn, background: 'transparent', borderColor: 'rgba(255,255,255,0.55)', color: '#ffffff' }} aria-label="Back to chats">
                 <BackArrow />
               </button>
               <div
@@ -626,7 +655,7 @@ export default function ChatsLayout() {
               </div>
               {/* Report User button in header — mobile */}
               {tradeId && reportedTrades.has(String(tradeId)) ? (
-                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.8, cursor: 'default', color: '#c6e930' }} title="Reported">
                   ✓
                 </span>
               ) : (
@@ -658,7 +687,7 @@ export default function ChatsLayout() {
               </div>
               {/* Report button in desktop header */}
               {tradeId && reportedTrades.has(String(tradeId)) ? (
-                <span style={{ ...s.reportHeaderBtnDesktop, opacity: 0.7, cursor: 'default', color: '#15803d' }}>
+                <span style={{ ...s.reportHeaderBtnDesktop, opacity: 0.8, cursor: 'default', color: '#c6e930' }}>
                   ✓ Reported
                 </span>
               ) : (
@@ -668,65 +697,72 @@ export default function ChatsLayout() {
               )}
             </div>
 
-            {/* ── Action bar: View Item + Proof submission ── */}
-            <div className="cl-action-bar">
-              {selectedTrade.requested_item_id && (
-                <button type="button"
-                  onClick={() => navigate(`/item/${selectedTrade.requested_item_id}`)}
-                  style={s.actionBtnOutline}>
-                  🛍 View Item
-                </button>
-              )}
+            {/* ── Trade summary card ── */}
+            <div className="cl-trade-summary">
+              <div className="cl-trade-summary-main">
+                {selectedTrade.requested_item_images?.[0] ? (
+                  <img
+                    className="cl-trade-thumbnail"
+                    src={selectedTrade.requested_item_images[0]}
+                    alt={selectedTrade.requested_item_title || 'Trade item'}
+                  />
+                ) : (
+                  <div className="cl-trade-thumbnail cl-trade-thumbnail-placeholder" aria-hidden="true">🛍</div>
+                )}
+                <div className="cl-trade-summary-content">
+                  <h3 className="cl-trade-summary-title">Trade with {otherUserName || 'your trade partner'}</h3>
+                  <div className="cl-action-bar">
+                    {selectedTrade.requested_item_id && (
+                      <button type="button"
+                        onClick={() => navigate(`/item/${selectedTrade.requested_item_id}`)}
+                        className="cl-summary-action">
+                        🛍 View Item
+                      </button>
+                    )}
 
-              {/* Before proof: show Submit button */}
-              {showProofBtn && (
-                <button
-                  type="button"
-                  onClick={() => setShowProofModal(true)}
-                  style={{ ...s.actionBtnFill, flexShrink: 0 }}
-                >
-                  📸 Submit Exchange Proof
-                </button>
-              )}
+                    {/* Before proof: show Submit button */}
+                    {showProofBtn && (
+                      <button
+                        type="button"
+                        onClick={() => setShowProofModal(true)}
+                        style={{ ...s.actionBtnFill, flexShrink: 0, borderRadius: 999, padding: '5px 10px', fontSize: 11.5 }}
+                      >
+                        📸 Submit Exchange Proof
+                      </button>
+                    )}
 
-              {/* After this user submitted proof */}
-              {iHaveSubmittedProof && (
-                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 600, flexShrink: 0 }}>
-                  ✓ Exchange Proof Submitted
-                </span>
-              )}
+                    {/* After this user submitted proof */}
+                    {iHaveSubmittedProof && (
+                      <span className="cl-summary-pill">✓ Exchange Proof Submitted</span>
+                    )}
 
-              {/* Rate User — shown once proof is submitted AND user hasn't rated yet */}
-              {tradeIsCompleted && iHaveSubmittedProof && !iHaveRated && (
-                <button
-                  type="button"
-                  onClick={() => setShowRating(r => !r)}
-                  style={{ ...s.actionBtnFill, flexShrink: 0, background: '#f59e0b' }}
-                >
-                  ⭐ Rate User
-                </button>
-              )}
+                    {/* Rate User — shown once proof is submitted AND user hasn't rated yet */}
+                    {tradeIsCompleted && iHaveSubmittedProof && !iHaveRated && (
+                      <button
+                        type="button"
+                        onClick={() => setShowRating(r => !r)}
+                        style={{ ...s.actionBtnFill, flexShrink: 0, background: '#f59e0b', borderRadius: 999, padding: '5px 10px', fontSize: 11.5 }}
+                      >
+                        ⭐ Rate User
+                      </button>
+                    )}
 
-              {/* Already rated */}
-              {iHaveRated && (
-                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 600, flexShrink: 0 }}>
-                  ✓ Rated
-                </span>
-              )}
+                    {/* Already rated */}
+                    {iHaveRated && <span className="cl-summary-pill">✓ Rated</span>}
 
-              {/* Both submitted or admin verification in progress */}
-              {(bothSubmittedProof || tradeIsAwaitingAdmin) && !tradeIsCompleted && (
-                <span style={{ fontSize: 12.5, color: T.muted, fontFamily: 'Manrope, sans-serif', fontWeight: 500, flexShrink: 0 }}>
-                  👥 Waiting for admin verification.
-                </span>
-              )}
+                    {/* Both submitted or admin verification in progress */}
+                    {(bothSubmittedProof || tradeIsAwaitingAdmin) && !tradeIsCompleted && (
+                      <span className="cl-summary-pill">👥 Waiting for admin verification</span>
+                    )}
 
-              {/* Trade fully completed by admin */}
-              {tradeIsCompleted && (
-                <span style={{ fontSize: 12.5, color: T.accent, fontFamily: 'Manrope, sans-serif', fontWeight: 600, flexShrink: 0 }}>
-                  ✅ Trade Completed
-                </span>
-              )}
+                    {/* Trade fully completed by admin */}
+                    {tradeIsCompleted && <span className="cl-summary-pill">✓ Trade Completed</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="cl-summary-caption">
+                🔒 This conversation is logged for safety and dispute resolution
+              </div>
             </div>
 
             {/* Inline rating form — shown after proof submitted, before rating done */}
@@ -745,12 +781,6 @@ export default function ChatsLayout() {
 
             {/* Info banner — only for accepted trades where user hasn't submitted proof yet */}
             {tradeIsAccepted && !tradeIsCompleted && !tradeIsAwaitingAdmin && !iHaveSubmittedProof && <ProofInfoBanner />}
-
-            {/* Safety notice — always visible above messages */}
-            <div style={s.safetyBanner}>
-              🔒 This conversation is recorded for safety and dispute resolution.
-              It may be reviewed by administrators if necessary.
-            </div>
 
             {/* Messages fill area */}
             <div style={s.chatFill}>
@@ -975,33 +1005,33 @@ const s = {
   /* ── desktop header strip (always visible on desktop, hidden on mobile) ── */
   desktopHeader: {
     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-    borderBottom: `1px solid ${T.border}`, background: T.surface, flexShrink: 0,
+    borderBottom: `1px solid ${T.border}`, background: '#0f3d2e', flexShrink: 0,
   },
   desktopHeaderName: {
-    fontWeight: 600, fontSize: 14.5, color: T.text, fontFamily: 'var(--font-heading)',
+    fontWeight: 600, fontSize: 14.5, color: '#ffffff', fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   desktopHeaderStatus: { fontSize: 11, color: T.accent, marginTop: 1, fontFamily: 'Manrope, sans-serif' },
   reportHeaderBtnDesktop: {
     padding: '5px 12px', borderRadius: T.radiusCtrl,
-    border: `1px solid ${T.border}`, background: 'transparent',
-    color: T.muted, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.55)', background: 'transparent',
+    color: '#ffffff', fontSize: 12, fontWeight: 500, cursor: 'pointer',
     fontFamily: 'Manrope, sans-serif', flexShrink: 0, transition: 'border-color 0.15s, color 0.15s',
   },
 
   /* ── mobile back bar ── */
   mobileBackBar: {
     display: 'none', alignItems: 'center', gap: 10, padding: '8px 12px',
-    background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
+    background: '#0f3d2e', borderBottom: `1px solid ${T.border}`, flexShrink: 0, minHeight: 56,
   },
   mobileBackName: {
-    fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'var(--font-heading)',
+    fontWeight: 600, fontSize: 15, color: '#ffffff', fontFamily: 'var(--font-heading)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
   },
   mobileBackStatus: { fontSize: 11, color: T.accent, marginTop: 1, fontFamily: 'Manrope, sans-serif' },
   reportHeaderBtn: {
-    width: 32, height: 32, borderRadius: '50%', border: `1px solid ${T.border}`,
-    background: 'transparent', color: T.muted, cursor: 'pointer',
+    width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.55)',
+    background: 'transparent', color: '#ffffff', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
   },
 
