@@ -41,6 +41,10 @@
   justify-content: space-between;
   gap: 20px;
   flex-shrink: 0;
+  /* Leave room for the absolutely positioned close control so the identity
+     block never runs underneath it. */
+  padding-right: 44px;
+  padding-top: 6px;
 }
 
 .drawer-title {
@@ -55,13 +59,32 @@
   line-height: 1.6;
 }
 
+/* The drawer's own close control. Positioned in the drawer's top corner as a
+   sibling of the identity block, so it is never read as "dismiss the name /
+   email" and is the only thing that closes the drawer. */
 .drawer-close {
-  border: none;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
   background: transparent;
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   line-height: 1;
   color: #5F5B52;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.drawer-close:hover {
+  background: #F6F5F0;
+  border-color: #E4E2D9;
+  color: #24231F;
 }
 
 .drawer-menu {
@@ -74,16 +97,37 @@
   padding-bottom: 8px;
 }
 
+/* Identity block: photo/initial on the LEFT, name + email to its RIGHT. */
 .drawer-user {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
+}
+
+.drawer-avatar {
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3px #E4E2D9;
+}
+
+.drawer-user-text {
+  min-width: 0;
 }
 
 .drawer-name {
   margin: 0;
   font-family: 'Fraunces', serif;
   font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.drawer-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .drawer-email {

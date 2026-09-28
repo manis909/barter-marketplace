@@ -1,0 +1,48 @@
+/*
+ * Circular avatar with a first-initial fallback.
+ *
+ * Sizing is driven by inline width/height (set by the component) so the same
+ * element can be dropped into the navbar, the drawers and the profile pages
+ * at different sizes without inheriting an unrelated stylesheet's box.
+ */
+.user-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eaf2ee 0%, #d5e6df 100%);
+  color: #2f6f5e;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.user-avatar__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+
+.user-avatar__initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-transform: uppercase;
+}
+
+/* Placeholder colour for the initials, tuned for contrast on the sage fill. */
+.user-avatar--muted {
+  background: #eef1ef;
+  color: #6b7a74;
+}

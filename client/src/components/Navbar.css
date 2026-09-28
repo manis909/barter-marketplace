@@ -205,21 +205,6 @@
   background: #E6F7F6;
 }
 
-.profile-icon {
-  color: #005C66;
-}
-
-/* Profile photo shown in the navbar button when the user has one set */
-.profile-icon-image {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  flex-shrink: 0;
-}
-
 /* ============================================================
    MOBILE NAVBAR (Below 768px)
    ============================================================ */

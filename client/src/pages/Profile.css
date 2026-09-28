@@ -56,14 +56,6 @@
   flex-shrink: 0;
 }
 
-.profile-photo-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e5e7eb;
-  color: #9ca3af;
-}
-
 .profile-header-info {
   display: flex;
   flex-direction: column;

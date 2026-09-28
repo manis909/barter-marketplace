@@ -374,7 +374,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT s.*, u.username AS teacher_name, u.id AS teacher_id
+      `SELECT s.*, u.username AS teacher_name, u.id AS teacher_id,
+              u.is_verified AS teacher_is_verified
        FROM skill_listings s
        JOIN users u ON u.id = s.teacher_id
        WHERE s.id = $1`,

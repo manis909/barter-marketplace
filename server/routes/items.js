@@ -488,7 +488,8 @@ router.put('/:id', requireAuth, requireVerified, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT i.*, u.username AS owner_name, u.id AS owner_id
+      `SELECT i.*, u.username AS owner_name, u.id AS owner_id,
+              u.is_verified AS owner_is_verified
        FROM items i
        JOIN users u ON u.id = i.owner_id
        WHERE i.id = $1`,

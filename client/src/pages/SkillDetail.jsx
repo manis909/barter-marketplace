@@ -8,6 +8,7 @@ import SkillWishlistButton from '../components/SkillWishlistButton'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
 import useVerificationStatus from '../hooks/useVerificationStatus'
 import SkillProviderBookingModal from '../components/SkillProviderBookingModal'
+import VerifiedBadge from '../features/verification/VerifiedBadge'
 import './SkillDetail.css'
 
 export default function SkillDetailPage() {
@@ -62,6 +63,7 @@ export default function SkillDetailPage() {
       category: skill.category || 'Uncategorized',
       teacherName: skill.teacher_name || 'Teacher',
       teacherId: skill.teacher_id,
+      teacherIsVerified: Boolean(skill.teacher_is_verified ?? skill.teacherIsVerified),
       session_type: skill.session_type || 'one_on_one',
       max_participants: skill.max_participants || 1,
       images: Array.isArray(skill.image_urls) && skill.image_urls.length > 0
@@ -251,7 +253,7 @@ export default function SkillDetailPage() {
               <div className="detail-teacher-meta">
                 <div className="detail-teacher-row">
                   <Link to={normalizedSkill.teacherId ? `/profile/${normalizedSkill.teacherId}` : '/profile'}>{normalizedSkill.teacherName}</Link>
-                  <span className="detail-verified-badge"><CheckCircle2 size={12} /> Verified</span>
+                  {normalizedSkill.teacherIsVerified && <VerifiedBadge size="sm" />}
                 </div>
                 <div className="detail-teacher-rating">
                   <span>Trusted teacher profile</span>

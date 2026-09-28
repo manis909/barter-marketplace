@@ -70,12 +70,39 @@ router.post(
 );
 
 // ---- User: check their own verification status ----
+// `celebration_seen` is the account-scoped flag the one-time celebration
+// reads. It is NULL for anyone who has not seen it for their current
+// verification — including accounts approved before the celebration existed,
+// so they still get it the first time they open their profile.
 router.get('/status', requireAuth, async (req, res) => {
   const result = await db.query(
-    'SELECT is_verified, verification_status, verification_rejection_reason FROM users WHERE id = $1',
+    `SELECT is_verified, verification_status, verification_rejection_reason,
+            verified_at, verification_celebration_seen_at
+     FROM users WHERE id = $1`,
     [req.userId]
   );
-  res.json(result.rows[0]);
+
+  const row = result.rows[0] || {};
+  res.json({
+    ...row,
+    celebration_seen: Boolean(row.verification_celebration_seen_at),
+  });
+});
+
+// ---- User: mark the verification celebration as seen ----
+// Idempotent and only ever writes for an approved user, so it cannot be used
+// to fake a verification or to reset the flag.
+router.post('/celebration/seen', requireAuth, async (req, res) => {
+  await db.query(
+    `UPDATE users
+     SET verification_celebration_seen_at = now()
+     WHERE id = $1
+       AND is_verified = TRUE
+       AND verification_celebration_seen_at IS NULL`,
+    [req.userId]
+  );
+
+  res.json({ ok: true });
 });
 
 // ---- Admin: list all pending submissions with a signed view URL for the ID, and hall ticket number as plain text ----
@@ -118,7 +145,14 @@ router.post('/:userId/approve', requireAuth, requireAdmin, async (req, res) => {
     `UPDATE users
      SET is_verified = TRUE, verification_status = 'approved',
          id_verification_path = NULL, hallticket_verification_path = NULL,
-         verification_rejection_reason = NULL
+         verification_rejection_reason = NULL,
+         -- Only start a fresh verification event when this is a genuine
+         -- unverified -> verified transition. A repeated approval keeps the
+         -- original verified_at and keeps the celebration "seen" flag, so the
+         -- celebration still fires exactly once per verification.
+         verified_at = CASE WHEN is_verified THEN verified_at ELSE now() END,
+         verification_celebration_seen_at =
+           CASE WHEN is_verified THEN verification_celebration_seen_at ELSE NULL END
      WHERE id = $1`,
     [userId]
   );

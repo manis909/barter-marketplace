@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
+import UserAvatar from './UserAvatar'
+import VerifiedBadge from '../features/verification/VerifiedBadge'
 import {
   User,
   Box,
@@ -49,9 +51,9 @@ export default function ProfileDrawer({ open, onClose, onLogout }) {
   )
 
   const userEmail = currentUser?.email || 'you@example.com'
-  const userAvatar =
-    currentUser?.avatar ||
-    'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=facearea&facepad=3&w=128&h=128&q=80'
+  // Photo when the user has one, first-initial avatar when they don't.
+  const userAvatar = currentUser?.profile_image || null
+  const isVerified = Boolean(currentUser?.is_verified)
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -113,16 +115,31 @@ export default function ProfileDrawer({ open, onClose, onLogout }) {
       aria-hidden={!open}
     >
       <aside className={open ? 'profile-drawer active' : 'profile-drawer'}>
+        {/*
+          The drawer's own close control. It is a sibling of the identity
+          block (not a child of it) so it never appears beside the
+          name or email — it only ever closes the drawer.
+        */}
+        <button type="button" className="drawer-close" onClick={onClose} aria-label="Close drawer">
+          ×
+        </button>
+
         <div className="drawer-header">
-          <div className="drawer-user no-avatar">
-            <div>
-              <p className="drawer-name">{userName}</p>
+          <div className="drawer-user">
+            <UserAvatar
+              src={userAvatar}
+              name={userName}
+              size={52}
+              className="drawer-avatar"
+            />
+            <div className="drawer-user-text">
+              <p className="drawer-name">
+                <span className="drawer-name-text">{userName}</span>
+                {isVerified && <VerifiedBadge size="md" withLabel={false} />}
+              </p>
               <p className="drawer-email">{userEmail}</p>
             </div>
           </div>
-          <button type="button" className="drawer-close" onClick={onClose} aria-label="Close drawer">
-            ×
-          </button>
         </div>
 
         <nav className="drawer-menu" aria-label="Profile navigation">

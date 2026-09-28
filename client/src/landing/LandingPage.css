@@ -24,6 +24,7 @@
   height: 100vh;
   z-index: 1;
   background: rgba(0, 0, 0, 0.18); /* subtle — just enough to protect text contrast across the video loop */
+  pointer-events: none;
 }
 
 .landing-content {
@@ -124,6 +125,19 @@
 .landing-btn-secondary:hover {
   background: #c6e930;
   color: #0f3d2e;
+}
+
+.landing-silk-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.landing-silk-bg canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 @media (max-width: 480px) {

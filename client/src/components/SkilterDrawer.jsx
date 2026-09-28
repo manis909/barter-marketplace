@@ -21,6 +21,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
+import UserAvatar from './UserAvatar'
+import VerifiedBadge from '../features/verification/VerifiedBadge'
 import {
   User,
   Lightbulb,
@@ -62,6 +64,9 @@ export default function SkilterDrawer({ open, onClose }) {
     [currentUser]
   )
   const userEmail = currentUser?.email || 'you@example.com'
+  // Photo when the user has one, first-initial avatar when they don't.
+  const userAvatar = currentUser?.profile_image || null
+  const isVerified = Boolean(currentUser?.is_verified)
 
   // Highlight the active item based on current URL
   useEffect(() => {
@@ -110,21 +115,33 @@ export default function SkilterDrawer({ open, onClose }) {
       <aside className={open ? 'profile-drawer active' : 'profile-drawer'}>
 
         {/* Header */}
+        {/* The drawer's own close control — kept outside the identity block
+            so it never sits beside the name or email. */}
+        <button
+          type="button"
+          className="drawer-close"
+          onClick={onClose}
+          aria-label="Close Skilter drawer"
+        >
+          ×
+        </button>
+
         <div className="drawer-header">
-          <div className="drawer-user no-avatar">
-            <div>
-              <p className="drawer-name">{userName}</p>
+          <div className="drawer-user">
+            <UserAvatar
+              src={userAvatar}
+              name={userName}
+              size={52}
+              className="drawer-avatar"
+            />
+            <div className="drawer-user-text">
+              <p className="drawer-name">
+                <span className="drawer-name-text">{userName}</span>
+                {isVerified && <VerifiedBadge size="md" withLabel={false} />}
+              </p>
               <p className="drawer-email">{userEmail}</p>
             </div>
           </div>
-          <button
-            type="button"
-            className="drawer-close"
-            onClick={onClose}
-            aria-label="Close Skilter drawer"
-          >
-            ×
-          </button>
         </div>
 
         {/* Nav */}

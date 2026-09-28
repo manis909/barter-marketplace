@@ -6,7 +6,8 @@ import ProfileDrawer from './ProfileDrawer'
 import SkilterDrawer from './SkilterDrawer'
 import RentalDrawer from './RentalDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
-import { User, Home, ChevronDown } from 'lucide-react'
+import UserAvatar from './UserAvatar'
+import { Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import { SKILTER_CATEGORY_META, normalizeSkilterCategory } from '../data/skilterCategories'
@@ -437,11 +438,11 @@ export default function Navbar() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.96 }}
                 >
-                  {currentUser.profile_image ? (
-                    <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
-                  ) : (
-                    <User className="profile-icon" size={20} />
-                  )}
+                  <UserAvatar
+                    src={currentUser.profile_image}
+                    name={currentUser.full_name || currentUser.username}
+                    size={36}
+                  />
                 </motion.button>
               ) : (
                 <Link to="/login" className="navbar-link navbar-login-btn">
@@ -518,11 +519,11 @@ export default function Navbar() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.96 }}
                   >
-                    {currentUser.profile_image ? (
-                      <img src={currentUser.profile_image} alt="Profile" className="profile-icon-image" />
-                    ) : (
-                      <User className="profile-icon" size={18} />
-                    )}
+                    <UserAvatar
+                      src={currentUser.profile_image}
+                      name={currentUser.full_name || currentUser.username}
+                      size={36}
+                    />
                   </motion.button>
                 ) : (
                   <Link to="/login" className="navbar-link navbar-login-btn mobile-login-btn">

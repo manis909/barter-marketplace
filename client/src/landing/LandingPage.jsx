@@ -1,26 +1,20 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
-import landingVideo from '../assets/landing-background.mp4';
-import landingPoster from '../assets/landing-poster.jpg';
+import Silk from '../components/Silk';
 import './LandingPage.css';
 
-// NOTE: this replaces the previous landing page design — confirm with
-// the team before this is the final version, since the old page had
-// a lot of finished content (feature list, stats, trade preview card).
 export default function LandingPage() {
   return (
     <div className="landing-page">
-      <video
-        className="landing-video-bg"
-        autoPlay
-        muted
-        loop
-        playsInline
-        poster={landingPoster}
-        aria-hidden="true"
-      >
-        <source src={landingVideo} type="video/mp4" />
-      </video>
+      <div className="landing-silk-bg" aria-hidden="true">
+        <Silk
+          speed={5.3}
+          scale={1}
+          color="#38b71a"
+          noiseIntensity={1.5}
+          rotation={0}
+        />
+      </div>
 
       <div className="landing-overlay" aria-hidden="true" />
 

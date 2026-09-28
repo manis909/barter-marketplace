@@ -1,0 +1,65 @@
+/*
+ * Shield + handshake verified mark.
+ *
+ * One artwork, many sizes. Colours are driven entirely by the custom
+ * properties below so the surrounding context (inline text, an avatar
+ * corner, the celebration panel) can tint the very same mark without
+ * introducing a second design.
+ */
+.shield-badge {
+  --shield-badge-size: 16px;
+  --shield-badge-fill: #ecfdf5;
+  --shield-badge-edge: #059669;
+  --shield-badge-mark: #047857;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.shield-badge__icon {
+  width: var(--shield-badge-size);
+  height: var(--shield-badge-size);
+  flex-shrink: 0;
+  display: block;
+  overflow: visible;
+}
+
+.shield-badge__shield {
+  fill: var(--shield-badge-fill);
+  stroke: var(--shield-badge-edge);
+}
+
+.shield-badge__handshake {
+  stroke: var(--shield-badge-mark);
+}
+
+.shield-badge__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--shield-badge-edge);
+  white-space: nowrap;
+}
+
+/* Unlabelled (icon-only) placements align optically with adjacent text. */
+.shield-badge:not(.shield-badge--labelled) {
+  align-self: center;
+}
+
+/* The 48px "main profile" treatment gets a hairline so it reads against
+   light photo backdrops. */
+.shield-badge--identity {
+  --shield-badge-fill: #ffffff;
+  filter: drop-shadow(0 2px 6px rgba(5, 150, 105, 0.28));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shield-badge {
+    animation: none !important;
+    transition: none !important;
+  }
+}
