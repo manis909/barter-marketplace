@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getMyRentalBookings, getHiddenRentalBookingIds, hideRentalBookingChat } from '../services/rentalBookingService';
+import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
 import RentalBookingChatWindow from '../features/chat/RentalBookingChatWindow';
+import ReportModal from '../components/ReportModal';
 
 const T = {
   bg:           '#F6F5F0',
@@ -152,6 +154,8 @@ export default function RentalChatsLayout() {
   const [deleteMenuFor, setDeleteMenuFor] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [hiddenIds, setHiddenIds] = useState([]);
+  const [showReport, setShowReport] = useState(false);
+  const [reportedBookings, setReportedBookings] = useState(new Set());
 
   const basePath = location.pathname.startsWith('/renter/chat')
     ? '/renter/chat'
@@ -185,13 +189,21 @@ export default function RentalChatsLayout() {
     setLoading(true);
     setError('');
     try {
-      const [bookingData, hidden] = await Promise.all([
+      const [bookingData, hidden, reportsRes] = await Promise.all([
         getMyRentalBookings(),
         getHiddenRentalBookingIds().catch(() => []),
+        api.get('/reports/mine').catch(() => ({ data: { reports: [] } })),
       ]);
       const list = bookingData?.bookings ?? (Array.isArray(bookingData) ? bookingData : []);
       setBookings(list);
       setHiddenIds(Array.isArray(hidden) ? hidden : []);
+
+      const userReports = reportsRes?.data?.reports || [];
+      const reportedBookingIds = userReports
+        .filter(r => r.rental_booking_id)
+        .map(r => String(r.rental_booking_id));
+
+      setReportedBookings(new Set(reportedBookingIds));
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Failed to load chats');
     } finally {
@@ -364,6 +376,20 @@ export default function RentalChatsLayout() {
                   <div style={s.mobileBackName}>{otherUserName || 'Chat'}</div>
                 </div>
               </button>
+              {bookingId && reportedBookings.has(String(bookingId)) ? (
+                <span style={{ ...s.reportHeaderBtn, opacity: 0.6, cursor: 'default', color: '#15803d' }} title="Reported">
+                  ✓
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowReport(true)}
+                  style={s.reportHeaderBtn}
+                  aria-label="Report user"
+                >
+                  ⚑
+                </button>
+              )}
             </div>
 
             <div style={s.chatFill}>
@@ -380,6 +406,19 @@ export default function RentalChatsLayout() {
           </>
         )}
       </div>
+
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        reportedUserId={otherUserId}
+        rentalBookingId={bookingId || null}
+        userName={otherUserName}
+        onSuccess={() => {
+          if (bookingId) {
+            setReportedBookings(prev => new Set(prev).add(String(bookingId)));
+          }
+        }}
+      />
     </div>
   );
 }
@@ -445,6 +484,11 @@ const s = {
   mobileBackName: {
     fontWeight: 600, fontSize: 15, color: T.text, fontFamily: 'Fraunces, serif',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
+  },
+  reportHeaderBtn: {
+    border: '1px solid #d1d5db', background: '#ffffff', color: '#1f2937',
+    borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700,
+    padding: '6px 10px', lineHeight: 1, flexShrink: 0,
   },
   headerProfileBtn: {
     display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0,

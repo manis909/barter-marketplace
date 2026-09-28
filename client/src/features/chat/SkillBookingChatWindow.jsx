@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback, Fragment } from 'react';
 import { io } from 'socket.io-client';
 import { fmtTime, formatChatDateHeader, getDateKey } from '../../utils/helpers';
+import api from '../../services/api';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = api.defaults.baseURL.replace(/\/api\/?$/, '');
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
@@ -45,12 +46,10 @@ function Avatar({ name, imageUrl, size = 34 }) {
 
 /* ─── CSS ────────────────────────────────────────────────────────────────── */
 const SKC_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Manrope:wght@400;500&display=swap');
-
 .skc-wrap {
   width: 100%; max-width: 100%; box-sizing: border-box;
   display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;
-  font-family: Manrope, sans-serif; overflow: hidden;
+  font-family: var(--font-body); overflow: hidden;
 }
 
 /* Desktop header — hidden on mobile (mobile header in SkillChatsLayout) */
@@ -62,7 +61,7 @@ const SKC_CSS = `
 .skc-header-info { flex: 1; min-width: 0; }
 .skc-header-name {
   font-size: 15px; font-weight: 600; color: ${T.text};
-  font-family: Fraunces, serif;
+  font-family: var(--font-heading);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .skc-header-status { font-size: 11px; color: ${T.accent}; margin-top: 1px; }
@@ -83,7 +82,7 @@ const SKC_CSS = `
   padding: 4px 10px; border-radius: 6px; border: 1px solid ${T.accent};
   background: transparent; color: ${T.accent}; font-size: 11.5px;
   font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  font-family: Manrope, sans-serif;
+  font-family: var(--font-body);
 }
 
 /* Outer border */
@@ -178,7 +177,7 @@ const SKC_CSS = `
 .skc-actions button {
   font-size: 11px; padding: 3px 8px; border: 1px solid ${T.border};
   background: ${T.surface}; cursor: pointer; color: ${T.muted};
-  border-radius: 6px; transition: border-color 0.12s; font-family: Manrope, sans-serif;
+  border-radius: 6px; transition: border-color 0.12s; font-family: var(--font-body);
 }
 .skc-actions button:hover { border-color: ${T.accent}; color: ${T.accent}; }
 
@@ -192,7 +191,7 @@ const SKC_CSS = `
 .skc-del-menu button {
   padding: 9px 13px; text-align: left; border: none; background: none;
   cursor: pointer; font-size: 12.5px; color: ${T.text};
-  font-family: Manrope, sans-serif; transition: background 0.12s;
+  font-family: var(--font-body); transition: background 0.12s;
 }
 .skc-del-menu button:hover { background: ${T.bg}; }
 .skc-del-menu button.danger { color: ${T.danger}; }
@@ -260,7 +259,7 @@ const SKC_CSS = `
   padding: 11px 14px; text-align: left; border: none; background: none;
   cursor: pointer; font-size: 13.5px; color: ${T.text};
   display: flex; align-items: center; gap: 9px;
-  font-family: Manrope, sans-serif; transition: background 0.12s;
+  font-family: var(--font-body); transition: background 0.12s;
 }
 .skc-attach-menu-desktop button:hover { background: ${T.bg}; }
 
@@ -279,7 +278,7 @@ const SKC_CSS = `
   display: flex; align-items: center; gap: 14px;
   width: 100%; padding: 14px 20px; border: none; background: none;
   cursor: pointer; font-size: 15px; color: ${T.text};
-  font-family: Manrope, sans-serif; transition: background 0.12s;
+  font-family: var(--font-body); transition: background 0.12s;
 }
 .skc-bottom-sheet button:hover, .skc-bottom-sheet button:active { background: ${T.bg}; }
 .skc-bottom-sheet-icon { font-size: 22px; width: 28px; text-align: center; }
@@ -287,7 +286,7 @@ const SKC_CSS = `
 /* Text input */
 .skc-text-input {
   flex: 1; min-width: 0; padding: 9px 14px; border-radius: 22px; border: 1px solid ${T.border};
-  outline: none; font-size: 14px; font-family: Manrope, sans-serif;
+  outline: none; font-size: 14px; font-family: var(--font-body);
   background: ${T.bg}; color: ${T.text}; transition: border-color 0.18s; line-height: 1.4;
 }
 .skc-text-input:focus { border-color: ${T.accent}; background: ${T.surface}; }
@@ -653,9 +652,7 @@ export default function SkillBookingChatWindow({
                           <span
                             className="skc-status"
                             style={{ color: chatIsRead ? '#53bdeb' : 'rgba(255,255,255,0.7)' }}
-                          >
-                            ✓✓
-                          </span>
+                          ></span>
                         )}
                       </div>
                     )}
