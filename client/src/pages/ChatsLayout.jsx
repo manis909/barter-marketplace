@@ -39,13 +39,13 @@ const LAYOUT_CSS = `
 .chatslayout-sidebar-scroll::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
 
 .chatslayout-row {
-  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
-  cursor: pointer; border-bottom: 1px solid ${T.border};
-  transition: background 0.15s, transform 0.15s, border-color 0.15s;
-  background: transparent; border-left: 3px solid transparent; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; margin: 6px 8px; padding: 12px;
+  cursor: pointer; border: 1px solid #e5e7eb;
+  border-radius: 14px; transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  background: #ffffff; box-shadow: 0 1px 2px rgba(15, 61, 46, 0.04); box-sizing: border-box;
 }
-.chatslayout-row:hover { background: ${T.bg}; border-left-color: ${T.accent}; transform: translateY(-1px); }
-.chatslayout-row.active { background: #EBF2F0; border-left-color: ${T.accent}; }
+.chatslayout-row:hover { background: rgba(249, 250, 251, 0.8); }
+.chatslayout-row.active { background: #f0fdf4; border-color: #bbf7d0; box-shadow: 0 1px 3px rgba(15, 61, 46, 0.08); }
 .chatslayout-del-opt:hover { background: ${T.bg}; }
 
 /* ── Mobile (< 768px): one panel at a time, full-width ── */
@@ -187,17 +187,17 @@ const LAYOUT_CSS = `
 /* ─── Helper components ──────────────────────────────────────────────────── */
 function initialOf(n) { return (n || '?').trim().charAt(0).toUpperCase(); }
 
-function Avatar({ name, imageUrl, size = 38 }) {
+function Avatar({ name, imageUrl, size = 38, fallbackBackground = T.accent, fallbackWeight = 700, roundedSquare = false }) {
   const [err, setErr] = useState(false);
   useEffect(() => { setErr(false); }, [imageUrl]);
   const src = imageUrl && !err
     ? (imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`) : null;
   return (
     <span style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex',
+      width: size, height: size, borderRadius: roundedSquare ? 14 : '50%', flexShrink: 0, display: 'flex',
       alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      background: src ? 'transparent' : T.accent, color: '#fff',
-      fontWeight: 700, fontSize: size * 0.39, border: `1px solid ${T.border}`,
+      background: src ? 'transparent' : fallbackBackground, color: '#fff',
+      fontWeight: fallbackWeight, fontSize: size * 0.39, border: `1px solid ${T.border}`,
     }}>
       {src
         ? <img src={src} alt={name} onError={() => setErr(true)}
@@ -583,7 +583,7 @@ export default function ChatsLayout() {
                       role="button" tabIndex={0}
                       onKeyDown={e => e.key === 'Enter' && handleSelectChat_log(trade.id)}
                     >
-                      <Avatar name={name} imageUrl={imgField} size={38} />
+                      <Avatar name={name} imageUrl={imgField} size={56} fallbackBackground="#1b4d3e" fallbackWeight={600} roundedSquare />
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={s.rowName}>{name || 'Unknown user'}</span>
                         <span style={s.rowSub}>{trade.requested_item_title}</span>
@@ -957,16 +957,17 @@ const s = {
   sidebarMuted: { padding: 16, color: T.muted, fontSize: 13, margin: 0 },
   emptyList: { padding: '40px 16px', textAlign: 'center' },
   rowName: {
-    display: 'block', fontWeight: 600, fontSize: 13.5, color: T.text,
+    display: 'block', fontWeight: 700, fontSize: 14, color: '#111827',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   rowSub: {
-    display: 'block', fontSize: 11.5, color: T.muted, overflow: 'hidden',
+    display: 'block', fontSize: 12, color: T.muted, overflow: 'hidden',
     textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
   },
   rowCompletedBadge: {
-    display: 'inline-block', marginTop: 3, fontSize: 10.5,
-    color: T.accent, fontWeight: 600, letterSpacing: 0.2,
+    display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4,
+    padding: '3px 8px', borderRadius: 999, background: '#dcfce7',
+    color: '#166534', fontSize: 11, fontWeight: 600, lineHeight: 1.2,
   },
   trashBtn: {
     border: 'none', background: 'transparent', color: T.muted, cursor: 'pointer',
