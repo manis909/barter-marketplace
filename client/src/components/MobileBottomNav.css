@@ -2,6 +2,13 @@
    MobileBottomNav.css - iPhone-Style Translucent Glass Navigation
    ============================================================ */
 
+/* Hide mobile bottom navigation bar on ALL Chat pages (Barter, Rental, Skilter) */
+body:has(.chatslayout-root) .mobile-bottom-nav,
+body:has(.rentalchatslayout-root) .mobile-bottom-nav,
+body:has(.skillchatslayout-root) .mobile-bottom-nav {
+  display: none !important;
+}
+
 .mobile-bottom-nav {
   position: fixed;
   bottom: max(18px, env(safe-area-inset-bottom, 18px));

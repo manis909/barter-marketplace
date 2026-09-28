@@ -141,6 +141,16 @@ export default function Navbar() {
   // Show the mobile category row on Barter, Skilter, and Renter explore pages
   const showCategoryRow = isExploreActive || isSkilterActive || isRenterActive
 
+  // Check if current page is any Chat page (Barter, Rental, or Skilter)
+  const isChatPage = useMemo(() => {
+    const p = location.pathname.toLowerCase()
+    return (
+      /^\/chats?(\/|$)/.test(p) ||
+      /^\/(rental|renter|rentals)\/chat(\/|$)/.test(p) ||
+      /^\/(skilter|skills)\/chat(\/|$)/.test(p)
+    )
+  }, [location.pathname])
+
   // ── Platform detection ───────────────────────────────────────────────────
   // Paths that are explicitly owned by a platform:
   const SKILTER_PREFIXES = ['/skilter', '/skills']
@@ -584,8 +594,8 @@ export default function Navbar() {
         <RentalDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       )}
 
-      {/* Floating Bottom Navigation Bar on Mobile (Instagram-style pill) */}
-      {!drawerOpen && (
+      {/* Floating Bottom Navigation Bar on Mobile (Instagram-style pill) - hidden on all Chat pages */}
+      {!drawerOpen && !isChatPage && (
         <MobileBottomNav
           currentPlatform={currentPlatform}
           onSelectPlatform={handlePlatformSelect}

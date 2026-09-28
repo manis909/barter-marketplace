@@ -44,9 +44,9 @@ const LAYOUT_CSS = `
 @media (max-width: 767px) {
   .skillchatslayout-root {
     border-radius: 0 !important; border: none !important;
-    height: calc(100vh - 80px) !important;
-    height: calc(100dvh - 80px) !important;
-    height: calc(var(--vv-height, 100dvh) - 80px) !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: var(--vv-height, 100dvh) !important;
     max-width: 100% !important; width: 100% !important;
     margin: 0 !important; overflow: hidden !important;
     overscroll-behavior: contain !important;
