@@ -6,13 +6,9 @@ import ProfileDrawer from './ProfileDrawer'
 import SkilterDrawer from './SkilterDrawer'
 import RentalDrawer from './RentalDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
-<<<<<<< HEAD
 import UserAvatar from './UserAvatar'
-import { Home, ChevronDown } from 'lucide-react'
-=======
 import MobileBottomNav from './MobileBottomNav'
-import { User, Home, ChevronDown } from 'lucide-react'
->>>>>>> bb02118067a83249dd7d5cbebf81b75f07296f98
+import { Home, ChevronDown } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import { SKILTER_CATEGORY_META, normalizeSkilterCategory } from '../data/skilterCategories'

@@ -303,8 +303,6 @@
   text-decoration: underline;
 }
 
-<<<<<<< HEAD
-=======
 .skill-detail-page .detail-verified-badge {
   display: inline-flex;
   align-items: center;
@@ -318,7 +316,6 @@
   font-weight: 700;
 }
 
->>>>>>> bb02118067a83249dd7d5cbebf81b75f07296f98
 .skill-detail-page .detail-teacher-rating {
   margin-top: 4px;
   color: #567367;
