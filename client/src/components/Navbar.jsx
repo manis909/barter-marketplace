@@ -6,13 +6,9 @@ import ProfileDrawer from './ProfileDrawer'
 import SkilterDrawer from './SkilterDrawer'
 import RentalDrawer from './RentalDrawer'
 import NotificationBell from '../features/notifications/NotificationBell'
-<<<<<<< HEAD
 import UserAvatar from './UserAvatar'
-import { Home, ChevronDown } from 'lucide-react'
-=======
 import MobileBottomNav from './MobileBottomNav'
-import { User, Home, ChevronDown } from 'lucide-react'
->>>>>>> bb02118067a83249dd7d5cbebf81b75f07296f98
+import { Home, ChevronDown, ArrowLeftRight, Shapes, KeyRound } from 'lucide-react'
 import { useAuth } from '../features/auth/AuthContext'
 import { CATEGORY_META, normalizeCategory } from '../data/categories'
 import { SKILTER_CATEGORY_META, normalizeSkilterCategory } from '../data/skilterCategories'
@@ -24,9 +20,9 @@ const CATEGORIES = CATEGORY_META
 const SKILTER_CATEGORIES = SKILTER_CATEGORY_META
 
 const platformTabs = [
-  { key: 'Barter', label: 'Barter', path: '/explore' },
-  { key: 'Skilter', label: 'Skilter', path: '/skilter' },
-  { key: 'Renter', label: 'Renter', path: '/renter' },
+  { key: 'Barter', label: 'Barter', path: '/explore', Icon: ArrowLeftRight },
+  { key: 'Skilter', label: 'Skilter', path: '/skilter', Icon: Shapes },
+  { key: 'Renter', label: 'Renter', path: '/renter', Icon: KeyRound },
 ]
 
 export default function Navbar() {
@@ -304,12 +300,12 @@ export default function Navbar() {
                 className="desktop-brand-link"
                 aria-label="TRISTAL Home"
               >
-                <span className="desktop-brand-mark">⇄</span>
                 <span className="desktop-brand-name">TRISTAL</span>
               </Link>
               <div className="navbar-platform-tabs" aria-label="Platform switcher">
                 {platformTabs.map((tab) => {
                   const isActive = currentPlatform === tab.key
+                  const Icon = tab.Icon
 
                   return (
                     <button
@@ -319,16 +315,14 @@ export default function Navbar() {
                       onClick={() => handlePlatformSelect(tab.key)}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      {isActive && (
-                        <motion.span
-                          className="platform-tab-mark"
-                          aria-hidden="true"
-                          whileHover={{ rotate: 180, scale: 1.08 }}
-                          transition={{ duration: 0.4, ease: 'easeInOut' }}
-                        >
-                          ⇄
-                        </motion.span>
-                      )}
+                      <motion.span
+                        className="platform-tab-mark"
+                        aria-hidden="true"
+                        whileHover={{ rotate: 12, scale: 1.15, y: -2 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      >
+                        <Icon size={15} />
+                      </motion.span>
                       <span className="platform-tab-label">{tab.label}</span>
                     </button>
                   )
@@ -488,7 +482,6 @@ export default function Navbar() {
                 className="mobile-brand-link"
                 aria-label="TRISTAL Home"
               >
-                <span className="mobile-brand-mark">⇄</span>
                 <span className="mobile-brand-name">TRISTAL</span>
               </Link>
 
