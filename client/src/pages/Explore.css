@@ -110,6 +110,14 @@
     width: 100%;
     justify-content: center;
   }
+
+  .explore-category-filter {
+    display: none;
+  }
+
+  .explore-page .category-filter {
+    display: none !important;
+  }
 }
 
 /* ── Full-screen Swipe Discovery Modal Overlay ────────────────────────────── */
