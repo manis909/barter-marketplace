@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../features/auth/AuthContext'
-import { uploadImageToSupabase } from '../services/supabase'
+import { uploadImageToSupabase, uploadSkillVideoToSupabase } from '../services/supabase'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import ImageCropModal from '../components/ImageCropModal'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
@@ -50,7 +50,8 @@ const EMPTY_FORM = {
   session_type: 'One-on-One',
   max_participants: '',
   images: [],
-  existingImageUrls: []
+  existingImageUrls: [],
+  demo_video_urls: []
 }
 
 export default function MySkillsPage() {
@@ -59,6 +60,8 @@ export default function MySkillsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [imagePreviews, setImagePreviews] = useState([])
+  const [demoVideoFiles, setDemoVideoFiles] = useState([])
+  const [demoVideoPreviewUrls, setDemoVideoPreviewUrls] = useState([])
   const [skills, setSkills] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -171,6 +174,37 @@ export default function MySkillsPage() {
     event.target.value = ''
   }
 
+  const handleDemoVideoChange = (event) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = ''
+    if (!selectedFile) return
+
+    const isVideo = selectedFile.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(selectedFile.name)
+    if (!isVideo) {
+      setMessage('Please select an MP4, WebM, or MOV video for the Skill Reel.')
+      return
+    }
+
+    demoVideoPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
+    setForm((previous) => ({ ...previous, demo_video_urls: [] }))
+    setDemoVideoFiles([selectedFile])
+    setDemoVideoPreviewUrls([URL.createObjectURL(selectedFile)])
+  }
+
+  const removeDemoVideo = (index, isExisting = false) => {
+    if (isExisting) {
+      setForm((previous) => ({
+        ...previous,
+        demo_video_urls: previous.demo_video_urls.filter((_, itemIndex) => itemIndex !== index)
+      }))
+      return
+    }
+
+    URL.revokeObjectURL(demoVideoPreviewUrls[index])
+    setDemoVideoFiles((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
+    setDemoVideoPreviewUrls((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const removeNewImage = (index) => {
     URL.revokeObjectURL(imagePreviews[index])
     const newImages = form.images.filter((_, i) => i !== index)
@@ -229,8 +263,11 @@ export default function MySkillsPage() {
   }
 
   const resetForm = () => {
+    demoVideoPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
     setForm(EMPTY_FORM)
     setImagePreviews([])
+    setDemoVideoFiles([])
+    setDemoVideoPreviewUrls([])
     setMessage('')
     setIsEditing(false)
     setEditingSkillId(null)
@@ -265,9 +302,14 @@ export default function MySkillsPage() {
       session_type: skill.session_type || 'One-on-One',
       max_participants: skill.max_participants || '',
       images: [],
-      existingImageUrls: Array.isArray(skill.image_urls) ? skill.image_urls : []
+      existingImageUrls: Array.isArray(skill.image_urls) ? skill.image_urls : [],
+      demo_video_urls: Array.isArray(skill.demo_video_urls)
+        ? skill.demo_video_urls
+        : (skill.demo_video_url ? [skill.demo_video_url] : [])
     })
     setImagePreviews([])
+    setDemoVideoFiles([])
+    setDemoVideoPreviewUrls([])
     setMessage('')
     setIsFormOpen(true)
     scrollToForm()
@@ -282,10 +324,24 @@ export default function MySkillsPage() {
   // ── submit (create or update) ──────────────────────────────────
   const handleSubmit = async (event) => {
     event.preventDefault()
+
     setIsSubmitting(true)
     setMessage('')
 
     try {
+      let newDemoVideoUrls = []
+      if (demoVideoFiles.length > 0) {
+        try {
+          newDemoVideoUrls = await Promise.all(
+            demoVideoFiles.map((file) => uploadSkillVideoToSupabase(file))
+          )
+        } catch (uploadError) {
+          console.error('Skill Reel upload failed:', uploadError)
+          setMessage('The Skill Reel could not be uploaded. Your skill was not saved. Please try again.')
+          return
+        }
+      }
+
       // Upload any newly selected images
       const newlyUploadedUrls = form.images.length > 0
         ? await Promise.all(
@@ -298,6 +354,7 @@ export default function MySkillsPage() {
         : []
 
       const finalImageUrls = [...form.existingImageUrls, ...newlyUploadedUrls]
+      const demoVideoUrls = [...form.demo_video_urls, ...newDemoVideoUrls]
 
       const payload = {
         skill_name: form.skill_name,
@@ -309,6 +366,7 @@ export default function MySkillsPage() {
         session_type: form.session_type,
         max_participants: form.session_type === 'Group' ? form.max_participants : null,
         image_urls: finalImageUrls,
+        demo_video_urls: demoVideoUrls,
       }
 
       console.log('🔍 FRONTEND DEBUG - Form state:', {
@@ -679,6 +737,39 @@ export default function MySkillsPage() {
                   ))}
                 </div>
               )}
+
+            </div>
+
+            <div className="form-field form-field--full skill-reel-field">
+              <label htmlFor="skill-demo-video">Skill Reel (Optional)</label>
+              <small>One short MP4, WebM, or MOV video. Selecting a new video replaces the current reel.</small>
+              <input
+                id="skill-demo-video"
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                onChange={handleDemoVideoChange}
+              />
+              {demoVideoFiles[0] && (
+                <p className="skill-reel-filename">{demoVideoFiles[0].name}</p>
+              )}
+              <div className="skill-reel-preview-list">
+                {form.demo_video_urls.map((url, index) => (
+                  <div className="skill-reel-preview" key={url}>
+                    <video src={url} controls preload="metadata" />
+                    <button type="button" onClick={() => removeDemoVideo(index, true)} aria-label="Remove existing Skill Reel">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {demoVideoPreviewUrls.map((url, index) => (
+                  <div className="skill-reel-preview" key={url}>
+                    <video src={url} controls preload="metadata" />
+                    <button type="button" onClick={() => removeDemoVideo(index)} aria-label="Remove selected Skill Reel">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="form-field">
