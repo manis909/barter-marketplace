@@ -4,6 +4,7 @@ import { useAuth } from '../features/auth/AuthContext';
 import { getMyTeachingBookings, updateSkillBookingStatus } from '../services/skillBookingService';
 import Footer from '../components/Footer';
 import RatingForm from '../features/ratings/RatingForm';
+import api from '../services/api';
 
 const BARTER_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
@@ -259,6 +260,78 @@ const BARTER_CSS = `
   cursor: pointer;
 }
 .btn-complete:hover { opacity: 0.9; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* 1. Header */
+  .page-top-bar { display: none; }
+
+  .title-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none; border-right: none; border-top: none;
+    padding: 10px 14px !important;
+    min-height: 56px;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 1px 4px rgba(15,61,46,0.07);
+  }
+  .title-card h1 { font-size: 20px !important; margin: 0 0 2px !important; }
+  .title-card p  { font-size: 12px !important; margin: 0 !important; }
+
+  /* 2. Section label */
+  .section-label { margin: 10px 12px 8px !important; font-size: 11px; }
+
+  /* 3. Listing card: tighter */
+  .listing-card {
+    margin: 0 10px 14px !important;
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .listing-header {
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+
+  /* Skill thumb in listing header */
+  .listing-header img[style*="width: 56px"],
+  .listing-header img[style*="width:56px"] {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .listing-title { font-size: 17px !important; }
+  .listing-meta  { font-size: 11px; gap: 8px; }
+  .spots-badge   { font-size: 11px; padding: 4px 9px; }
+
+  /* 4. Learner rows: keep stacked (already column on mobile), tighter */
+  .learner-row {
+    padding: 12px;
+    border-radius: 12px;
+    gap: 10px;
+  }
+  .learner-requests { gap: 10px; }
+
+  .avatar { width: 34px; height: 34px; font-size: 13px; }
+
+  /* Learner name + date */
+  .learner-info > div > div:first-child { font-size: 13px; }
+  .learner-info > div > div:nth-child(2) { font-size: 11px; }
+
+  /* 5. Action buttons */
+  .actions-row { gap: 6px; flex-wrap: wrap; }
+  .btn-accept,
+  .btn-decline,
+  .btn-complete {
+    padding: 7px 12px;
+    font-size: 12px;
+    border-radius: 9px;
+  }
+}
 `;
 
 export default function MyTeaching() {
@@ -270,6 +343,8 @@ export default function MyTeaching() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState({});
+  const [subscription, setSubscription] = useState(null);
+  const [subLoading, setSubLoading] = useState(false);
 
   const fetchTeaching = useCallback(async () => {
     setLoading(true);
@@ -282,6 +357,14 @@ export default function MyTeaching() {
       setError(err.response?.data?.error || 'Failed to load teaching bookings.');
     } finally {
       setLoading(false);
+    }
+
+    // Load subscription status in parallel (non-blocking)
+    try {
+      const subRes = await api.get('/tutor-subscription/mine');
+      setSubscription(subRes.data);
+    } catch {
+      // Not critical — subscription banner is optional
     }
   }, []);
 
@@ -327,6 +410,58 @@ export default function MyTeaching() {
             Manage requests and capacity for the skills you teach.
           </p>
         </div>
+
+        {/* ── Subscription status banner ── */}
+        {subscription && (
+          <div style={{
+            margin: '14px 16px 0',
+            padding: '12px 16px',
+            borderRadius: 12,
+            background: subscription.is_active ? '#f0fdf4' : '#fefce8',
+            border: `1px solid ${subscription.is_active ? '#bbf7d0' : '#fde68a'}`,
+            fontSize: 13,
+          }}>
+            {subscription.is_active ? (
+              <span style={{ color: '#15803d', fontWeight: 600 }}>
+                ✅ Unlimited plan active — 5% platform fee.{' '}
+                Expires {new Date(subscription.subscription?.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
+              </span>
+            ) : subscription.subscription?.payment_status === 'pending_verification' ? (
+              <span style={{ color: '#92400e', fontWeight: 600 }}>
+                ⏳ Plan payment submitted — awaiting admin verification.
+              </span>
+            ) : (
+              <span style={{ color: '#92400e', fontWeight: 600 }}>
+                You're on the standard plan (15% / 10% fee).{' '}
+                <button
+                  type="button"
+                  style={{
+                    background: 'none', border: '1px solid #d97706', borderRadius: 6,
+                    padding: '2px 10px', fontSize: 12, fontWeight: 700,
+                    color: '#92400e', cursor: 'pointer', marginLeft: 6,
+                  }}
+                  onClick={async () => {
+                    if (subLoading) return;
+                    setSubLoading(true);
+                    try {
+                      await api.post('/tutor-subscription');
+                      const res = await api.get('/tutor-subscription/mine');
+                      setSubscription(res.data);
+                      alert('Subscription created! Upload your payment screenshot to activate the plan.');
+                    } catch (e) {
+                      alert(e.response?.data?.error || 'Could not create subscription.');
+                    } finally {
+                      setSubLoading(false);
+                    }
+                  }}
+                  disabled={subLoading}
+                >
+                  {subLoading ? '…' : 'Get Unlimited (₹149/month)'}
+                </button>
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="section-label">Your Listings & Requests</div>
 
@@ -397,6 +532,26 @@ export default function MyTeaching() {
                               {b.scheduled_time && (
                                 <div style={{ fontSize: 12, color: 'var(--light-green)', fontWeight: 500, marginTop: 2 }}>
                                   📅 Scheduled: {new Date(b.scheduled_time).toLocaleString()}
+                                </div>
+                              )}
+                              {/* Fee/payout chip — tutor-only, shown when snapshotted */}
+                              {b.tutor_payout_amount != null && (
+                                <div style={{
+                                  fontSize: 11, marginTop: 4, display: 'inline-flex',
+                                  gap: 6, flexWrap: 'wrap',
+                                }}>
+                                  <span style={{
+                                    background: 'rgba(21,128,61,0.10)', color: '#15803d',
+                                    padding: '2px 7px', borderRadius: 6, fontWeight: 600,
+                                  }}>
+                                    → ₹{Number(b.tutor_payout_amount).toLocaleString('en-IN')} your payout
+                                  </span>
+                                  <span style={{
+                                    background: 'rgba(180,83,9,0.08)', color: '#b45309',
+                                    padding: '2px 7px', borderRadius: 6,
+                                  }}>
+                                    − ₹{Number(b.fee_amount).toLocaleString('en-IN')} fee
+                                  </span>
                                 </div>
                               )}
                             </div>

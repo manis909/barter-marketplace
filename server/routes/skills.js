@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../models/db');
 const requireAuth = require('../middleware/auth');
 const requireVerified = require('../middleware/verified');
+const { getTutorFeeRate } = require('../config/pricing');
 
 // Exact Skilter categories as specified
 const SKILL_CATEGORIES = [
@@ -139,6 +140,21 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
       max_participants,
       'typeof max_participants': typeof max_participants
     });
+
+    // ── Listing cap enforcement ────────────────────────────────────────────
+    // Without an active unlimited plan, a tutor may have at most 4 approved listings.
+    try {
+      const { approvedCount, hasActivePlan } = await getTutorFeeRate(db, req.userId);
+      if (!hasActivePlan && approvedCount >= 4) {
+        return res.status(403).json({
+          error: 'You have reached the 4-listing limit. Upgrade to the Unlimited plan (₹149/month) to add more listings.',
+          code: 'LISTING_LIMIT_REACHED',
+        });
+      }
+    } catch (capErr) {
+      if (capErr.code !== 'NO_APPROVED_APPLICATIONS') throw capErr;
+      // 0 approved apps is fine here — fee gate is enforced at booking creation
+    }
 
     // Validation
     if (!skill_name || !skill_name.trim()) {

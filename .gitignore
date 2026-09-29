@@ -24,3 +24,6 @@ build/
 .DS_Store
 Thumbs.db
 server/uploads/
+
+# Local test credentials — never commit
+server/scripts/.test-tokens

@@ -27,6 +27,7 @@ import { getDaysUntilDate } from '../utils/helpers'
 import RentalTimeline from '../components/RentalTimeline'
 import PaymentUploadPanelRental from '../components/PaymentUploadPanelRental'
 import RatingForm from '../features/ratings/RatingForm'
+import ReportModal from '../components/ReportModal'
 // Card, CardContent, Badge, Button imported for future use / RentalBookingDetail parity
 import { Separator } from '../components/ui/separator.jsx'
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar.jsx'
@@ -837,6 +838,228 @@ const PAGE_CSS = `
 @media (max-width: 399px) {
   .mr-chips-row { display: none; }
 }
+
+/* Hidden on desktop, shown only inside the mobile block */
+.mr-mobile-back { display: none; }
+.mr-stats-inline { display: none; }
+.mr-requests-link-label { display: inline; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px
+   Desktop layout is unchanged — every rule here is inside
+   this media query.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* ── 1. COMPACT HEADER ──────────────────────────────────── */
+
+  /* Hide the separate top-bar back button row — we fold it into
+     the title card on mobile */
+  .mr-top-bar {
+    padding: 0;
+    display: none;
+  }
+
+  /* Title card becomes a single slim bar ~60px tall */
+  .mr-title-card {
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    padding: 0 12px;
+    min-height: 60px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: nowrap;
+    box-shadow: 0 1px 4px rgba(15,61,46,0.07);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--mr-paper);
+  }
+
+  /* Left group: back arrow + title + inline stats */
+  .mr-title-card > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* Back arrow — injected via ::before on the title card's
+     first child; we add it as a real element in the JSX via
+     the mr-mobile-back class */
+  .mr-mobile-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: rgba(15,61,46,0.06);
+    color: var(--mr-dark);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .mr-mobile-back:hover { background: rgba(15,61,46,0.12); }
+
+  /* Title text */
+  .mr-title-card h1 {
+    font-size: 20px;
+    margin: 0;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Hide the KeyRound icon on mobile to save space */
+  .mr-title-card h1 svg { display: none; }
+
+  /* Stats become inline text next to title */
+  .mr-stats {
+    display: none; /* hidden — shown as inline text via .mr-stats-inline */
+  }
+  .mr-stats-inline {
+    display: inline;
+    font-size: 11px;
+    color: var(--mr-muted);
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 2px;
+  }
+
+  /* Requests link → compact pill on the right */
+  .mr-requests-link {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 20px;
+    gap: 4px;
+    align-self: center;
+    flex-shrink: 0;
+    box-shadow: none;
+  }
+  /* Hide the label text, keep badge + icon */
+  .mr-requests-link-label { display: none; }
+  .mr-requests-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+
+  /* ── 2. TABS ──────────────────────────────────────────────── */
+  .mr-seg-wrap {
+    margin: 8px 12px 0;
+  }
+  .mr-seg-btn {
+    padding: 8px 0;
+    font-size: 13px;
+    min-height: 38px;
+  }
+
+  /* ── 3. FILTER PILLS ─────────────────────────────────────── */
+  .mr-filters {
+    padding: 8px 12px 4px;
+    gap: 6px;
+  }
+  .mr-filter-pill {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  /* ── 4. SECTION TITLE ────────────────────────────────────── */
+  .mr-section-title {
+    margin: 10px 12px 8px;
+  }
+
+  /* ── 5. CARDS LIST ───────────────────────────────────────── */
+  .mr-cards {
+    padding: 0 10px 72px;
+    gap: 10px;
+  }
+
+  /* ── 6. CARD IMAGE ───────────────────────────────────────── */
+  /* Portrait banner → shorter cover strip */
+  .mr-card-img-wrap {
+    width: 100%;
+    height: 120px; /* was ~200px */
+  }
+
+  /* ── 7. CARD CONTENT ─────────────────────────────────────── */
+  .mr-card-content {
+    padding: 12px 14px 12px;
+  }
+  .mr-card-top-row {
+    margin-bottom: 8px;
+  }
+  .mr-card-title {
+    font-size: 14px;
+  }
+
+  /* ── 8. META ROWS ────────────────────────────────────────── */
+  .mr-meta-rows {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .mr-meta-row {
+    font-size: 11.5px;
+  }
+
+  /* ── 9. PRICE CHIPS ──────────────────────────────────────── */
+  .mr-chips-row {
+    display: flex; /* re-show (was hidden at 399px) */
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .mr-chip {
+    font-size: 10.5px;
+    padding: 4px 8px;
+  }
+
+  /* ── 10. TIMELINE ────────────────────────────────────────── */
+  .mr-timeline {
+    padding: 10px 10px;
+    margin: 2px 0 10px;
+    border-radius: 10px;
+  }
+  .mr-tl-circle {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  .mr-tl-connector {
+    margin-top: 11px;
+    margin-bottom: 12px;
+  }
+  /* Fix "Accepte / d" mid-word wrap */
+  .mr-tl-step-label {
+    font-size: 9px;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── 11. ACTION ROW ──────────────────────────────────────── */
+  .mr-action-row {
+    padding-top: 10px;
+    gap: 6px;
+  }
+  .mr-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+    min-height: 40px; /* keep tappable */
+    border-radius: 10px;
+  }
+
+  /* ── 12. OVERDUE BAR ─────────────────────────────────────── */
+  .mr-overdue-bar {
+    font-size: 11px;
+    padding: 6px 14px;
+  }
+}
 `
 
 // ─────────────────────────────────────────────────────────────
@@ -1056,6 +1279,8 @@ function RentalCard({
   confirmingId, navigate,
   onPaymentSuccess,
   onConfirmDialog,
+  onOpenReportModal,
+  onOpenExtensionModal,
 }) {
   const urgency = getRentalUrgency(rental)
   const overdue = Boolean(rental.is_overdue || urgency?.isOverdue)
@@ -1194,6 +1419,12 @@ function RentalCard({
             <span className="mr-chip">
               🔒 ₹{Number(rental.deposit_amount || 0).toLocaleString('en-IN')} deposit
             </span>
+            {/* Owner-only payout chip — shown in "My Items Out" tab */}
+            {!iAmRenter && rental.owner_payout_amount != null && (
+              <span className="mr-chip" style={{ background: 'rgba(21,128,61,0.10)', color: '#15803d' }}>
+                → ₹{Number(rental.owner_payout_amount).toLocaleString('en-IN')} your payout
+              </span>
+            )}
           </div>
 
           {/* Payment guide (only when payment needed) */}
@@ -1274,30 +1505,73 @@ function RentalCard({
               </span>
             )}
 
+            {/* Pickup already done — show when status advanced past 'accepted' */}
+            {['active', 'return_pending', 'completed'].includes(rental.status) && (
+              <span className="mr-confirmed-text">
+                <CheckCircle2 size={14} /> Picked up
+              </span>
+            )}
+
             {/* Return button */}
             {['active', 'return_pending'].includes(rental.status) && (
               canConfirmReturn ? (
-                <button
-                  type="button"
-                  className="mr-btn mr-btn-primary"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onConfirmDialog({
-                      type: 'return',
-                      id: rental.id,
-                      title: 'Confirm Return',
-                      description: `Confirm that the item "${rental.item_name}" has been ${iAmRenter ? 'returned to the owner' : 'received back from the renter'}?`,
-                    })
-                  }}
-                  disabled={confirmingId === rental.id}
-                >
-                  <PackageCheck size={14} />
-                  {confirmingId === rental.id ? 'Confirming…' : 'Confirm Return'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {urgency?.isOverdue && (
+                    <span className="mr-urgency" style={urgency.style}>
+                      ⚠ {urgency.label}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="mr-btn mr-btn-primary"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onConfirmDialog({
+                        type: 'return',
+                        id: rental.id,
+                        title: 'Confirm Return',
+                        description: `Confirm that the item "${rental.item_name}" has been ${iAmRenter ? 'returned to the owner' : 'received back from the renter'}?`,
+                      })
+                    }}
+                    disabled={confirmingId === rental.id}
+                  >
+                    <PackageCheck size={14} />
+                    {confirmingId === rental.id ? 'Confirming…' : 'Confirm Return'}
+                  </button>
+                </div>
               ) : isAwaitingReturnDate ? (
                 <span className="mr-confirmed-text" style={{ color: '#b45309', background: '#fef3c7', padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
-                  <Clock size={13} /> {daysUntilEnd} {daysUntilEnd === 1 ? 'day' : 'days'} left until return
+                  <Clock size={13} /> {daysUntilEnd > 0 ? daysUntilEnd : Math.abs(daysUntilEnd)} {Math.abs(daysUntilEnd) === 1 ? 'day' : 'days'} {daysUntilEnd > 0 ? 'left until return' : 'overdue'}
                 </span>
+              ) : myReturn ? (
+                /* Owner/renter already confirmed — waiting for other side */
+                <span className="mr-confirmed-text">
+                  <CheckCircle2 size={14} /> Return confirmed — waiting for {iAmRenter ? 'owner' : 'renter'}
+                </span>
+              ) : urgency?.isOverdue ? (
+                /* Date passed but neither confirmed — still show the overdue chip */
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="mr-urgency" style={urgency.style}>
+                    ⚠ {urgency.label}
+                  </span>
+                  <button
+                    type="button"
+                    className="mr-btn mr-btn-primary"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onConfirmDialog({
+                        type: 'return',
+                        id: rental.id,
+                        title: 'Confirm Return',
+                        description: `Confirm that the item "${rental.item_name}" has been ${iAmRenter ? 'returned to the owner' : 'received back from the renter'}?`,
+                      })
+                    }}
+                    disabled={confirmingId === rental.id}
+                  >
+                    <PackageCheck size={14} />
+                    {confirmingId === rental.id ? 'Confirming…' : 'Confirm Return'}
+                  </button>
+                </div>
               ) : (
                 <span className="mr-confirmed-text">
                   <CheckCircle2 size={14} /> Return confirmed
@@ -1320,6 +1594,39 @@ function RentalCard({
                 onClick={(e) => { e.stopPropagation(); navigate(`/rental/chat/${rental.id}`) }}
               >
                 <MessageCircle size={14} /> Chat
+              </button>
+            )}
+
+            {/* Request Extension - available during active/overdue rentals for renter */}
+            {['active', 'return_pending'].includes(rental.status) && iAmRenter && (
+              <button
+                type="button"
+                className="mr-btn mr-btn-ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenExtensionModal?.(rental);
+                }}
+              >
+                📅 Request Extension
+              </button>
+            )}
+
+            {/* Report Issue - available during active/overdue rentals */}
+            {['active', 'return_pending'].includes(rental.status) && (
+              <button
+                type="button"
+                className="mr-btn mr-btn-ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfirmDialog({
+                    type: 'report',
+                    id: rental.id,
+                    title: 'Report an Issue',
+                    description: `Are you sure you want to report an issue with "${rental.item_name}"? This opens a dispute and notifies our admin team. Use this only if the other party is unresponsive or the item was damaged.`,
+                  })
+                }}
+              >
+                ⚠ Report Issue
               </button>
             )}
           </div>
@@ -1405,6 +1712,14 @@ export default function MyRentals() {
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
 
+  // Report modal state
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+  const [reportingBooking, setReportingBooking] = useState(null)
+
+  // Extension modal state
+  const [extensionModalOpen, setExtensionModalOpen] = useState(false)
+  const [extendingBooking, setExtendingBooking] = useState(null)
+
   // ── Load data ──
   const load = useCallback(async () => {
     try {
@@ -1462,6 +1777,14 @@ export default function MyRentals() {
     try {
       if (dialogData.type === 'pickup') {
         await api.post(`/rental-bookings/${dialogData.id}/confirm-pickup`)
+      } else if (dialogData.type === 'return') {
+        await api.post(`/rental-bookings/${dialogData.id}/confirm-return`)
+      } else if (dialogData.type === 'report') {
+        // Route to the report modal after the confirmation dialog
+        setDialogOpen(false)
+        const rental = [...data.renting, ...data.owned].find(r => r.id === dialogData.id)
+        if (rental) handleOpenReportModal(rental)
+        return
       } else {
         await api.post(`/rental-bookings/${dialogData.id}/confirm-return`)
       }
@@ -1472,6 +1795,50 @@ export default function MyRentals() {
     } finally {
       setConfirmingId(null)
     }
+  }
+
+  // Report modal handlers
+  function handleOpenReportModal(booking) {
+    setReportingBooking(booking)
+    setReportModalOpen(true)
+  }
+
+  function handleCloseReportModal() {
+    setReportModalOpen(false)
+    setReportingBooking(null)
+  }
+
+  // Extension modal handlers
+  function handleOpenExtensionModal(booking) {
+    setExtendingBooking(booking)
+    setExtensionModalOpen(true)
+  }
+
+  function handleCloseExtensionModal() {
+    setExtensionModalOpen(false)
+    setExtendingBooking(null)
+  }
+
+  async function handleRequestExtension(extraDays) {
+    if (!extendingBooking) return
+    
+    try {
+      await api.post(`/rental-bookings/${extendingBooking.id}/request-extension`, {
+        extra_days: extraDays
+      })
+      
+      handleCloseExtensionModal()
+      // Show success message or refresh data
+      alert('Extension request submitted successfully')
+      await load()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to request extension')
+    }
+  }
+
+  function handleReportSuccess() {
+    // Optional: Show success message or refresh data
+    handleCloseReportModal()
   }
 
   // ── Derived lists ──
@@ -1509,6 +1876,168 @@ export default function MyRentals() {
         loading={Boolean(confirmingId)}
       />
 
+      {/* Report modal */}
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={handleCloseReportModal}
+        reportedUserId={reportingBooking ? (tab === 'renting' ? reportingBooking.owner_id : reportingBooking.borrower_id) : null}
+        rentalBookingId={reportingBooking?.id}
+        userName={reportingBooking ? (tab === 'renting' ? reportingBooking.owner_name : reportingBooking.borrower_name) : ''}
+        onSuccess={handleReportSuccess}
+      />
+
+      {/* Extension modal */}
+      {extensionModalOpen && extendingBooking && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '16px',
+            boxSizing: 'border-box',
+          }}
+          onClick={handleCloseExtensionModal}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              width: '100%',
+              maxWidth: '460px',
+              maxHeight: '90vh',
+              borderRadius: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0,0,0,0.06)',
+              overflow: 'hidden',
+              fontFamily: 'Manrope, sans-serif',
+              animation: 'fadeInReportModal 0.2s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '18px 20px 14px',
+                borderBottom: '1px solid #E4E2D9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: '17px',
+                    fontWeight: 600,
+                    fontFamily: 'Fraunces, serif',
+                    color: '#24231F',
+                  }}
+                >
+                  Request Extension
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#5F5B52' }}>
+                  Extend rental for "{extendingBooking.item_name}"
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseExtensionModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  color: '#5F5B52',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <div
+              style={{
+                padding: '16px 20px',
+                overflowY: 'auto',
+                flex: 1,
+              }}
+            >
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#5F5B52' }}>
+                  Current end date: <strong>{formatDate(extendingBooking.end_datetime)}</strong>
+                </p>
+                <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#5F5B52' }}>
+                  Select how many extra days you need:
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(5, 1fr)',
+                  gap: '8px',
+                  marginBottom: '20px',
+                }}
+              >
+                {[1, 2, 3, 4, 5, 7, 10, 14, 21, 30].map(days => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => handleRequestExtension(days)}
+                    style={{
+                      padding: '10px 8px',
+                      border: '1.5px solid #E4E2D9',
+                      borderRadius: '8px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#24231F',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => e.target.style.borderColor = '#3D6E63'}
+                    onMouseLeave={(e) => e.target.style.borderColor = '#E4E2D9'}
+                  >
+                    {days} day{days !== 1 ? 's' : ''}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ 
+                padding: '12px 14px', 
+                backgroundColor: '#F0FDF4',
+                border: '1px solid #BBF7D0',
+                borderRadius: '10px',
+                fontSize: '13px',
+                color: '#166534'
+              }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Note:</p>
+                <ul style={{ margin: '0', paddingLeft: '16px' }}>
+                  <li>Extension request will be sent to the owner for approval</li>
+                  <li>Additional fee will be calculated based on listing rate</li>
+                  <li>Payment for extension uses the same UTR/screenshot flow</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Top Bar ── */}
       <div className="mr-top-bar">
         <Link to="/renter" className="mr-back">
@@ -1519,10 +2048,20 @@ export default function MyRentals() {
       {/* ── Title card ── */}
       <div className="mr-title-card">
         <div>
-          <h1>
-            <KeyRound size={28} color="var(--mr-dark)" strokeWidth={2} />
-            My Rentals
-          </h1>
+          {/* Mobile-only back arrow inside title card */}
+          <Link to="/renter" className="mr-mobile-back" aria-label="Back to Rentals">
+            <ArrowLeft size={18} />
+          </Link>
+          <div style={{ minWidth: 0 }}>
+            <h1>
+              <KeyRound size={28} color="var(--mr-dark)" strokeWidth={2} />
+              My Rentals
+            </h1>
+            {/* Mobile inline stats */}
+            <span className="mr-stats-inline">
+              {data.renting.length} renting · {data.owned.length} out
+            </span>
+          </div>
           <div className="mr-stats">
             <div className="mr-stat">
               <span className="mr-stat-num">{data.renting.length}</span>
@@ -1537,7 +2076,7 @@ export default function MyRentals() {
         </div>
 
         <Link to="/renter/requests" className="mr-requests-link">
-          Incoming requests
+          <span className="mr-requests-link-label">Incoming requests</span>
           {pendingCount > 0 && (
             <span className="mr-requests-badge">{pendingCount}</span>
           )}
@@ -1635,6 +2174,8 @@ export default function MyRentals() {
                 navigate={navigate}
                 onPaymentSuccess={handlePaymentSuccess}
                 onConfirmDialog={handleConfirmDialog}
+                onOpenReportModal={handleOpenReportModal}
+                onOpenExtensionModal={handleOpenExtensionModal}
               />
             ))}
           </div>

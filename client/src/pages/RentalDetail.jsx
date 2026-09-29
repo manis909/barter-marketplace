@@ -170,7 +170,7 @@ export default function RentalDetailPage() {
             </p>
             <p className="rental-detail-description">{rental.description || 'No description provided.'}</p>
             <div className="rental-detail-rate">
-              INR {Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small>
+              ₹{Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
               {isOwner ? (

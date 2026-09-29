@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { TRADE_STATUS } from '../../utils/constants';
 import { requestMoreItems, getTradeItems, addItemsToTrade, submitProof } from '../../services/tradeService';
 import api from '../../services/api';
-import { fmtDate } from '../../utils/helpers';
+import { fmtDate, fmtINR } from '../../utils/helpers';
 
 const TRADE_ITEMS_ROW_CSS = `
 :root {
@@ -625,6 +625,44 @@ const TRADE_ITEMS_ROW_CSS = `
 .tl-label { padding: 3px 0 10px; }
 .tl-label .tl-title { font-size: 12.5px; font-weight: 600; color: var(--ink); }
 .tl-label .tl-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: 'IBM Plex Mono', monospace; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* Card header */
+  .ticket-head { padding: 10px 12px 8px; }
+  .avatar { width: 28px; height: 28px; font-size: 12px; }
+  .who-text .handle { font-size: 13px; }
+  .who-text .date { font-size: 10px; }
+  .status { font-size: 10px; padding: 4px 8px; }
+
+  /* Card body */
+  .ticket-body { padding: 2px 12px 12px; }
+
+  /* Item rows: tighter */
+  .item-row { gap: 8px; padding: 7px 8px; border-radius: 10px; margin-bottom: 4px; }
+  .item-row img { width: 36px; height: 36px; border-radius: 8px; }
+  .item-row .name { font-size: 12.5px; }
+  .item-row .cond { font-size: 10.5px; }
+  .item-row .side-label { font-size: 9px; }
+
+  /* Multi-item thumbnails */
+  .multi-item-thumb { width: 42px; height: 42px; border-radius: 9px; }
+  .multi-plus-icon { width: 18px; height: 18px; font-size: 11px; }
+  .multi-items-row { gap: 6px; }
+  .item-row.give.multi { padding: 8px 10px; gap: 7px; }
+  .multi-items-meta .name { font-size: 12px; }
+
+  /* Swap badge divider */
+  .divider { margin: 0 0 6px; }
+  .swap-badge { width: 22px; height: 22px; font-size: 11px; }
+
+  /* Footer buttons */
+  .ticket-foot { padding: 2px 12px 14px; gap: 7px; }
+  .btn { padding: 9px 0; font-size: 12.5px; border-radius: 10px; }
+}
 `;
 
 const FALLBACK_IMAGE = 'https://placehold.co/120x100?text=No+Image';
@@ -991,11 +1029,11 @@ export default function TradeCard({ trade, currentUserId, onStatusChange }) {
 
   const offeredMeta = normalizeMeta([
     trade.offered_item_condition?.replace(/_/g, ' '),
-    trade.offered_item_value ? `Est. $${trade.offered_item_value}` : null,
+    trade.offered_item_value ? `Est. ${fmtINR(trade.offered_item_value)}` : null,
   ]);
   const requestedMeta = normalizeMeta([
     trade.requested_item_condition?.replace(/_/g, ' '),
-    trade.requested_item_value ? `Est. $${trade.requested_item_value}` : null,
+    trade.requested_item_value ? `Est. ${fmtINR(trade.requested_item_value)}` : null,
   ]);
 
   const displayDate = trade.created_at ? fmtDate(trade.created_at) : '—';

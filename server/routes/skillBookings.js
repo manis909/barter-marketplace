@@ -8,6 +8,87 @@ const requireAuth  = require("../middleware/auth");
 const requireVerified = require("../middleware/verified");
 const requireAdmin = require("../middleware/admin");
 const { createNotification } = require("./notifications");
+const {
+  getTutorFeeRate,
+  roundRupees,
+  SKILTER_FEE_UNLIMITED,
+  SKILTER_UNLIMITED_PLAN_PRICE_INR,
+} = require("../config/pricing");
+
+// ── Response formatters ───────────────────────────────────────────────────────
+
+/**
+ * Fields every party (learner AND tutor AND admin) can see.
+ * Commission/fee fields are NOT in this base set.
+ */
+function formatBookingBase(b) {
+  return {
+    id: b.id,
+    skill_listing_id: b.skill_listing_id,
+    requester_id: b.requester_id,
+    teacher_id: b.teacher_id,
+    scheduled_time: b.scheduled_time,
+    status: b.status,
+    payment_status: b.payment_status,
+    payment_submitted_at: b.payment_submitted_at || null,
+    payment_rejection_reason: b.payment_rejection_reason || null,
+    payout_status: b.payout_status || null,
+    created_at: b.created_at,
+    updated_at: b.updated_at,
+    // denormalised listing fields (joined by GET /mine)
+    skill_name: b.skill_name || null,
+    skill_description: b.skill_description || null,
+    skill_category: b.skill_category || null,
+    skill_price_type: b.skill_price_type || null,
+    session_type: b.session_type || null,
+    max_participants: b.max_participants || null,
+    skill_image_urls: b.skill_image_urls || null,
+    spots_left: b.spots_left != null ? b.spots_left : null,
+    requester_username: b.requester_username || null,
+    requester_name: b.requester_name || null,
+    requester_profile_image: b.requester_profile_image || null,
+    teacher_username: b.teacher_username || null,
+    teacher_name: b.teacher_name || null,
+    teacher_profile_image: b.teacher_profile_image || null,
+  };
+}
+
+/**
+ * Learner (requester) view — no fee fields ever.
+ */
+function formatLearnerView(b) {
+  return formatBookingBase(b);
+}
+
+/**
+ * Tutor (teacher) view — adds fee_amount and tutor_payout_amount.
+ * fee_rate is deliberately excluded from both views; it's served
+ * only through GET /api/skilter-config.
+ * NULL values = legacy booking, no commission applicable.
+ */
+function formatTutorView(b) {
+  const base = formatBookingBase(b);
+  return {
+    ...base,
+    fee_amount: b.fee_amount != null ? Number(b.fee_amount) : null,
+    tutor_payout_amount: b.tutor_payout_amount != null ? Number(b.tutor_payout_amount) : null,
+    payout_sent_at: b.payout_sent_at || null,
+    payout_utr: b.payout_utr || null,
+  };
+}
+
+/**
+ * Admin view — all fields including fee_rate.
+ */
+function formatAdminView(b) {
+  return {
+    ...formatTutorView(b),
+    fee_rate: b.fee_rate != null ? Number(b.fee_rate) : null,
+    payment_screenshot_url: b.payment_screenshot_url || null,
+    payment_utr: b.payment_utr || null,
+    payout_notes: b.payout_notes || null,
+  };
+}
 
 // UUID validator
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -73,6 +154,22 @@ router.post("/", requireAuth, requireVerified, async (req, res) => {
       return res.status(400).json({ error: "You cannot book your own skill listing" });
     }
 
+    // ── Fee tier check + snapshot ──────────────────────────────────────────
+    // Throws 403 if tutor has zero approved applications.
+    let feeInfo;
+    try {
+      feeInfo = await getTutorFeeRate(db, teacher_id);
+    } catch (feeErr) {
+      if (feeErr.code === 'NO_APPROVED_APPLICATIONS') {
+        return res.status(feeErr.statusCode || 403).json({ error: feeErr.message });
+      }
+      throw feeErr;
+    }
+
+    const price = Number(listing.price || 0);
+    const feeAmount        = roundRupees(price * feeInfo.feeRate);
+    const tutorPayoutAmount = price - feeAmount;
+
     // Duplicate check
     const dupCheck = await db.query(
       `SELECT id FROM skill_bookings
@@ -84,10 +181,14 @@ router.post("/", requireAuth, requireVerified, async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO skill_bookings (skill_listing_id, requester_id, teacher_id, scheduled_time, status, payment_status)
-       VALUES ($1, $2, $3, $4, 'pending', 'unpaid')
+      `INSERT INTO skill_bookings
+         (skill_listing_id, requester_id, teacher_id, scheduled_time,
+          status, payment_status,
+          fee_rate, fee_amount, tutor_payout_amount)
+       VALUES ($1, $2, $3, $4, 'pending', 'unpaid', $5, $6, $7)
        RETURNING *`,
-      [skill_listing_id, requester_id, teacher_id, scheduled_time || null]
+      [skill_listing_id, requester_id, teacher_id, scheduled_time || null,
+       feeInfo.feeRate, feeAmount, tutorPayoutAmount]
     );
 
     const booking = result.rows[0];
@@ -99,7 +200,7 @@ router.post("/", requireAuth, requireVerified, async (req, res) => {
       `Someone reserved a spot for "${listing.skill_name}". Once they pay, the booking will be confirmed.`
     ).catch(err => console.error("Notification error (skill_booking):", err));
 
-    res.status(201).json({ success: true, booking });
+    res.status(201).json({ success: true, booking: formatLearnerView(booking) });
   } catch (err) {
     console.error("POST /skill-bookings error:", err);
     res.status(500).json({ error: "Server error" });
@@ -140,7 +241,11 @@ router.get("/mine", requireAuth, async (req, res) => {
       [req.userId]
     );
 
-    res.json({ success: true, bookings: result.rows });
+    // Apply role-appropriate formatter per row
+    const formatted = result.rows.map(b =>
+      b.teacher_id === req.userId ? formatTutorView(b) : formatLearnerView(b)
+    );
+    res.json({ success: true, bookings: formatted });
   } catch (err) {
     console.error("GET /skill-bookings/mine error:", err);
     res.status(500).json({ error: "Server error" });
@@ -708,7 +813,7 @@ router.patch("/:id/confirm-payout", requireAuth, requireAdmin, async (req, res) 
 
   try {
     const bookingRes = await db.query(
-      `SELECT b.*, sl.skill_name FROM skill_bookings b
+      `SELECT b.*, sl.skill_name, sl.price FROM skill_bookings b
        JOIN skill_listings sl ON sl.id = b.skill_listing_id
        WHERE b.id = $1`,
       [bookingId]
@@ -719,30 +824,72 @@ router.patch("/:id/confirm-payout", requireAuth, requireAdmin, async (req, res) 
     }
 
     const booking = bookingRes.rows[0];
+
     if (booking.payment_status !== "paid") {
-      return res.status(400).json({ error: `Cannot send payout — learner payment status is '${booking.payment_status}', expected 'paid'.` });
+      return res.status(400).json({
+        error: `Cannot send payout — learner payment status is '${booking.payment_status}', expected 'paid'.`,
+      });
     }
 
+    // Use snapshotted payout amount. Legacy rows (NULL) fall back to full price.
+    const tutorPayout = booking.tutor_payout_amount != null
+      ? Number(booking.tutor_payout_amount)
+      : Number(booking.price || 0);
+
+    // Atomic guarded UPDATE — only succeeds when payout_status is still 'pending_payout'
     const updateRes = await db.query(
       `UPDATE skill_bookings
-       SET payout_status = 'paid_out',
+       SET payout_status  = 'paid_out',
            payout_sent_at = NOW(),
-           payout_utr = $1,
-           payout_notes = $2,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
+           payout_utr     = $1,
+           payout_notes   = $2,
+           updated_at     = CURRENT_TIMESTAMP
+       WHERE id            = $3
+         AND payout_status = 'pending_payout'
        RETURNING *`,
-      [payout_utr ? String(payout_utr).trim() : null, payout_notes ? String(payout_notes).trim() : null, bookingId]
+      [
+        payout_utr ? String(payout_utr).trim() : null,
+        payout_notes ? String(payout_notes).trim() : null,
+        bookingId,
+      ]
+    );
+
+    if (updateRes.rows.length === 0) {
+      return res.status(409).json({
+        error: `Payout not applied — booking payout_status is '${booking.payout_status}', expected 'pending_payout'. It may have already been paid out.`,
+      });
+    }
+
+    const updated = updateRes.rows[0];
+
+    // Fetch teacher's payout UPI
+    const payoutDetailsRes = await db.query(
+      `SELECT upi_id, account_holder_name
+       FROM seller_payout_details
+       WHERE entity_type = 'skill_booking' AND entity_id = $1`,
+      [bookingId]
     );
 
     createNotification(
       booking.teacher_id,
       "skill_payout_sent",
       "Payout Sent",
-      `Your payout for "${booking.skill_name}" has been processed by admin.`
+      `Your payout of ₹${tutorPayout.toLocaleString('en-IN')} for "${booking.skill_name}" has been processed.`
     ).catch(err => console.error("Notification error (skill_payout_sent):", err));
 
-    res.json({ success: true, booking: updateRes.rows[0] });
+    res.json({
+      success: true,
+      booking: {
+        ...formatAdminView(updated),
+        payout_utr: updated.payout_utr,
+        payout_sent_at: updated.payout_sent_at,
+        // Admin-facing summary
+        tutor_payout_amount: tutorPayout,
+        fee_amount: booking.fee_amount != null ? Number(booking.fee_amount) : null,
+        seller_payout_upi: payoutDetailsRes.rows[0]?.upi_id || null,
+        seller_payout_name: payoutDetailsRes.rows[0]?.account_holder_name || null,
+      },
+    });
   } catch (err) {
     console.error("PATCH /skill-bookings/:id/confirm-payout error:", err);
     res.status(500).json({ error: "Server error" });

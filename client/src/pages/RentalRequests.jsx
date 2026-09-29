@@ -226,6 +226,81 @@ const PAGE_CSS = `
 
 /* ── Responded note ── */
 .rr-responded-note { font-size: 12px; color: var(--rr-muted); margin: 0; font-style: italic; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop layout unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* 1. Header: hide separate top-bar, collapse title card to slim bar */
+  .rr-top-bar { display: none; }
+
+  .rr-title-card {
+    margin: 0;
+    border-radius: 0;
+    border-left: none; border-right: none; border-top: none;
+    padding: 12px 14px;
+    min-height: 56px;
+    position: sticky; top: 0; z-index: 50;
+    background: var(--rr-paper);
+    box-shadow: 0 1px 4px rgba(15,61,46,0.07);
+  }
+
+  .rr-title-card h1 { font-size: 20px; margin: 0; }
+  .rr-pending-pill { font-size: 11px; padding: 3px 9px; margin-top: 5px; }
+
+  /* 2. Tabs: tighter */
+  .rr-tabs-wrap { margin: 0 12px; }
+  .rr-tab { font-size: 13px; padding: 10px 6px 8px; margin-right: 14px; }
+
+  /* 3. Body padding */
+  .rr-body { padding: 12px 10px 60px; }
+  .rr-stack { gap: 10px; }
+
+  /* 4. Card: keep thumb small, inline layout */
+  .rr-card-inner {
+    flex-direction: row !important; /* override 479px column rule */
+    gap: 10px;
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  /* Thumb: fixed small square */
+  .rr-thumb {
+    width: 68px !important;
+    height: 68px !important;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .rr-item-name { font-size: 14px; }
+  .rr-sub { font-size: 12px; margin-bottom: 6px; }
+
+  /* 5. Meta chips: smaller */
+  .rr-meta-chips { gap: 5px; margin-bottom: 8px; }
+  .rr-chip { font-size: 11px; padding: 3px 8px; }
+
+  /* 6. Breakdown box: compact */
+  .rr-breakdown {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 9px;
+  }
+  .rr-breakdown-row { font-size: 11.5px; margin-bottom: 3px; }
+  .rr-breakdown-total .label { font-size: 12px; }
+  .rr-breakdown-total .amount { font-size: 13px; }
+
+  /* 7. Action buttons: full-width stack */
+  .rr-actions { flex-direction: column; gap: 6px; }
+  .rr-btn-accept,
+  .rr-btn-decline,
+  .rr-btn-withdraw {
+    width: 100%;
+    justify-content: center;
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+}
 `
 
 const STATUS_CFG = {
@@ -278,6 +353,11 @@ function IncomingCard({ req, onRespond, busyId }) {
   const total = Math.round((fee + deposit) * 100) / 100
   const isPending = req.status === 'pending'
 
+  // Commission fields — present only on new bookings; NULL on legacy bookings
+  const hasCommission = req.commission_amount != null
+  const commission = hasCommission ? Number(req.commission_amount) : null
+  const ownerPayout = hasCommission ? Number(req.owner_payout_amount) : null
+
   return (
     <div className="rr-card">
       <div className="rr-card-inner">
@@ -309,10 +389,23 @@ function IncomingCard({ req, onRespond, busyId }) {
               <span>Refundable deposit (15%)</span>
               <span className="val">₹{deposit}</span>
             </div>
+            {hasCommission && (
+              <div className="rr-breakdown-row" style={{ color: '#b45309' }}>
+                <span>Platform fee (10%)</span>
+                <span className="val" style={{ color: '#b45309' }}>− ₹{commission}</span>
+              </div>
+            )}
             <div className="rr-breakdown-total">
-              <span className="label">Total</span>
-              <span className="amount">₹{total}</span>
+              <span className="label">{hasCommission ? 'You receive' : 'Total'}</span>
+              <span className="amount" style={hasCommission ? { color: '#15803d' } : {}}>
+                ₹{hasCommission ? ownerPayout : total}
+              </span>
             </div>
+            {hasCommission && (
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4, fontStyle: 'italic' }}>
+                Renter pays ₹{total} (fee + deposit). You receive ₹{ownerPayout} after the platform fee. Deposit is not charged.
+              </div>
+            )}
           </div>
 
           {isPending ? (

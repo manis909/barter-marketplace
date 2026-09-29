@@ -190,7 +190,7 @@ export default function Renter() {
                         </Link>
                       </div>
                       <div className="rental-market-rate">
-                        INR {Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small>
+                        ₹{Number(rental.rate_amount).toLocaleString('en-IN')} <small>/ {rental.rate_type === 'hourly' ? 'hour' : 'day'}</small>
                       </div>
                       <div className="rental-market-actions">
                         {isOwner ? (

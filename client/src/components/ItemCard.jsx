@@ -7,6 +7,7 @@ import api from '../services/api'
 import WishlistButton from './WishlistButton'
 import VerificationRequiredModal from './VerificationRequiredModal'
 import useVerificationStatus from '../hooks/useVerificationStatus'
+import { fmtINR } from '../utils/helpers'
 import './ItemCard.css'
 
 function formatConditionLabel(str) {
@@ -285,7 +286,7 @@ export default function ItemCard({ item }) {
                 >
                   {myItems.map((i) => (
                     <option key={i.id} value={i.id}>
-                      {i.title} {i.estimated_value ? `(Est. $${i.estimated_value})` : ''}
+                      {i.title} {i.estimated_value ? `(Est. ${fmtINR(i.estimated_value)})` : ''}
                     </option>
                   ))}
                 </select>

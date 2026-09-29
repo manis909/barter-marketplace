@@ -431,6 +431,82 @@ const BARTER_CSS = `
   display: inline-block;
   word-break: break-all;
 }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* 1. Header: hide top-bar, collapse title card to slim sticky bar */
+  .page-top-bar { display: none; }
+
+  .title-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none; border-right: none; border-top: none;
+    padding: 10px 14px !important;
+    min-height: 56px;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 1px 4px rgba(15,61,46,0.07);
+  }
+  .title-card h1 { font-size: 20px !important; margin: 0 0 2px !important; }
+  .title-card p  { font-size: 12px !important; margin: 0 !important; }
+
+  /* 2. Segment tabs */
+  .segment { margin: 8px 10px 0 !important; }
+  .segment button { padding: 8px 0; font-size: 13px; }
+
+  /* 3. Section label */
+  .section-label { margin: 8px 10px 6px !important; font-size: 11px; }
+
+  /* 4. Cards grid */
+  .cards-grid { padding: 0 10px !important; gap: 10px !important; }
+
+  /* 5. Ticket card */
+  .ticket-card { border-radius: 14px; }
+
+  .ticket-header {
+    padding: 10px 14px;
+  }
+  .ticket-header span:first-child { font-size: 12px; }
+
+  /* 6. Ticket body */
+  .ticket-body {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  /* Skill image + title row */
+  .ticket-body img[style*="width: 56px"],
+  .ticket-body img[style*="width:56px"] {
+    width: 42px !important;
+    height: 42px !important;
+  }
+  .ticket-body h3 { font-size: 15px !important; }
+
+  /* Date/meta lines */
+  .ticket-body [style*="font-size: 12px"],
+  .ticket-body [style*="font-size:12px"] { font-size: 11px !important; }
+
+  /* 7. Actions */
+  .ticket-actions {
+    padding: 10px 14px;
+    gap: 7px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 9px;
+  }
+
+  .btn-open-chat {
+    padding: 9px 14px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+}
 `;
 
 // ── QR canvas component ───────────────────────────────────────────────────────

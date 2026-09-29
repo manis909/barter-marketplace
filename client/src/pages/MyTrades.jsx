@@ -262,7 +262,47 @@ const BARTER_CSS = `
 .footer-space {
   height: 40px;
 }
-`;
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* 1. Hide separate top-bar, make title card a slim sticky bar */
+  .page-top-bar { display: none; }
+
+  .title-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none; border-right: none; border-top: none;
+    padding: 10px 14px !important;
+    min-height: 56px;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 1px 4px rgba(15,61,46,0.07);
+  }
+
+  .title-card h1 { font-size: 20px !important; margin: 0 0 4px !important; }
+
+  /* Stat row: tighter numbers */
+  .stat-row { gap: 16px; }
+  .stat b { font-size: 17px; }
+  .stat span { font-size: 10px; }
+
+  /* 2. Segmented tab: tighter */
+  .segment { margin: 8px 10px 0 !important; }
+  .segment button { padding: 8px 0; font-size: 13px; }
+
+  /* 3. Section label */
+  .section-label { margin: 8px 10px 6px !important; font-size: 11px; }
+
+  /* 4. Cards grid: tighter padding + gap */
+  .cards-grid { padding: 0 10px !important; gap: 10px !important; }
+
+  /* 5. History filter chips */
+  .cards-grid + div,
+  .segment ~ div[style] { padding: 0 10px !important; }
+}`;
+
 
 function SkeletonCard() {
   return (

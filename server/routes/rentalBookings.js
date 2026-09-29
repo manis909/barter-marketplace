@@ -11,7 +11,11 @@ const requireAdmin = require('../middleware/admin');
 const { createNotification } = require('./notifications');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DEPOSIT_RATE = 0.15;
+const {
+  DEPOSIT_RATE,
+  RENTAL_COMMISSION_RATE,
+  roundRupees,
+} = require('../config/pricing');
 
 function isValidUUID(val) {
   return val && UUID_RE.test(String(val));
@@ -75,7 +79,12 @@ function computeBookingTotals(listing, startIso, endIso) {
   const total = Number((baseRate * durationUnits).toFixed(2));
   const deposit = Number((total * DEPOSIT_RATE).toFixed(2));
 
-  return { total, deposit, durationUnits, rateType };
+  // Snapshot commission at booking creation time so later config changes
+  // never alter existing bookings.
+  const commissionAmount = roundRupees(total * RENTAL_COMMISSION_RATE);
+  const ownerPayoutAmount = total - commissionAmount; // exact, never double-rounded
+
+  return { total, deposit, durationUnits, rateType, commissionAmount, ownerPayoutAmount };
 }
 
 function formatBookingDetail(row) {
@@ -122,6 +131,35 @@ function formatBookingDetail(row) {
   };
 }
 
+/**
+ * Booking response for the OWNER.
+ * Includes commission_amount and owner_payout_amount.
+ * Does NOT include commission_rate (that comes from the /rental-config endpoint).
+ * For legacy bookings (NULL columns) both fields are null — the UI shows "N/A".
+ */
+function formatOwnerBookingView(row) {
+  if (!row) return null;
+  const base = formatBookingDetail(row);
+  return {
+    ...base,
+    commission_amount: row.commission_amount != null ? Number(row.commission_amount) : null,
+    owner_payout_amount: row.owner_payout_amount != null ? Number(row.owner_payout_amount) : null,
+    payout_status: row.payout_status || null,
+    payout_sent_at: row.payout_sent_at || null,
+  };
+}
+
+/**
+ * Booking response for the BORROWER.
+ * Commission fields are deliberately absent — not just omitted, never added.
+ * payout_status is also excluded (borrower has no visibility into owner payouts).
+ */
+function formatBorrowerBookingView(row) {
+  if (!row) return null;
+  // Start from the base shared fields — commission_* columns never appear.
+  return formatBookingDetail(row);
+}
+
 const rentalPaymentStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, '../uploads/rental-payment-screenshots');
@@ -136,6 +174,32 @@ const rentalPaymentStorage = multer.diskStorage({
 
 const rentalPaymentUpload = multer({
   storage: rentalPaymentStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!allowed.includes(ext)) {
+      return cb(new Error('Only JPG and PNG files are allowed'));
+    }
+    cb(null, true);
+  },
+});
+
+// Multer config for extension payments
+const extensionPaymentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '../uploads/extensions');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
+const extensionPaymentUpload = multer({
+  storage: extensionPaymentStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['.jpg', '.jpeg', '.png'];
@@ -304,7 +368,11 @@ router.get('/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'You are not part of this booking' });
     }
 
-    return res.json({ success: true, booking: formatBookingDetail(booking) });
+    const view = booking.owner_id === req.userId
+      ? formatOwnerBookingView(booking)
+      : formatBorrowerBookingView(booking);
+
+    return res.json({ success: true, booking: view });
   } catch (err) {
     console.error('GET /rental-bookings/:id error:', err);
     return res.status(500).json({ error: 'Server error' });
@@ -313,7 +381,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 
 router.post('/', requireAuth, requireVerified, async (req, res) => {
   try {
-    const { rental_listing_id, start_datetime, end_datetime, meeting_location } = req.body;
+    const { rental_listing_id, start_datetime, end_datetime, meeting_location, proposed_amount } = req.body;
 
     if (!rental_listing_id || !isValidUUID(rental_listing_id)) {
       return res.status(400).json({ error: 'Valid rental_listing_id is required' });
@@ -382,6 +450,20 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
     }
 
     const totals = computeBookingTotals(listing, start_datetime, end_datetime);
+    
+    // Handle price negotiation
+    const hasProposedAmount = proposed_amount !== undefined && proposed_amount !== null;
+    const proposedAmountNum = hasProposedAmount ? Number(proposed_amount) : null;
+    
+    // Validate proposed amount if provided
+    if (hasProposedAmount) {
+      if (isNaN(proposedAmountNum) || proposedAmountNum <= 0) {
+        return res.status(400).json({ error: 'Invalid proposed amount' });
+      }
+      if (proposedAmountNum > totals.total * 2) {
+        return res.status(400).json({ error: 'Proposed amount cannot be more than double the calculated price' });
+      }
+    }
 
     const insert = await db.query(
       `INSERT INTO rental_bookings (
@@ -391,6 +473,8 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         start_datetime,
         end_datetime,
         agreed_total_amount,
+        proposed_amount,
+        negotiation_status,
         status,
         meeting_location,
         deposit_amount,
@@ -398,8 +482,11 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         borrower_confirmed_pickup,
         owner_confirmed_pickup,
         borrower_confirmed_return,
-        owner_confirmed_return
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, 'unpaid', false, false, false, false)
+        owner_confirmed_return,
+        commission_rate,
+        commission_amount,
+        owner_payout_amount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, 'unpaid', false, false, false, false, $11, $12, $13)
        RETURNING *`,
       [
         rental_listing_id,
@@ -408,21 +495,33 @@ router.post('/', requireAuth, requireVerified, async (req, res) => {
         start,
         end,
         totals.total,
+        hasProposedAmount ? proposedAmountNum : null,
+        hasProposedAmount ? 'pending' : 'none',
         meeting_location || null,
         totals.deposit,
+        RENTAL_COMMISSION_RATE,
+        totals.commissionAmount,
+        totals.ownerPayoutAmount,
       ]
     );
 
     const row = insert.rows[0];
 
+    // Create notification message
+    let notificationMessage = `A borrower requested to rent "${listing.item_name}" for ${totals.durationUnits} ${totals.rateType === 'hourly' ? 'hours' : 'days'}.`;
+    
+    if (hasProposedAmount) {
+      notificationMessage += ` Proposed price: ₹${proposedAmountNum.toLocaleString('en-IN')} (listed: ₹${totals.total.toLocaleString('en-IN')}).`;
+    }
+
     createNotification(
       listing.owner_id,
       'rental_booking_requested',
-      'New Rental Request',
-      `A borrower requested to rent "${listing.item_name}" for ${totals.durationUnits} ${totals.rateType === 'hourly' ? 'hours' : 'days'}.`
+      hasProposedAmount ? 'New Rental Request (Price Negotiation)' : 'New Rental Request',
+      notificationMessage
     ).catch((err) => console.error('Notification error (rental_booking_requested):', err));
 
-    return res.status(201).json({ success: true, booking: formatBookingDetail(row) });
+    return res.status(201).json({ success: true, booking: formatBorrowerBookingView(row) });
   } catch (err) {
     console.error('POST /rental-bookings error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });
@@ -491,7 +590,7 @@ router.patch('/:id/status', requireAuth, requireVerified, async (req, res) => {
         : `Your booking request for "${booking.listing_item_name}" was declined.`
     ).catch((err) => console.error('Notification error (rental booking status):', err));
 
-    return res.json({ success: true, booking: formatBookingDetail(updatedBooking), details: {
+    return res.json({ success: true, booking: formatOwnerBookingView(updatedBooking), details: {
       dates: {
         start_datetime: booking.start_datetime,
         end_datetime: booking.end_datetime,
@@ -681,7 +780,7 @@ router.patch('/:id/confirm-payment', requireAuth, requireAdmin, async (req, res)
       `Payment for "${booking.listing_item_name}" has been verified.`
     ).catch((err) => console.error('Notification error (rental_payment_confirmed_owner):', err));
 
-    return res.json({ success: true, booking: formatBookingDetail(updated) });
+    return res.json({ success: true, booking: formatOwnerBookingView(updated) });
   } catch (err) {
     console.error('PATCH /rental-bookings/:id/confirm-payment error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });
@@ -697,29 +796,58 @@ router.patch('/:id/confirm-payout', requireAuth, requireAdmin, async (req, res) 
       return res.status(400).json({ error: 'Invalid booking id' });
     }
 
+    // Fetch to validate payment_status and read the snapshotted payout amount.
+    // We do NOT recompute the payout from the current config rate — we use
+    // owner_payout_amount as stored at booking creation time.
     const booking = await fetchBookingWithListing(id);
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
     if (booking.payment_status !== 'paid') {
-      return res.status(400).json({ error: `Cannot send payout — buyer payment status is '${booking.payment_status}', expected 'paid'.` });
+      return res.status(400).json({
+        error: `Cannot send payout — payment_status is '${booking.payment_status}', expected 'paid'.`,
+      });
     }
 
+    // For legacy bookings (commission columns NULL), pay out the full fee.
+    // For new bookings, pay out the snapshotted owner_payout_amount.
+    const ownerPayout = booking.owner_payout_amount != null
+      ? Number(booking.owner_payout_amount)
+      : Number(booking.agreed_total_amount);
+
+    // Atomic guarded UPDATE: only succeeds when payout_status is still
+    // 'pending_payout'. Returns zero rows if already paid_out or wrong state,
+    // which guards against double-clicks and race conditions.
     const update = await db.query(
       `UPDATE rental_bookings
-       SET payout_status = 'paid_out',
+       SET payout_status  = 'paid_out',
            payout_sent_at = NOW(),
-           payout_utr = $1,
-           payout_notes = $2,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
+           payout_utr     = $1,
+           payout_notes   = $2,
+           updated_at     = CURRENT_TIMESTAMP
+       WHERE id           = $3
+         AND payout_status = 'pending_payout'
        RETURNING *`,
-      [payout_utr ? String(payout_utr).trim() : null, payout_notes ? String(payout_notes).trim() : null, id]
+      [
+        payout_utr ? String(payout_utr).trim() : null,
+        payout_notes ? String(payout_notes).trim() : null,
+        id,
+      ]
     );
 
+    if (update.rows.length === 0) {
+      return res.status(409).json({
+        error: `Payout not applied — booking payout_status is '${booking.payout_status}', expected 'pending_payout'. It may have already been paid out.`,
+      });
+    }
+
+    const updated = update.rows[0];
+
     const payoutDetailsRes = await db.query(
-      `SELECT upi_id, account_holder_name FROM seller_payout_details WHERE entity_type = 'rental_booking' AND entity_id = $1`,
+      `SELECT upi_id, account_holder_name
+       FROM seller_payout_details
+       WHERE entity_type = 'rental_booking' AND entity_id = $1`,
       [id]
     );
 
@@ -727,19 +855,21 @@ router.patch('/:id/confirm-payout', requireAuth, requireAdmin, async (req, res) 
       booking.owner_id,
       'rental_payout_sent',
       'Payout Sent',
-      `Your payout for "${booking.listing_item_name}" has been processed by admin.`
+      `Your payout of ₹${ownerPayout.toLocaleString('en-IN')} for "${booking.listing_item_name}" has been processed.`
     ).catch((err) => console.error('Notification error (rental_payout_sent):', err));
 
     return res.json({
       success: true,
       booking: {
-        ...formatBookingDetail(update.rows[0]),
-        payout_status: update.rows[0].payout_status,
-        payout_sent_at: update.rows[0].payout_sent_at,
-        payout_utr: update.rows[0].payout_utr,
+        ...formatOwnerBookingView(updated),
+        payout_utr: updated.payout_utr,
+        payout_sent_at: updated.payout_sent_at,
+        // Admin-facing summary: how much to send and where
+        owner_payout_amount: ownerPayout,
+        commission_amount: booking.commission_amount != null ? Number(booking.commission_amount) : null,
         seller_payout_upi: payoutDetailsRes.rows[0]?.upi_id || null,
         seller_payout_name: payoutDetailsRes.rows[0]?.account_holder_name || null,
-      }
+      },
     });
   } catch (err) {
     console.error('PATCH /rental-bookings/:id/confirm-payout error:', err);
@@ -1047,6 +1177,507 @@ router.get('/admin/pending-payments', requireAuth, requireAdmin, async (req, res
 
 // ── GET /api/rental-bookings/:id/payment-screenshot ─────────────────────────
 // Auth-gated file stream. Allowed: admin OR the borrower who owns this booking.
+// Helper to check if user can manage extension for a booking
+async function canManageExtension(bookingId, userId) {
+  const result = await db.query(
+    `SELECT borrower_id, owner_id, status FROM rental_bookings WHERE id = $1`,
+    [bookingId]
+  );
+  if (result.rows.length === 0) return null;
+  
+  const booking = result.rows[0];
+  const isRenter = booking.borrower_id === userId;
+  const isOwner = booking.owner_id === userId;
+  
+  return { booking, isRenter, isOwner };
+}
+
+// Calculate extension fee based on listing rate
+function calculateExtensionFee(listing, extraDays) {
+  const rateType = normalizeRateType(listing.rate_type);
+  let durationUnits = extraDays;
+  
+  if (rateType === 'hourly') {
+    durationUnits = extraDays * 24; // Convert days to hours for hourly rate
+  }
+  
+  const baseRate = Number(listing.rate_amount);
+  const additionalFee = Number((baseRate * durationUnits).toFixed(2));
+  
+  return additionalFee;
+}
+
+// POST /api/rental-bookings/:id/request-extension - renter requests extension
+router.post('/:id/request-extension', requireAuth, requireVerified, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { extra_days } = req.body;
+    
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
+    
+    if (!extra_days || extra_days < 1 || extra_days > 30) {
+      return res.status(400).json({ error: 'Extra days must be between 1 and 30' });
+    }
+    
+    const permission = await canManageExtension(id, req.userId);
+    if (!permission) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    
+    const { booking, isRenter } = permission;
+    
+    if (!isRenter) {
+      return res.status(403).json({ error: 'Only the renter can request an extension' });
+    }
+    
+    if (!['active', 'return_pending'].includes(booking.status)) {
+      return res.status(400).json({ error: 'Extension can only be requested for active bookings' });
+    }
+    
+    // Get listing details for rate calculation
+    const listingRes = await db.query(
+      `SELECT rl.* FROM rental_listings rl
+       JOIN rental_bookings rb ON rb.rental_listing_id = rl.id
+       WHERE rb.id = $1`,
+      [id]
+    );
+    
+    if (listingRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+    
+    const listing = listingRes.rows[0];
+    
+    // Calculate new end date
+    const currentEnd = new Date(booking.end_datetime);
+    const newEndDate = new Date(currentEnd);
+    newEndDate.setDate(currentEnd.getDate() + parseInt(extra_days));
+    
+    // Calculate additional fee
+    const additionalFee = calculateExtensionFee(listing, parseInt(extra_days));
+    
+    // Check for existing pending extension request
+    const existingRes = await db.query(
+      `SELECT id FROM rental_extension_requests 
+       WHERE booking_id = $1 AND status = 'pending'`,
+      [id]
+    );
+    
+    if (existingRes.rows.length > 0) {
+      return res.status(409).json({ error: 'A pending extension request already exists for this booking' });
+    }
+    
+    // Create extension request
+    const insertRes = await db.query(
+      `INSERT INTO rental_extension_requests (
+        booking_id, requested_extra_days, new_end_date, additional_fee
+      ) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [id, extra_days, newEndDate.toISOString().split('T')[0], additionalFee]
+    );
+    
+    const extensionRequest = insertRes.rows[0];
+    
+    // Notify owner
+    createNotification(
+      booking.owner_id,
+      'rental_extension_requested',
+      'Extension Requested',
+      `Renter has requested a ${extra_days}-day extension for rental booking.`
+    ).catch(err => console.error('Notification error (extension requested):', err));
+    
+    res.json({ success: true, extension: extensionRequest });
+  } catch (err) {
+    console.error('POST /rental-bookings/:id/request-extension error:', err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// GET /api/rental-bookings/:id/extensions - get extension requests for booking
+router.get('/:id/extensions', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
+    
+    const permission = await canManageExtension(id, req.userId);
+    if (!permission) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    
+    const extensionsRes = await db.query(
+      `SELECT * FROM rental_extension_requests 
+       WHERE booking_id = $1 
+       ORDER BY requested_at DESC`,
+      [id]
+    );
+    
+    res.json({ success: true, extensions: extensionsRes.rows });
+  } catch (err) {
+    console.error('GET /rental-bookings/:id/extensions error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/rental-bookings/extensions/:extensionId/respond - owner responds to extension request
+router.post('/extensions/:extensionId/respond', requireAuth, requireVerified, async (req, res) => {
+  try {
+    const { extensionId } = req.params;
+    const { action, reason } = req.body; // action: 'approve' or 'decline'
+    
+    if (!isValidUUID(extensionId)) {
+      return res.status(400).json({ error: 'Invalid extension id' });
+    }
+    
+    if (!action || !['approve', 'decline'].includes(action)) {
+      return res.status(400).json({ error: 'Action must be "approve" or "decline"' });
+    }
+    
+    // Get extension with booking details
+    const extensionRes = await db.query(
+      `SELECT er.*, rb.borrower_id, rb.owner_id, rb.status as booking_status,
+              rb.end_datetime, rb.agreed_total_amount
+       FROM rental_extension_requests er
+       JOIN rental_bookings rb ON rb.id = er.booking_id
+       WHERE er.id = $1`,
+      [extensionId]
+    );
+    
+    if (extensionRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Extension request not found' });
+    }
+    
+    const extension = extensionRes.rows[0];
+    
+    if (extension.owner_id !== req.userId) {
+      return res.status(403).json({ error: 'Only the owner can respond to extension requests' });
+    }
+    
+    if (extension.status !== 'pending') {
+      return res.status(400).json({ error: 'Extension request already processed' });
+    }
+    
+    if (action === 'approve') {
+      // Update extension status to approved
+      const updateRes = await db.query(
+        `UPDATE rental_extension_requests 
+         SET status = 'approved', responded_at = NOW()
+         WHERE id = $1 RETURNING *`,
+        [extensionId]
+      );
+      
+      const updatedExtension = updateRes.rows[0];
+      
+      // Notify renter
+      createNotification(
+        extension.borrower_id,
+        'rental_extension_approved',
+        'Extension Approved',
+        `Owner approved your ${extension.requested_extra_days}-day extension request. Please submit payment for additional fee.`
+      ).catch(err => console.error('Notification error (extension approved):', err));
+      
+      res.json({ success: true, extension: updatedExtension, requiresPayment: true });
+    } else {
+      // Decline extension
+      const updateRes = await db.query(
+        `UPDATE rental_extension_requests 
+         SET status = 'declined', responded_at = NOW(), response_reason = $1
+         WHERE id = $2 RETURNING *`,
+        [reason || 'Extension declined by owner', extensionId]
+      );
+      
+      const updatedExtension = updateRes.rows[0];
+      
+      // Notify renter
+      createNotification(
+        extension.borrower_id,
+        'rental_extension_declined',
+        'Extension Declined',
+        `Owner declined your extension request.${reason ? ' Reason: ' + reason : ''}`
+      ).catch(err => console.error('Notification error (extension declined):', err));
+      
+      res.json({ success: true, extension: updatedExtension });
+    }
+  } catch (err) {
+    console.error('POST /rental-bookings/extensions/:extensionId/respond error:', err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// POST /api/rental-bookings/extensions/:extensionId/pay - renter pays for approved extension
+router.post('/extensions/:extensionId/pay', requireAuth, requireVerified, async (req, res) => {
+  try {
+    const { extensionId } = req.params;
+    
+    if (!isValidUUID(extensionId)) {
+      return res.status(400).json({ error: 'Invalid extension id' });
+    }
+    
+    // Get extension with booking details
+    const extensionRes = await db.query(
+      `SELECT er.*, rb.borrower_id, rb.owner_id, rb.agreed_total_amount
+       FROM rental_extension_requests er
+       JOIN rental_bookings rb ON rb.id = er.booking_id
+       WHERE er.id = $1`,
+      [extensionId]
+    );
+    
+    if (extensionRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Extension request not found' });
+    }
+    
+    const extension = extensionRes.rows[0];
+    
+    if (extension.borrower_id !== req.userId) {
+      return res.status(403).json({ error: 'Only the renter can pay for extension' });
+    }
+    
+    if (extension.status !== 'approved') {
+      return res.status(400).json({ error: 'Extension must be approved before payment' });
+    }
+    
+    if (extension.payment_status === 'paid') {
+      return res.status(400).json({ error: 'Extension already paid' });
+    }
+    
+    // Return extension payment details (similar to regular booking payment)
+    res.json({
+      success: true,
+      extension,
+      paymentDetails: {
+        amount: extension.additional_fee,
+        description: `Extension fee for ${extension.requested_extra_days} extra day(s)`
+      }
+    });
+  } catch (err) {
+    console.error('POST /rental-bookings/extensions/:extensionId/pay error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/rental-bookings/extensions/:extensionId/upload-payment - upload UTR/screenshot for extension
+router.post(
+  '/extensions/:extensionId/upload-payment',
+  requireAuth,
+  requireVerified,
+  extensionPaymentUpload.single('screenshot'),
+  async (req, res) => {
+    try {
+      const { extensionId } = req.params;
+      const { utr } = req.body;
+      
+      if (!isValidUUID(extensionId)) {
+        return res.status(400).json({ error: 'Invalid extension id' });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'Payment screenshot is required' });
+      }
+      
+      if (!utr || utr.trim().length === 0) {
+        return res.status(400).json({ error: 'UTR/Transaction ID is required' });
+      }
+      
+      // Get extension with booking details
+      const extensionRes = await db.query(
+        `SELECT er.*, rb.borrower_id, rb.status as booking_status
+         FROM rental_extension_requests er
+         JOIN rental_bookings rb ON rb.id = er.booking_id
+         WHERE er.id = $1`,
+        [extensionId]
+      );
+      
+      if (extensionRes.rows.length === 0) {
+        return res.status(404).json({ error: 'Extension request not found' });
+      }
+      
+      const extension = extensionRes.rows[0];
+      
+      if (extension.borrower_id !== req.userId) {
+        return res.status(403).json({ error: 'Only the renter can submit payment' });
+      }
+      
+      if (extension.status !== 'approved') {
+        return res.status(400).json({ error: 'Extension must be approved before payment' });
+      }
+      
+      if (extension.payment_status === 'paid') {
+        return res.status(400).json({ error: 'Extension already paid' });
+      }
+      
+      // Check for duplicate UTR
+      const cleanUtr = String(utr).trim().toUpperCase();
+      const dupRes = await db.query(
+        `SELECT id FROM rental_extension_requests WHERE payment_utr = $1 AND id != $2`,
+        [cleanUtr, extensionId]
+      );
+      
+      if (dupRes.rows.length > 0) {
+        return res.status(400).json({ error: 'This UTR has already been used for another payment' });
+      }
+      
+      // Save screenshot path
+      const relativePath = path.join('uploads', 'extensions', req.file.filename);
+      
+      // Update extension with payment info
+      const updateRes = await db.query(
+        `UPDATE rental_extension_requests 
+         SET payment_status = 'pending_verification',
+             payment_screenshot_url = $1,
+             payment_utr = $2,
+             payment_submitted_at = NOW()
+         WHERE id = $3 RETURNING *`,
+        [relativePath, cleanUtr, extensionId]
+      );
+      
+      const updatedExtension = updateRes.rows[0];
+      
+      // Notify owner
+      createNotification(
+        extension.owner_id,
+        'rental_extension_payment_submitted',
+        'Extension Payment Submitted',
+        `Renter submitted payment for ${extension.requested_extra_days}-day extension. Awaiting admin verification.`
+      ).catch(err => console.error('Notification error (extension payment):', err));
+      
+      res.json({ success: true, extension: updatedExtension });
+    } catch (err) {
+      if (req.file) fs.unlink(req.file.path, () => {});
+      console.error('POST /rental-bookings/extensions/:extensionId/upload-payment error:', err);
+      res.status(500).json({ error: err.message || 'Server error' });
+    }
+  }
+);
+
+// POST /api/rental-bookings/extensions/:extensionId/confirm-payment - admin verifies extension payment
+router.post('/extensions/:extensionId/confirm-payment', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { extensionId } = req.params;
+    
+    if (!isValidUUID(extensionId)) {
+      return res.status(400).json({ error: 'Invalid extension id' });
+    }
+    
+    const client = await db.getClient();
+    let updatedExtension;
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Get extension with booking details
+      const extensionRes = await client.query(
+        `SELECT er.*, rb.id as booking_id, rb.end_datetime, rb.agreed_total_amount
+         FROM rental_extension_requests er
+         JOIN rental_bookings rb ON rb.id = er.booking_id
+         WHERE er.id = $1 FOR UPDATE`,
+        [extensionId]
+      );
+      
+      if (extensionRes.rows.length === 0) {
+        throw new Error('Extension request not found');
+      }
+      
+      const extension = extensionRes.rows[0];
+      
+      if (extension.payment_status !== 'pending_verification') {
+        throw new Error('Extension payment is not pending verification');
+      }
+      
+      // Update extension payment status
+      const updateExtRes = await client.query(
+        `UPDATE rental_extension_requests 
+         SET payment_status = 'paid'
+         WHERE id = $1 RETURNING *`,
+        [extensionId]
+      );
+      
+      updatedExtension = updateExtRes.rows[0];
+      
+      // Update booking end date and total amount
+      const newTotal = Number(extension.agreed_total_amount) + Number(extension.additional_fee);
+      
+      const updateBookingRes = await client.query(
+        `UPDATE rental_bookings 
+         SET end_datetime = $1, agreed_total_amount = $2, updated_at = NOW()
+         WHERE id = $3 RETURNING *`,
+        [extension.new_end_date, newTotal, extension.booking_id]
+      );
+      
+      // Notify both parties
+      const booking = updateBookingRes.rows[0];
+      
+      createNotification(
+        booking.borrower_id,
+        'rental_extension_confirmed',
+        'Extension Confirmed',
+        `Your ${extension.requested_extra_days}-day extension has been confirmed. New end date: ${extension.new_end_date}.`
+      ).catch(err => console.error('Notification error (extension confirmed to renter):', err));
+      
+      createNotification(
+        booking.owner_id,
+        'rental_extension_confirmed',
+        'Extension Confirmed',
+        `Rental extension confirmed. Booking now ends on ${extension.new_end_date}.`
+      ).catch(err => console.error('Notification error (extension confirmed to owner):', err));
+      
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
+    
+    res.json({ success: true, extension: updatedExtension });
+  } catch (err) {
+    console.error('POST /rental-bookings/extensions/:extensionId/confirm-payment error:', err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// POST /api/rental-bookings/extensions/:extensionId/reject-payment - admin rejects extension payment
+router.post('/extensions/:extensionId/reject-payment', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { extensionId } = req.params;
+    const { reason } = req.body;
+    
+    if (!isValidUUID(extensionId)) {
+      return res.status(400).json({ error: 'Invalid extension id' });
+    }
+    
+    const updateRes = await db.query(
+      `UPDATE rental_extension_requests 
+       SET payment_status = 'rejected',
+           payment_rejection_reason = $1,
+           payment_rejected_at = NOW()
+       WHERE id = $2 RETURNING *`,
+      [reason || 'Payment verification failed', extensionId]
+    );
+    
+    if (updateRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Extension request not found' });
+    }
+    
+    const updatedExtension = updateRes.rows[0];
+    
+    // Notify renter
+    createNotification(
+      updatedExtension.borrower_id,
+      'rental_extension_payment_rejected',
+      'Extension Payment Rejected',
+      `Your extension payment was rejected.${reason ? ' Reason: ' + reason : ' Please try again.'}`
+    ).catch(err => console.error('Notification error (extension payment rejected):', err));
+    
+    res.json({ success: true, extension: updatedExtension });
+  } catch (err) {
+    console.error('POST /rental-bookings/extensions/:extensionId/reject-payment error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/:id/payment-screenshot', requireAuth, async (req, res) => {
   const { id } = req.params;
   if (!isValidUUID(id)) {

@@ -33,6 +33,9 @@ const rentalListingsRoutes = require("./routes/rentalListings");
 const rentalBookingsRoutes = require("./routes/rentalBookings");
 const rentalWishlistRoutes = require("./routes/rentalWishlist");
 const rentalChatRoutes = require("./routes/rentalChat");
+const rentalConfigRoutes = require("./routes/rentalConfig");
+const tutorSubscriptionRoutes = require("./routes/tutorSubscription");
+const skilterConfigRoutes = require("./routes/skilterConfig");
 const rateLimit = require("express-rate-limit");
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -67,6 +70,9 @@ app.use("/api/skill-wishlist", skillWishlistRoutes);
 app.use("/api/rentals", rentalRoutes);
 app.use("/api/rental-listings", rentalListingsRoutes);
 app.use("/api/rental-bookings", rentalBookingsRoutes);
+app.use("/api/rental-config", rentalConfigRoutes);
+app.use("/api/skilter-config", skilterConfigRoutes);
+app.use("/api/tutor-subscription", tutorSubscriptionRoutes);
 app.use("/api/rental-wishlist", rentalWishlistRoutes);
 app.use("/api/rental-chat", rentalChatRoutes);
 app.get("/", async (req, res) => {

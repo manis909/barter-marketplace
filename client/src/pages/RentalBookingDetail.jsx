@@ -435,6 +435,7 @@ export default function RentalBookingDetailPage() {
   }
 
   const iAmRenter = booking.borrower_id === currentUser?.id
+  const iAmOwner  = booking.owner_id === currentUser?.id
   const listing   = booking.listing || {}
   const images    = Array.isArray(listing.image_urls) ? listing.image_urls : []
 
@@ -806,6 +807,33 @@ export default function RentalBookingDetailPage() {
                     : 'Awaiting Payment'}
                 </span>
               </div>
+
+              {/* Owner-only payout cell — shown only to the owner, only when commission is snapshotted */}
+              {iAmOwner && booking.owner_payout_amount != null && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 sm:col-span-3">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-1">
+                    Your Payout (after 10% platform fee)
+                  </span>
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-xl font-mono font-bold text-emerald-700">
+                      ₹{Number(booking.owner_payout_amount).toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-[11px] text-emerald-600 font-sans">
+                      (Platform fee: ₹{Number(booking.commission_amount).toLocaleString('en-IN')} · Deposit not charged)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Legacy booking note for owner — commission not applicable */}
+              {iAmOwner && booking.owner_payout_amount == null && (
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-100 sm:col-span-3">
+                  <span className="block text-[11px] text-stone-500 font-sans">
+                    Platform fee does not apply to this booking (created before the commission system).
+                    You receive the full rental fee: ₹{Number(booking.agreed_total_amount).toLocaleString('en-IN')}.
+                  </span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

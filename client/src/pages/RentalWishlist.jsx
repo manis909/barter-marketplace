@@ -255,6 +255,26 @@ const CSS = `
 .rw-explore-btn:hover {
   transform: translateY(-2px);
 }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+  .rw-page { padding: 16px 12px 56px; }
+  .rw-back { padding: 6px 12px; font-size: 12px; margin-bottom: 14px; }
+  .rw-header { margin-bottom: 16px; }
+  .rw-title  { font-size: 24px; }
+  .rw-subtitle { font-size: 13px; margin-top: 4px; }
+  .rw-count-badge { font-size: 12px; padding: 3px 9px; }
+  .rw-grid { grid-template-columns: 1fr; gap: 12px; }
+  .rw-card-media { aspect-ratio: 16 / 8; }
+  .rw-card-body  { padding: 12px; gap: 7px; }
+  .rw-card-title { font-size: 15px; }
+  .rw-card-owner { font-size: 11.5px; }
+  .rw-card-rate  { font-size: 14px; }
+  .rw-rent-btn   { height: 36px; font-size: 12.5px; border-radius: 9px; }
+  .rw-remove-btn { width: 30px; height: 30px; border-radius: 8px; }
+}
 `
 
 export default function RentalWishlist() {

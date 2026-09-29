@@ -865,7 +865,44 @@ export default function MySkillsPage() {
                     required={form.session_type === 'Group'}
                   />
                 </div>
-              )}
+
+                {/* ── Fee preview (tutor-only, live as they type) ── */}
+                {Number(form.price) > 0 && (
+                  <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                    <div style={{
+                      background: '#f0fdf4', border: '1px solid #bbf7d0',
+                      borderRadius: 10, padding: '10px 14px',
+                    }}>
+                      <p style={{ margin: 0, fontSize: 13, color: '#15803d', fontWeight: 600 }}>
+                        You set ₹{Number(form.price).toLocaleString('en-IN')} / session.
+                        {' '}You'll receive ₹{Math.round(Number(form.price) * 0.85).toLocaleString('en-IN')} after the 15% platform fee
+                        {' '}(reduces to 10% once you have 2+ approved listings, or 5% with the Unlimited plan).
+                      </p>
+                      <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#166534' }}>
+                        Tristal charges a platform fee on each session fee. Learners always pay the listed price.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-field">
+                  <label>Price Unit</label>
+                  <select name="price_unit" value={form.price_unit} onChange={handleChange}>
+                    {PRICE_UNITS.map((unit) => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            <div className="form-field">
+              <label>Session Type</label>
+              <select name="session_type" value={form.session_type} onChange={handleChange}>
+                {SESSION_TYPES.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
             </div>
 
             {message && <p className={`form-message ${message.includes('successfully') ? 'form-message--success' : 'form-message--error'}`}>{message}</p>}
