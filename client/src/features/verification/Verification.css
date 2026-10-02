@@ -138,21 +138,6 @@
   font-size: 28px;
 }
 
-/* ---------- Verified badge, used on Profile ---------- */
-.verified-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #ecfdf5;
-  color: #059669;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
 /* ---------- Admin review page ---------- */
 .admin-verification-page {
   max-width: 700px;

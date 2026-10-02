@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Package, ArrowLeft, Trash2, Tag, ArrowLeftRight, CheckCircle2, ChevronRight, Sparkles } from 'lucide-react';
 import { getWishlist, removeWishlist, addWishlist } from '../services/tradeService';
-import { getErrorMessage } from '../utils/helpers';
+import { getErrorMessage, fmtINR } from '../utils/helpers';
 import { useAuth } from '../features/auth/AuthContext';
 import api from '../services/api';
 import Footer from '../components/Footer';
@@ -314,6 +314,47 @@ const CSS = `
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  /* 1. Page padding: reduce top */
+  .bw-page { padding: 16px 12px 56px; }
+
+  /* 2. Back link: smaller */
+  .bw-back { padding: 6px 12px; font-size: 12px; margin-bottom: 14px; }
+
+  /* 3. Header */
+  .bw-header { margin-bottom: 16px; }
+  .bw-title  { font-size: 24px; }
+  .bw-subtitle { font-size: 13px; margin-top: 4px; }
+  .bw-count-badge { font-size: 12px; padding: 3px 9px; }
+
+  /* 4. Grid: single column, tighter gap */
+  .bw-grid { grid-template-columns: 1fr; gap: 12px; }
+
+  /* 5. Card image: shorter aspect */
+  .bw-card-media { aspect-ratio: 16 / 8; }
+
+  /* 6. Card body: tighter */
+  .bw-card-body { padding: 12px; gap: 7px; }
+  .bw-card-title { font-size: 15px; }
+  .bw-card-meta  { font-size: 11.5px; }
+  .bw-card-value { font-size: 14px; }
+
+  /* 7. Action buttons: smaller but still tappable */
+  .bw-trade-btn,
+  .bw-view-btn {
+    height: 36px;
+    font-size: 12.5px;
+    border-radius: 9px;
+  }
+
+  /* 8. Remove button: stay visible */
+  .bw-remove-btn { width: 30px; height: 30px; border-radius: 8px; }
 }
 `;
 
@@ -642,7 +683,7 @@ function WishlistCard({ item, onRemove }) {
                   >
                     {myItems.map(i => (
                       <option key={i.id} value={i.id}>
-                        {i.title} (Est. ${i.estimated_value || '0'})
+                        {i.title} (Est. {fmtINR(i.estimated_value || 0)})
                       </option>
                     ))}
                   </select>

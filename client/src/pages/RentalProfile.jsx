@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import ProfileAvatar from '../components/ProfileAvatar';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
+import VerificationCelebration from '../features/verification/VerificationCelebration';
+import useVerificationCelebration from '../hooks/useVerificationCelebration';
 import './RentalProfile.css';
 import usePhotoViewer from '../hooks/usePhotoViewer';
 import PhotoViewerModal from '../components/PhotoViewerModal';
@@ -22,6 +25,12 @@ export default function RentalProfile() {
   const { currentUser, loading } = useAuth();
   const photoViewer = usePhotoViewer();
   const isOwnProfile = !userId || userId === currentUser?.id;
+
+  // Same one-time verification celebration as the Barter profile page.
+  const {
+    showCelebration,
+    dismissCelebration,
+  } = useVerificationCelebration(isOwnProfile && !userId);
 
   const [viewedUser, setViewedUser] = useState(null);
   const [viewedUserLoading, setViewedUserLoading] = useState(!isOwnProfile);
@@ -98,26 +107,19 @@ export default function RentalProfile() {
       </button>
 
       <div className="rental-profile-header">
-        {displayImage ? (
-  <img
-    src={displayImage}
-    alt="Profile"
-    className="profile-photo profile-photo-clickable"
-    onClick={photoViewer.openViewer}
-  />
-) : (
-          <div className="profile-photo profile-photo-placeholder">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-        )}
+        <ProfileAvatar
+          src={displayImage}
+          name={profileData.full_name || profileData.username}
+          size={100}
+          onClick={displayImage ? photoViewer.openViewer : undefined}
+        />
 
         <div className="rental-profile-header-info">
           <p className="profile-username">
             {profileData.username}
-            {profileData.is_verified && <VerifiedBadge />}
+            {profileData.is_verified && (
+              <VerifiedBadge size="sm" withLabel={false} title="Verified by the Barter team" />
+            )}
           </p>
 
           <div className="rental-profile-stats-row">
@@ -219,7 +221,11 @@ export default function RentalProfile() {
   dragY={photoViewer.dragY}
   dragging={photoViewer.dragging}
   touchHandlers={photoViewer.touchHandlers}
-/>
+ />
+
+      {showCelebration && (
+        <VerificationCelebration onDone={dismissCelebration} />
+      )}
     </div>
   );
 }

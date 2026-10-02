@@ -866,7 +866,26 @@ export default function MySkillsPage() {
                   />
                 </div>
               )}
-            </div>
+
+              {/* ── Fee preview (tutor-only, live as they type) ── */}
+              {Number(form.price) > 0 && (
+                <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                  <div style={{
+                    background: '#f0fdf4', border: '1px solid #bbf7d0',
+                    borderRadius: 10, padding: '10px 14px',
+                  }}>
+                    <p style={{ margin: 0, fontSize: 13, color: '#15803d', fontWeight: 600 }}>
+                      You set ₹{Number(form.price).toLocaleString('en-IN')} / session.
+                      {' '}You'll receive ₹{Math.round(Number(form.price) * 0.85).toLocaleString('en-IN')} after the 15% platform fee
+                      {' '}(reduces to 10% once you have 2+ approved listings, or 5% with the Unlimited plan).
+                    </p>
+                    <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#166534' }}>
+                      Tristal charges a platform fee on each session fee. Learners always pay the listed price.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>{/* /form-grid */}
 
             {message && <p className={`form-message ${message.includes('successfully') ? 'form-message--success' : 'form-message--error'}`}>{message}</p>}
 

@@ -45,6 +45,7 @@ export default function SkilterExplorePage() {
   const [error, setError] = useState(null)
   const [activeReelIndex, setActiveReelIndex] = useState(null)
   const reelVideoRef = useRef(null)
+  const reelTouchStartY = useRef(null)
 
   // Sync state when URL changes (e.g. browser back/forward)
   useEffect(() => {
@@ -162,6 +163,25 @@ export default function SkilterExplorePage() {
     setActiveReelIndex(null)
   }
 
+  function handleReelTouchStart(event) {
+    reelTouchStartY.current = event.touches[0].clientY
+  }
+
+  function handleReelTouchEnd(event) {
+    if (reelTouchStartY.current === null || reelItems.length < 2) return
+
+    const distance = reelTouchStartY.current - event.changedTouches[0].clientY
+    reelTouchStartY.current = null
+
+    if (Math.abs(distance) < 50) return
+
+    setActiveReelIndex((index) =>
+      distance > 0
+        ? (index + 1) % reelItems.length
+        : (index - 1 + reelItems.length) % reelItems.length
+    )
+  }
+
   return (
     <div className="skilter-page">
       {/* ── Category filter ──────────────────────────────────────────── */}
@@ -243,6 +263,8 @@ export default function SkilterExplorePage() {
             aria-modal="true"
             aria-label={`${activeReel.skillName} reel`}
             onClick={(event) => event.stopPropagation()}
+            onTouchStart={handleReelTouchStart}
+            onTouchEnd={handleReelTouchEnd}
           >
             <video
               key={activeReel.id}

@@ -3,8 +3,12 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../services/api';
 import { useAuth } from '../features/auth/AuthContext';
+import ProfileAvatar from '../components/ProfileAvatar';
+import UserAvatar from '../components/UserAvatar';
 import VerifiedBadge from '../features/verification/VerifiedBadge';
 import IdVerification from '../features/verification/IdVerification';
+import VerificationCelebration from '../features/verification/VerificationCelebration';
+import useVerificationCelebration from '../hooks/useVerificationCelebration';
 import './Profile.css';
 
 const MAX_IMAGE_SIZE_MB = 5; // raw file, before cropping — cropped output is much smaller
@@ -49,6 +53,14 @@ export default function Profile() {
   const { currentUser, loading, refreshUser } = useAuth();
 
   const isOwnProfile = !userId || userId === currentUser?.id;
+
+  // One-time verification celebration. Only ever fires for the signed-in user
+  // viewing their own profile, and only for the verification they have not
+  // seen yet.
+  const {
+    showCelebration,
+    dismissCelebration,
+  } = useVerificationCelebration(isOwnProfile && !userId);
 
   const [viewedUser, setViewedUser] = useState(null);
   const [viewedUserLoading, setViewedUserLoading] = useState(!isOwnProfile);
@@ -320,26 +332,19 @@ export default function Profile() {
         // ---------- VIEW MODE (Instagram-style) ----------
         <div className="profile-view">
           <div className="profile-header-row">
-            {displayImage ? (
-              <img
-                src={displayImage}
-                alt="Profile"
-                className="profile-photo profile-photo-clickable"
-                onClick={() => setPhotoViewerOpen(true)}
-              />
-            ) : (
-              <div className="profile-photo profile-photo-placeholder">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-            )}
+            <ProfileAvatar
+              src={displayImage}
+              name={profileData.full_name || profileData.username}
+              size={100}
+              onClick={displayImage ? () => setPhotoViewerOpen(true) : undefined}
+            />
 
             <div className="profile-header-info">
               <p className="profile-username">
                 {profileData.username}
-                {profileData.is_verified && <VerifiedBadge />}
+                {profileData.is_verified && (
+                  <VerifiedBadge size="sm" withLabel={false} title="Verified by the Barter team" />
+                )}
               </p>
 
               <div className="profile-stats-row">
@@ -450,16 +455,13 @@ export default function Profile() {
           <h2>Edit Profile</h2>
 
           <div className="profile-photo-section">
-            {profileImage ? (
-              <img src={profileImage} alt="Profile" className="profile-photo" />
-            ) : (
-              <div className="profile-photo profile-photo-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-            )}
+            {/* Same photo-or-initial rule as the view-mode header. */}
+            <UserAvatar
+              src={profileImage}
+              name={fullName || username}
+              size={100}
+              className="profile-photo"
+            />
 
             <div className="profile-photo-actions">
               <button type="button" className="profile-photo-edit" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
@@ -596,6 +598,10 @@ export default function Profile() {
             }}
           />
         </div>
+      )}
+
+      {showCelebration && (
+        <VerificationCelebration onDone={dismissCelebration} />
       )}
     </div>
   );

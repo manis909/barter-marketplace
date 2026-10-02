@@ -10,6 +10,15 @@ export const REPORT_REASONS = [
   'Other',
 ];
 
+// Rental-specific report reasons
+export const RENTAL_REPORT_REASONS = [
+  'Item damaged',
+  'Item not returned',
+  'Late return',
+  'Payment dispute',
+  'Other',
+];
+
 export default function ReportModal({
   isOpen,
   onClose,
@@ -20,6 +29,7 @@ export default function ReportModal({
   userName = '',
   onSuccess,
 }) {
+  const reasons = rentalBookingId ? RENTAL_REPORT_REASONS : REPORT_REASONS;
   const [selectedReason, setSelectedReason] = useState('');
   const [description, setDescription]       = useState('');
   const [isEditorOpen, setIsEditorOpen]     = useState(false);
@@ -172,7 +182,7 @@ export default function ReportModal({
                 color: '#24231F',
               }}
             >
-              Report User
+              {rentalBookingId ? 'Report Rental Issue' : 'Report User'}
             </h3>
             {userName && (
               <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#5F5B52' }}>
@@ -246,7 +256,7 @@ export default function ReportModal({
               marginBottom: '8px',
             }}
           >
-            {REPORT_REASONS.map((r) => {
+            {reasons.map((r) => {
               const isSelected = selectedReason === r;
               const isOtherOption = r === 'Other';
 

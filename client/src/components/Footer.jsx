@@ -24,6 +24,11 @@ const legalLinks = [
   { to: '/terms', label: 'Terms & Conditions', icon: FileText },
 ]
 
+const rentalQuickLinks = [
+  { to: '/renter', label: 'Explore', icon: Compass },
+  { to: '/renter/listings', label: 'My Rental Listings', icon: Package },
+]
+
 export default function Footer() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -31,9 +36,24 @@ export default function Footer() {
   // Determine if we're in the Skilter section
   const isSkilterSection = location.pathname.startsWith('/skilter') || location.pathname.startsWith('/skills')
   
+  // Determine if we're in the Rental section
+  const isRentalSection =
+    location.pathname.startsWith('/renter') ||
+    location.pathname === '/rent' ||
+    location.pathname.startsWith('/rental')
+
   // Choose the appropriate navigation links based on current section
-  const quickLinks = isSkilterSection ? skilterQuickLinks : barterQuickLinks
-  const explorePath = isSkilterSection ? '/skilter/explore' : '/explore'
+  const quickLinks = isSkilterSection
+    ? skilterQuickLinks
+    : isRentalSection
+      ? rentalQuickLinks
+      : barterQuickLinks
+
+  const explorePath = isSkilterSection
+    ? '/skilter/explore'
+    : isRentalSection
+      ? '/renter'
+      : '/explore'
   const [openSections, setOpenSections] = useState({})
 
   function toggleSection(section) {
@@ -68,15 +88,21 @@ export default function Footer() {
         <Link to={explorePath} className="footer-brand">
           <div className="footer-mark">⇄</div>
           <div className="footer-brand-text">
-            <span className="footer-logo">{isSkilterSection ? 'Skilter' : 'Barter'}</span>
+            <span className="footer-logo">
+              {isSkilterSection ? 'Skilter' : isRentalSection ? 'Rental' : 'Barter'}
+            </span>
             <p className="footer-copy">
-              {isSkilterSection ? 'Learn smarter. Share skills.' : 'Trade smarter. Exchange sustainably.'}
+              {isSkilterSection
+                ? 'Learn smarter. Share skills.'
+                : isRentalSection
+                  ? 'Rent what you need, when you need it.'
+                  : 'Trade smarter. Exchange sustainably.'}
             </p>
           </div>
         </Link>
 
         <div className="footer-socials footer-socials-inline">
-          <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.instagram.com/curu.in" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
             <FaInstagram size={15} />
           </a>
           <a href="#" aria-label="X" target="_blank" rel="noopener noreferrer">
@@ -89,10 +115,16 @@ export default function Footer() {
         <div className="footer-col footer-brand-col">
           <Link to={explorePath} className="footer-brand footer-brand-desktop">
             <div className="footer-mark">⇄</div>
-            <span className="footer-logo">{isSkilterSection ? 'Skilter' : 'Barter'}</span>
+            <span className="footer-logo">
+              {isSkilterSection ? 'Skilter' : isRentalSection ? 'Rental' : 'Barter'}
+            </span>
           </Link>
           <p className="footer-copy footer-copy-desktop">
-            {isSkilterSection ? 'Learn smarter. Share skills.' : 'Trade smarter. Exchange sustainably.'}
+            {isSkilterSection
+              ? 'Learn smarter. Share skills.'
+              : isRentalSection
+                ? 'Rent what you need, when you need it.'
+                : 'Trade smarter. Exchange sustainably.'}
           </p>
         </div>
 
@@ -156,9 +188,9 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <p>© 2026 {isSkilterSection ? 'Skilter' : 'Barter'}. All Rights Reserved.</p>
+        <p>© 2026 {isSkilterSection ? 'Skilter' : isRentalSection ? 'Rental' : 'Barter'}. All Rights Reserved.</p>
         <div className="footer-socials footer-socials-bottom">
-          <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.instagram.com/curu.in" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
             <FaInstagram size={15} />
           </a>
           <a href="#" aria-label="X" target="_blank" rel="noopener noreferrer">

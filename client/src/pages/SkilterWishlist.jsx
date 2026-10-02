@@ -307,6 +307,28 @@ const CSS = `
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+  .sw-page { padding: 16px 12px 56px; }
+  .sw-back { padding: 6px 12px; font-size: 12px; margin-bottom: 14px; }
+  .sw-header { margin-bottom: 16px; }
+  .sw-title  { font-size: 24px; }
+  .sw-subtitle { font-size: 13px; margin-top: 4px; }
+  .sw-count-badge { font-size: 12px; padding: 3px 9px; }
+  .sw-grid { grid-template-columns: 1fr; gap: 12px; }
+  .sw-card-media { aspect-ratio: 16 / 8; }
+  .sw-card-body  { padding: 12px; gap: 7px; }
+  .sw-card-title { font-size: 15px; }
+  .sw-card-teacher { font-size: 11.5px; }
+  .sw-card-rate  { font-size: 14px; }
+  .sw-card-badges { gap: 4px; }
+  .sw-book-btn,
+  .sw-view-btn   { height: 36px; font-size: 12.5px; border-radius: 9px; }
+  .sw-remove-btn { width: 30px; height: 30px; border-radius: 8px; }
+}
 `;
 
 export default function SkilterWishlist() {

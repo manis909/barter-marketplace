@@ -341,4 +341,31 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
+
+  .skilter-reel-viewer {
+    padding: 0;
+  }
+
+  .skilter-reel-viewer__dialog {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .skilter-reel-viewer__dialog > video {
+    object-fit: contain;
+  }
+
+  .skilter-reel-viewer__close {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+  }
+
+  .skilter-reel-viewer__navigation {
+    display: none;
+  }
 }

@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
-  Award,
   KeyRound,
   Minus,
   Plus
@@ -21,6 +20,7 @@ import {
 import { useAuth } from '../features/auth/AuthContext'
 import api from '../services/api'
 import WishlistButton from '../components/WishlistButton'
+import VerifiedBadge from '../features/verification/VerifiedBadge'
 import VerificationRequiredModal from '../components/VerificationRequiredModal'
 import { createRentalBooking } from '../services/rentalBookingService'
 import useVerificationStatus from '../hooks/useVerificationStatus'
@@ -137,6 +137,7 @@ export default function ItemDetailPage() {
       ownerName: item.ownerName || item.owner_name || 'Owner',
       ownerId: item.owner_id || item.ownerId,
       ownerRating: item.ownerRating ?? item.owner_rating ?? 4.5,
+      ownerIsVerified: Boolean(item.owner_is_verified ?? item.ownerIsVerified),
       desiredItem: item.desired_item || item.desiredItem || '',
       images: Array.isArray(item.image_urls) && item.image_urls.length > 0
         ? item.image_urls
@@ -462,7 +463,9 @@ export default function ItemDetailPage() {
               <span className="owner-role-label">Item Owner</span>
               <div className="owner-name-row">
                 <span className="owner-title-name">{normalizedItem.ownerName}</span>
-                <span className="verified-badge"><Award size={12} /> Verified Member</span>
+                {normalizedItem.ownerIsVerified && (
+                  <VerifiedBadge size="sm" label="Verified Member" />
+                )}
               </div>
               <div className="owner-rating-row">
                 <Star size={14} className="star-icon" fill="#F59E0B" color="#F59E0B" />

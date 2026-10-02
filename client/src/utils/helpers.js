@@ -162,6 +162,32 @@ export function timeAgo(timestamp) {
 }
 
 // ---------------------------------------------------------------------------
+// CURRENCY FORMATTING
+// ---------------------------------------------------------------------------
+
+/**
+ * Formats a number as whole Indian Rupees using the en-IN locale.
+ * Returns "₹1,200" style output.  Never shows decimals.
+ *
+ * Use this EVERYWHERE a money amount is displayed — never hardcode ₹,
+ * "INR", "$" or any other currency symbol in JSX.
+ *
+ * @param {number|string|null|undefined} amount
+ * @returns {string}  e.g. "₹1,200"  or "₹0" for null/undefined
+ */
+const _fmtINR = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+});
+
+export function fmtINR(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return '₹0';
+  return _fmtINR.format(n);
+}
+
+// ---------------------------------------------------------------------------
 // OTHER UTILITIES
 // ---------------------------------------------------------------------------
 

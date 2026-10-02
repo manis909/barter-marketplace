@@ -43,6 +43,7 @@ import AdminVerificationPage from './features/verification/AdminVerification';
 import AdminPaymentReviewPage from './pages/AdminPaymentReview';
 import AdminApplicationReviewPage from './pages/AdminApplicationReview';
 import RenterAdminPage from './pages/RenterAdmin';
+import DatePickerTest from './pages/DatePickerTest';
 
 // ── Skilter placeholder ───────────────────────────────────────────────────
 // Rendered for Skilter-specific routes whose full page is being built
@@ -138,6 +139,9 @@ function App() {
             <Route path="/skilter/wishlist"  element={<SkilterWishlistPage />} />
             <Route path="/skilter/chat"      element={<SkillChatsLayout />} />
             <Route path="/skilter/chat/:bookingId" element={<SkillChatsLayout />} />
+            
+            {/* Date Picker Test Route */}
+            <Route path="/test/datepicker" element={<DatePickerTest />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>

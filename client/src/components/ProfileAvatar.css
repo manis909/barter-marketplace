@@ -1,0 +1,28 @@
+/*
+ * Profile header identity block.
+ *
+ * The verified shield is anchored to the avatar's bottom-right corner. Sizing
+ * comes from ProfileAvatar (48px badge on a 100px avatar) and is deliberately
+ * expressed in percentages of the avatar so it scales with whatever size the
+ * page passes in.
+ */
+.profile-avatar-slot {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.profile-avatar {
+  vertical-align: middle;
+}
+
+.profile-avatar-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: #ffffff;
+  padding: 3px;
+  box-shadow: 0 2px 8px rgba(36, 35, 31, 0.16);
+}

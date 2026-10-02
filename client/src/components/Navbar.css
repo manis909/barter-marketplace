@@ -76,6 +76,20 @@
   line-height: 1;
 }
 
+.desktop-brand-name,
+.mobile-brand-name {
+  animation: tristal-word-shine 3s ease-in-out infinite;
+}
+
+@keyframes tristal-word-shine {
+  0%, 100% {
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.75);
+  }
+}
+
 .navbar-wrapper.platform-barter .desktop-brand-name,
 .navbar-wrapper.platform-renter .desktop-brand-name,
 .navbar-wrapper.platform-skilter .desktop-brand-name {
@@ -878,4 +892,4 @@
   background: #C6E930;
   color: #0F3D2E;
   box-shadow: 0 2px 8px rgba(198, 233, 48, 0.45);
-}
+}

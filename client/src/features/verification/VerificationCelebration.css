@@ -1,0 +1,339 @@
+/*
+ * Verification celebration overlay.
+ *
+ * Glassmorphism panel in the Barter cream / forest-green palette. Every
+ * animation is declared here (no JS tweening) so the whole sequence can be
+ * disabled wholesale by prefers-reduced-motion, and the lifetime is short
+ * enough that the overlay unmounts on its own — there is no Continue button
+ * and nothing to tap.
+ *
+ * The shield artwork is the shared VerifiedBadge at 96px; only the glow,
+ * shine and particles are specific to this screen.
+ */
+
+.vc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  /* Respect notches, home indicators and Android gesture bars. */
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background: rgba(36, 35, 31, 0.42);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  animation: vc-fade-in 420ms ease both;
+}
+
+.vc-overlay[data-reduced-motion='true'] {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ---------------------------------------------------------------- panel -- */
+
+.vc-panel {
+  position: relative;
+  width: min(430px, 100%);
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 34px 26px 30px;
+  border-radius: 28px;
+  box-sizing: border-box;
+
+  /* Frosted glass: translucent fill, a bright top highlight and a soft
+     outer hairline instead of a hard border. */
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(246, 250, 248, 0.42) 55%,
+    rgba(234, 242, 238, 0.5) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.85) inset,
+    0 -1px 0 0 rgba(47, 111, 94, 0.08) inset,
+    0 24px 60px rgba(36, 35, 31, 0.22);
+
+  animation: vc-panel-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    vc-panel-out var(--vc-exit-duration, 800ms) ease-in both;
+  animation-delay: 0ms, var(--vc-fade-delay, 4200ms);
+}
+
+@keyframes vc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes vc-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vc-panel-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.94); }
+}
+
+/* ----------------------------------------------------------------- glow -- */
+
+.vc-aura {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 340px;
+  height: 340px;
+  margin-left: -170px;
+  margin-top: -170px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(5, 150, 105, 0.24) 0%,
+    rgba(32, 178, 170, 0.14) 42%,
+    rgba(32, 178, 170, 0) 70%
+  );
+  filter: blur(6px);
+  pointer-events: none;
+  animation: vc-aura-breathe 3200ms ease-in-out 400ms infinite both;
+}
+
+@keyframes vc-aura-breathe {
+  0%, 100% { transform: scale(0.82); opacity: 0.55; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+
+/* --------------------------------------------------------------- shield -- */
+
+.vc-shield-stage {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  isolation: isolate;
+}
+
+/* Soft halo sitting behind the shield. */
+.vc-shield-glow {
+  position: absolute;
+  inset: -34%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(5, 150, 105, 0.42) 0%,
+    rgba(56, 199, 189, 0.22) 45%,
+    rgba(56, 199, 189, 0) 72%
+  );
+  filter: blur(8px);
+  z-index: -1;
+  animation: vc-shield-glow 2400ms ease-in-out 700ms infinite both;
+}
+
+@keyframes vc-shield-glow {
+  0%, 100% {
+    transform: scale(0.86);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+}
+
+.vc-shield {
+  /* Scale up, overshoot slightly, then settle. */
+  animation: vc-shield-pop 980ms cubic-bezier(0.34, 1.56, 0.64, 1) 260ms both;
+}
+
+@keyframes vc-shield-pop {
+  0%   { opacity: 0; transform: scale(0.2) rotate(-8deg); }
+  38%  { opacity: 1; transform: scale(1.16) rotate(2deg); }
+  58%  { opacity: 1; transform: scale(0.95) rotate(-1.5deg); }
+  76%  { opacity: 1; transform: scale(1.04) rotate(0.6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* Diagonal highlight that sweeps across the shield once. */
+.vc-shield-shine {
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 45%;
+  height: 140%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.85) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(14deg);
+  animation: vc-shine-sweep 1500ms ease-in-out 1150ms both;
+}
+
+@keyframes vc-shine-sweep {
+  0%   { transform: translateX(0) rotate(14deg); opacity: 0; }
+  12%  { opacity: 0.9; }
+  70%  { opacity: 0.55; }
+  100% { transform: translateX(420%) rotate(14deg); opacity: 0; }
+}
+
+/* ------------------------------------------------------------ particles -- */
+
+.vc-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vc-particle {
+  position: absolute;
+  border-radius: 50%;
+  /* Radiating outward from the shield. */
+  animation: vc-particle-drift var(--vc-float-duration) ease-in-out var(--vc-delay) infinite both;
+}
+
+/* Independent twinkle, layered on the same element via a second animation. */
+.vc-particle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: vc-particle-twinkle var(--vc-twinkle-duration) ease-in-out var(--vc-delay) infinite both;
+}
+
+.vc-particle--tone-0 {
+  background: #059669;
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.5);
+}
+
+.vc-particle--tone-1 {
+  background: #38c7bd;
+  box-shadow: 0 0 8px rgba(56, 199, 189, 0.5);
+}
+
+.vc-particle--tone-2 {
+  background: #c9dbd2;
+  box-shadow: 0 0 6px rgba(201, 219, 210, 0.7);
+}
+
+@keyframes vc-particle-drift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--vc-drift), var(--vc-rise)) scale(1.15);
+  }
+}
+
+@keyframes vc-particle-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.7); }
+  50%      { opacity: 1;    transform: scale(1.25); }
+}
+
+/* ----------------------------------------------------------------- text -- */
+
+.vc-title {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.5rem, 6.2vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: #1f3d35;
+  animation: vc-text-in 620ms ease-out 620ms both;
+}
+
+.vc-subtitle {
+  margin: 10px 0 0;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: #3d5c53;
+  max-width: 30ch;
+  animation: vc-text-in 620ms ease-out 820ms both;
+}
+
+@keyframes vc-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* -------------------------------------------------------- reduced motion -- */
+
+@media (prefers-reduced-motion: reduce) {
+  .vc-overlay {
+    animation: vc-fade-in 240ms ease both;
+  }
+
+  .vc-panel {
+    animation: vc-fade-in 320ms ease both, vc-fade-out var(--vc-exit-duration, 320ms) ease-in both;
+    animation-delay: 0ms, var(--vc-fade-delay, 2400ms);
+  }
+
+  /* No bounce, no glow pulse, no shine, no drifting particles — the message
+     still appears, it just arrives without motion. */
+  .vc-shield,
+  .vc-shield-glow,
+  .vc-shield-shine,
+  .vc-aura,
+  .vc-particle,
+  .vc-particle::after,
+  .vc-title,
+  .vc-subtitle {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@keyframes vc-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Very small phones (iPhone SE and similar) */
+@media (max-width: 360px) {
+  .vc-panel {
+    padding: 26px 18px 24px;
+  }
+
+  .vc-shield-stage {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* VerifiedBadge sets --shield-badge-size inline, so this override has to
+     outrank it for the celebration to shrink on small phones. */
+  .vc-shield-stage .vc-shield {
+    --shield-badge-size: 80px !important;
+  }
+}

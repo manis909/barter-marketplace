@@ -125,7 +125,33 @@ const BARTER_CSS = `
   .cards-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .footer-space { height: 40px; }
-`;
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMPACT  ≤ 520px  —  desktop unchanged
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 520px) {
+
+  .page-top-bar { display: none; }
+
+  .title-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none; border-right: none; border-top: none;
+    padding: 10px 14px !important;
+    min-height: 56px;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 1px 4px rgba(15,61,46,0.07);
+  }
+
+  .title-card h1 { font-size: 20px !important; margin: 0 0 4px !important; }
+  .stat-row { gap: 16px; }
+  .stat b { font-size: 17px; }
+  .stat span { font-size: 10px; }
+
+  .section-label { margin: 8px 10px 6px !important; font-size: 11px; }
+  .cards-grid { padding: 0 10px !important; gap: 10px !important; }
+}`;
+
 
 function SkeletonCard() {
   return (
